@@ -8,6 +8,9 @@ import '../../../core/risk_engine/risk_provider.dart';
 import '../../../core/security/local_settings_service.dart';
 import '../../../core/storage/database_provider.dart';
 import '../../../l10n/app_strings.dart';
+import '../../ers/ers_engine.dart';
+import '../../ers/ers_models.dart';
+import '../../ers/ers_percentile_widget.dart';
 
 class CheckinPage extends ConsumerStatefulWidget {
   const CheckinPage({super.key});
@@ -74,11 +77,51 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
         ),
       );
 
-      if (risk.riskLevel == RiskLevel.high) {
-        context.go('/safety');
-      } else {
-        context.go('/home');
-      }
+      // ERS分析
+      await Future.delayed(const Duration(milliseconds: 300));
+      if (!mounted) return;
+      final ersEngine = ERSEngine();
+      final ersResult = ersEngine.calculate(
+        ERSInput(
+          speechRate: 300,
+          negativeWordRatio: stress / 200.0,
+          pauseFrequency: 2,
+          moodScore: mood.toDouble(),
+          stressScore: stress.toDouble(),
+          energyScore: energy.toDouble(),
+          sleepDuration: 7,
+          appUsageStreak: 5,
+          checkInConsistency: 0.8,
+        ),
+        const PersonalBaseline(),
+      );
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('今日心理狀態分析', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+              ERSPercentileWidget(ersResult: ersResult, ageGroup: '高中'),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  if (risk.riskLevel == RiskLevel.high) {
+                    context.go('/safety');
+                  } else {
+                    context.go('/home');
+                  }
+                },
+                child: const Text('了解了'),
+              ),
+            ],
+          ),
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
       setState(() => _saving = false);

@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class PsyGuardTheme {
   // ── Colors (Serene Nature Palette) ────────────────────────────────
   // Sage Green & Warm Sand
-  static const Color primary = Color(0xFF5B8C85); // Sage Green (Calming, Trust)
-  static const Color secondary = Color(0xFFD4A373); // Warm Sand (Grounding)
-  static const Color background = Color(0xFFF9F9F8); // Warm Off-White
+  static const Color primary = Color(0xFF0ABFBC); // Sage Green (Calming, Trust)
+  static const Color secondary = Color(0xFF81D4D2); // Warm Sand (Grounding)
+  static const Color background = Color(0xFFF8FFFE); // Warm Off-White
   static const Color surface = Colors.white;
 
   static const Color textPrimary = Color(0xFF2D3748); // Slate 800
@@ -112,7 +113,7 @@ class PsyGuardTheme {
     borderRadius: BorderRadius.circular(24),
     boxShadow: [
       BoxShadow(
-        color: const Color(0xFF5B8C85).withValues(alpha: 0.08), // Sage shadow
+        color: const Color(0xFF0ABFBC).withValues(alpha: 0.08), // Sage shadow
         blurRadius: 16,
         offset: const Offset(0, 4),
       ),
@@ -127,7 +128,7 @@ class PsyGuardTheme {
   );
 
   // ── Risk Color Mapping ────────────────────────────────────────────
-  static const Color riskLow = Color(0xFF5B8C85); // Sage (Teal/Green)
+  static const Color riskLow = Color(0xFF0ABFBC); // Sage (Teal/Green)
   static const Color riskMedium = Color(0xFFE8A838); // Warm Orange
   static const Color riskHigh = Color(0xFFD14343); // Deep Red
 
