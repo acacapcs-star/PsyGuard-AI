@@ -104,9 +104,9 @@ class AppStrings {
       isZhTw ? '風險:$level，原因:$reasons' : 'Risk: $level. Reasons: $reasons';
 
   String get checkinTitle => navCheckin;
-  String get mood => isZhTw ? '心情' : 'Mood';
-  String get stress => isZhTw ? '壓力' : 'Stress';
-  String get energy => isZhTw ? '活力' : 'Energy';
+  String get mood => isZhTw ? '情緒穩定度' : 'Emotional Stability';
+  String get stress => isZhTw ? '心理負荷感' : 'Psychological Load';
+  String get energy => isZhTw ? '心理韌性值' : 'Mental Resilience';
   String get todayNote => isZhTw ? '今日筆記' : 'Today\'s Note';
   String get noteHint =>
       isZhTw ? '想記下什麼嗎？（選填）' : 'Anything to write down? (optional)';
