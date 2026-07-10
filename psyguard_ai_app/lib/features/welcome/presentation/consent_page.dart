@@ -25,7 +25,7 @@ class _ConsentPageState extends ConsumerState<ConsentPage> {
     final strings = AppStrings.of(ref.watch(appLanguageControllerProvider));
 
     return Scaffold(
-      backgroundColor: PsyGuardTheme.background,
+      backgroundColor: LumiTheme.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -35,7 +35,7 @@ class _ConsentPageState extends ConsumerState<ConsentPage> {
           style: GoogleFonts.nunitoSans(
             fontSize: 18,
             fontWeight: FontWeight.w700,
-            color: PsyGuardTheme.textPrimary,
+            color: LumiTheme.textPrimary,
           ),
         ),
       ),
@@ -62,7 +62,7 @@ class _ConsentPageState extends ConsumerState<ConsentPage> {
                       const SizedBox(height: 20),
                       Container(
                         padding: const EdgeInsets.all(20),
-                        decoration: PsyGuardTheme.softCard,
+                        decoration: LumiTheme.softCard,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -70,7 +70,7 @@ class _ConsentPageState extends ConsumerState<ConsentPage> {
                               children: [
                                 const Icon(
                                   Icons.info_outline_rounded,
-                                  color: PsyGuardTheme.textPrimary,
+                                  color: LumiTheme.textPrimary,
                                   size: 20,
                                 ),
                                 const SizedBox(width: 10),
@@ -79,7 +79,7 @@ class _ConsentPageState extends ConsumerState<ConsentPage> {
                                   style: GoogleFonts.nunitoSans(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w800,
-                                    color: PsyGuardTheme.textPrimary,
+                                    color: LumiTheme.textPrimary,
                                   ),
                                 ),
                               ],
@@ -90,7 +90,7 @@ class _ConsentPageState extends ConsumerState<ConsentPage> {
                               style: GoogleFonts.nunitoSans(
                                 fontSize: 14,
                                 height: 1.6,
-                                color: PsyGuardTheme.textSecondary,
+                                color: LumiTheme.textSecondary,
                               ),
                             ),
                             const SizedBox(height: 16),
@@ -99,7 +99,7 @@ class _ConsentPageState extends ConsumerState<ConsentPage> {
                               style: GoogleFonts.nunitoSans(
                                 fontSize: 14,
                                 height: 1.6,
-                                color: PsyGuardTheme.textSecondary,
+                                color: LumiTheme.textSecondary,
                               ),
                             ),
                           ],
@@ -118,7 +118,7 @@ class _ConsentPageState extends ConsumerState<ConsentPage> {
                           children: [
                             Checkbox(
                               value: _accepted,
-                              activeColor: PsyGuardTheme.primary,
+                              activeColor: LumiTheme.primary,
                               onChanged: (value) {
                                 setState(() => _accepted = value ?? false);
                               },
@@ -132,7 +132,7 @@ class _ConsentPageState extends ConsumerState<ConsentPage> {
                                   style: GoogleFonts.nunitoSans(
                                     fontSize: 14,
                                     height: 1.5,
-                                    color: PsyGuardTheme.textPrimary,
+                                    color: LumiTheme.textPrimary,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -161,9 +161,9 @@ class _ConsentPageState extends ConsumerState<ConsentPage> {
                                   }
                                 },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: PsyGuardTheme.primary,
+                            backgroundColor: LumiTheme.primary,
                             foregroundColor: Colors.white,
-                            disabledBackgroundColor: PsyGuardTheme.primary
+                            disabledBackgroundColor: LumiTheme.primary
                                 .withValues(alpha: 0.35),
                             elevation: 0,
                             shape: RoundedRectangleBorder(
@@ -183,7 +183,7 @@ class _ConsentPageState extends ConsumerState<ConsentPage> {
                         child: Text(
                           strings.needImmediateHelp,
                           style: GoogleFonts.nunitoSans(
-                            color: PsyGuardTheme.textSecondary,
+                            color: LumiTheme.textSecondary,
                             fontWeight: FontWeight.w700,
                           ),
                         ),

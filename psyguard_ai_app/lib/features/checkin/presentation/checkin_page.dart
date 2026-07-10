@@ -135,7 +135,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
   Widget build(BuildContext context) {
     final copy = AppStrings.of(ref.watch(appLanguageControllerProvider));
     return Scaffold(
-      backgroundColor: PsyGuardTheme.background,
+      backgroundColor: LumiTheme.background,
       appBar: AppBar(
         title: Text(copy.checkinTitle),
         leading: IconButton(
@@ -145,7 +145,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.history_rounded),
-            color: PsyGuardTheme.textPrimary,
+            color: LumiTheme.textPrimary,
             onPressed: () => context.push('/checkin/history'),
           ),
         ],
@@ -183,7 +183,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
           // Note section
           Container(
             padding: const EdgeInsets.all(20),
-            decoration: PsyGuardTheme.softCard,
+            decoration: LumiTheme.softCard,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -191,7 +191,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
                   children: [
                     Icon(
                       Icons.edit_note_rounded,
-                      color: PsyGuardTheme.primary,
+                      color: LumiTheme.primary,
                       size: 22,
                     ),
                     const SizedBox(width: 8),
@@ -200,7 +200,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        color: PsyGuardTheme.textPrimary,
+                        color: LumiTheme.textPrimary,
                       ),
                     ),
                   ],
@@ -211,7 +211,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
                   maxLines: 3,
                   style: const TextStyle(
                     fontSize: 14,
-                    color: PsyGuardTheme.textPrimary,
+                    color: LumiTheme.textPrimary,
                   ),
                   decoration: InputDecoration(hintText: copy.noteHint),
                 ),
@@ -259,7 +259,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
 
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: PsyGuardTheme.softCard,
+      decoration: LumiTheme.softCard,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -279,7 +279,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
-                  color: PsyGuardTheme.textPrimary,
+                  color: LumiTheme.textPrimary,
                 ),
               ),
               const Spacer(),
@@ -311,7 +311,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: PsyGuardTheme.textSecondary,
+                        color: LumiTheme.textSecondary,
                       ),
                     ),
                   ],
@@ -369,7 +369,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
           style: const TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w600,
-            color: PsyGuardTheme.textSecondary,
+            color: LumiTheme.textSecondary,
           ),
         ),
         if (assistiveLabel != null)
@@ -377,7 +377,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
             assistiveLabel,
             style: const TextStyle(
               fontSize: 10,
-              color: PsyGuardTheme.textLight,
+              color: LumiTheme.textLight,
             ),
           ),
       ],

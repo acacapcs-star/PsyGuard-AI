@@ -95,13 +95,13 @@ class _ReportCard extends StatelessWidget {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: PsyGuardTheme.primary.withValues(alpha: 0.1),
+                      color: LumiTheme.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
                       copy.recentDays(report.rangeDays),
                       style: const TextStyle(
-                        color: PsyGuardTheme.primary,
+                        color: LumiTheme.primary,
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
                       ),
@@ -119,7 +119,7 @@ class _ReportCard extends StatelessWidget {
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                  color: PsyGuardTheme.textPrimary,
+                  color: LumiTheme.textPrimary,
                   fontSize: 14,
                   height: 1.5,
                 ),
@@ -131,7 +131,7 @@ class _ReportCard extends StatelessWidget {
                   Text(
                     copy.viewFullReport,
                     style: TextStyle(
-                      color: PsyGuardTheme.primary,
+                      color: LumiTheme.primary,
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
@@ -140,7 +140,7 @@ class _ReportCard extends StatelessWidget {
                   Icon(
                     Icons.arrow_forward_ios_rounded,
                     size: 12,
-                    color: PsyGuardTheme.primary,
+                    color: LumiTheme.primary,
                   ),
                 ],
               ),

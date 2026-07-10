@@ -18,16 +18,16 @@ class SleepHistoryPage extends ConsumerWidget {
     final copy = AppStrings.of(ref.watch(appLanguageControllerProvider));
 
     return Scaffold(
-      backgroundColor: PsyGuardTheme.background,
+      backgroundColor: LumiTheme.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
-        leading: BackButton(color: PsyGuardTheme.textPrimary),
+        leading: BackButton(color: LumiTheme.textPrimary),
         title: Text(
           copy.isZhTw ? '睡眠歷史紀錄' : 'Sleep History',
           style: GoogleFonts.varelaRound(
-            color: PsyGuardTheme.textPrimary,
+            color: LumiTheme.textPrimary,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -37,7 +37,7 @@ class SleepHistoryPage extends ConsumerWidget {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
-              child: CircularProgressIndicator(color: PsyGuardTheme.primary),
+              child: CircularProgressIndicator(color: LumiTheme.primary),
             );
           }
           if (snapshot.hasError) {
@@ -54,13 +54,13 @@ class SleepHistoryPage extends ConsumerWidget {
                   Icon(
                     Icons.bedtime_outlined,
                     size: 64,
-                    color: PsyGuardTheme.textLight,
+                    color: LumiTheme.textLight,
                   ),
                   const SizedBox(height: 16),
                   Text(
                     copy.isZhTw ? '尚無睡眠紀錄' : 'No sleep records yet',
                     style: theme.textTheme.bodyLarge?.copyWith(
-                      color: PsyGuardTheme.textSecondary,
+                      color: LumiTheme.textSecondary,
                     ),
                   ),
                 ],
@@ -90,7 +90,7 @@ class SleepHistoryPage extends ConsumerWidget {
                         Text(
                           DateFormat('yyyy/MM/dd').format(log.date),
                           style: GoogleFonts.nunitoSans(
-                            color: PsyGuardTheme.textSecondary,
+                            color: LumiTheme.textSecondary,
                             fontWeight: FontWeight.w600,
                             fontSize: 14,
                           ),
@@ -143,7 +143,7 @@ class SleepHistoryPage extends ConsumerWidget {
           label,
           style: GoogleFonts.nunitoSans(
             fontSize: 12,
-            color: PsyGuardTheme.textLight,
+            color: LumiTheme.textLight,
           ),
         ),
         const SizedBox(height: 4),
@@ -153,8 +153,8 @@ class SleepHistoryPage extends ConsumerWidget {
             fontSize: 16,
             fontWeight: FontWeight.bold,
             color: isHighlight
-                ? PsyGuardTheme.primary
-                : PsyGuardTheme.textPrimary,
+                ? LumiTheme.primary
+                : LumiTheme.textPrimary,
           ),
         ),
       ],
@@ -168,16 +168,16 @@ class SleepHistoryPage extends ConsumerWidget {
 
     if (difficulty <= 0) {
       label = copy.isZhTw ? '品質優良' : 'Excellent';
-      color = PsyGuardTheme.success;
+      color = LumiTheme.success;
     } else if (difficulty <= 1) {
       label = copy.isZhTw ? '品質良好' : 'Good';
-      color = PsyGuardTheme.success;
+      color = LumiTheme.success;
     } else if (difficulty == 2) {
       label = copy.isZhTw ? '品質普通' : 'Fair';
-      color = PsyGuardTheme.textSecondary;
+      color = LumiTheme.textSecondary;
     } else {
       label = copy.isZhTw ? '品質不佳' : 'Poor';
-      color = PsyGuardTheme.error;
+      color = LumiTheme.error;
     }
 
     return Container(

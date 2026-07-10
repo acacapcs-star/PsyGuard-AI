@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class PsyGuardTheme {
+class LumiTheme {
   // ── Colors (Serene Nature Palette) ────────────────────────────────
   // Sage Green & Warm Sand
   static const Color primary = Color(0xFF0ABFBC); // Sage Green (Calming, Trust)

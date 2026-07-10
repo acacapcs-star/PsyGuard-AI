@@ -36,7 +36,7 @@ class AppFrame extends ConsumerWidget {
               child: Align(
                 alignment: Alignment.bottomLeft,
                 child: Text(
-                  'PsyGuard AI',
+                  'Lumi',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 26,

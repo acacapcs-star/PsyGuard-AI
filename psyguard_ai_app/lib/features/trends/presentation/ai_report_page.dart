@@ -44,28 +44,28 @@ class AiReportPage extends ConsumerWidget {
           h1: const TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
-            color: PsyGuardTheme.textPrimary,
+            color: LumiTheme.textPrimary,
             height: 1.5,
           ),
           h2: const TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: PsyGuardTheme.textPrimary,
+            color: LumiTheme.textPrimary,
             height: 1.5,
           ),
           h3: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: PsyGuardTheme.textPrimary,
+            color: LumiTheme.textPrimary,
             height: 1.5,
           ),
           p: const TextStyle(
             fontSize: 16,
-            color: PsyGuardTheme.textPrimary,
+            color: LumiTheme.textPrimary,
             height: 1.6,
           ),
           listBullet: const TextStyle(
-            color: PsyGuardTheme.primary,
+            color: LumiTheme.primary,
             fontSize: 16,
           ),
         ),

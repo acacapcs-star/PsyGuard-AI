@@ -30,7 +30,7 @@ class SafetyPage extends ConsumerWidget {
     final language = ref.watch(appLanguageControllerProvider);
     final copy = AppStrings.of(language);
     return Scaffold(
-      backgroundColor: PsyGuardTheme.background,
+      backgroundColor: LumiTheme.background,
       appBar: AppBar(
         title: Text(copy.safetyTitle),
         leading: IconButton(
@@ -171,7 +171,7 @@ class SafetyPage extends ConsumerWidget {
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.all(18),
-                decoration: PsyGuardTheme.softCard,
+                decoration: LumiTheme.softCard,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -181,7 +181,7 @@ class SafetyPage extends ConsumerWidget {
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w800,
-                          color: PsyGuardTheme.textPrimary,
+                          color: LumiTheme.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -190,7 +190,7 @@ class SafetyPage extends ConsumerWidget {
                         style: const TextStyle(
                           fontSize: 13,
                           height: 1.6,
-                          color: PsyGuardTheme.textSecondary,
+                          color: LumiTheme.textSecondary,
                         ),
                       ),
                       const SizedBox(height: 14),
@@ -203,7 +203,7 @@ class SafetyPage extends ConsumerWidget {
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.all(18),
-                decoration: PsyGuardTheme.softCard,
+                decoration: LumiTheme.softCard,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -212,7 +212,7 @@ class SafetyPage extends ConsumerWidget {
                       style: const TextStyle(
                         fontSize: 13,
                         height: 1.6,
-                        color: PsyGuardTheme.textPrimary,
+                        color: LumiTheme.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -232,7 +232,7 @@ class SafetyPage extends ConsumerWidget {
                           }
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: PsyGuardTheme.primary,
+                          backgroundColor: LumiTheme.primary,
                           foregroundColor: Colors.white,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
@@ -251,14 +251,14 @@ class SafetyPage extends ConsumerWidget {
                 style: const TextStyle(
                   fontSize: 12,
                   height: 1.5,
-                  color: PsyGuardTheme.textLight,
+                  color: LumiTheme.textLight,
                 ),
               ),
             ],
           );
         },
         loading: () => const Center(
-          child: CircularProgressIndicator(color: PsyGuardTheme.primary),
+          child: CircularProgressIndicator(color: LumiTheme.primary),
         ),
         error: (error, stack) => Center(child: Text(copy.loadFailed(error))),
       ),
@@ -271,7 +271,7 @@ class SafetyPage extends ConsumerWidget {
       style: const TextStyle(
         fontSize: 14,
         fontWeight: FontWeight.w800,
-        color: PsyGuardTheme.textPrimary,
+        color: LumiTheme.textPrimary,
       ),
     );
   }
@@ -297,18 +297,18 @@ class SafetyPage extends ConsumerWidget {
       borderRadius: BorderRadius.circular(20),
       child: Container(
         padding: const EdgeInsets.all(18),
-        decoration: PsyGuardTheme.softCard,
+        decoration: LumiTheme.softCard,
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: PsyGuardTheme.primary.withValues(alpha: 0.12),
+                color: LumiTheme.primary.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: const Icon(
                 Icons.support_agent_rounded,
-                color: PsyGuardTheme.primary,
+                color: LumiTheme.primary,
                 size: 24,
               ),
             ),
@@ -322,7 +322,7 @@ class SafetyPage extends ConsumerWidget {
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w800,
-                      color: PsyGuardTheme.textPrimary,
+                      color: LumiTheme.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -330,7 +330,7 @@ class SafetyPage extends ConsumerWidget {
                     description,
                     style: const TextStyle(
                       fontSize: 13,
-                      color: PsyGuardTheme.textSecondary,
+                      color: LumiTheme.textSecondary,
                       height: 1.4,
                     ),
                   ),
@@ -345,7 +345,7 @@ class SafetyPage extends ConsumerWidget {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: PsyGuardTheme.primary.withValues(alpha: 0.1),
+                  color: LumiTheme.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -353,7 +353,7 @@ class SafetyPage extends ConsumerWidget {
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
-                    color: PsyGuardTheme.primary,
+                    color: LumiTheme.primary,
                   ),
                 ),
               ),

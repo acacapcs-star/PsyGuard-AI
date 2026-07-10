@@ -362,7 +362,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                   children: [
                     Icon(
                       Icons.warning_amber_rounded,
-                      color: PsyGuardTheme.error,
+                      color: LumiTheme.error,
                       size: 22,
                     ),
                     const SizedBox(width: 10),
@@ -372,7 +372,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w800,
-                          color: PsyGuardTheme.textPrimary,
+                          color: LumiTheme.textPrimary,
                         ),
                       ),
                     ),
@@ -384,7 +384,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                   style: TextStyle(
                     fontSize: 13,
                     height: 1.6,
-                    color: PsyGuardTheme.textSecondary,
+                    color: LumiTheme.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -397,7 +397,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                       this.context.go('/safety');
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: PsyGuardTheme.error,
+                      backgroundColor: LumiTheme.error,
                       foregroundColor: Colors.white,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
@@ -414,7 +414,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                   child: OutlinedButton(
                     onPressed: () => Navigator.pop(context),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: PsyGuardTheme.textPrimary,
+                      foregroundColor: LumiTheme.textPrimary,
                       side: const BorderSide(color: Color(0xFFE5E7EB)),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
@@ -448,7 +448,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     });
 
     return Scaffold(
-      backgroundColor: PsyGuardTheme.background,
+      backgroundColor: LumiTheme.background,
       appBar: AppBar(
         title: Text(copy.chatTitle),
         leading: IconButton(
@@ -476,14 +476,14 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                           child: Icon(
                             Icons.psychology_alt_rounded,
                             size: 56,
-                            color: PsyGuardTheme.primary.withValues(alpha: 0.5),
+                            color: LumiTheme.primary.withValues(alpha: 0.5),
                           ),
                         ),
                         const SizedBox(height: 20),
                         Text(
                           copy.chatEmptyTitle,
                           style: TextStyle(
-                            color: PsyGuardTheme.textSecondary,
+                            color: LumiTheme.textSecondary,
                             fontSize: 17,
                             fontWeight: FontWeight.w500,
                           ),
@@ -492,7 +492,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                         Text(
                           copy.chatEmptySubtitle,
                           style: TextStyle(
-                            color: PsyGuardTheme.textLight,
+                            color: LumiTheme.textLight,
                             fontSize: 14,
                           ),
                         ),
@@ -512,7 +512,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                 );
               },
               loading: () => const Center(
-                child: CircularProgressIndicator(color: PsyGuardTheme.primary),
+                child: CircularProgressIndicator(color: LumiTheme.primary),
               ),
               error: (error, stack) => Center(
                 child: Text(
@@ -543,7 +543,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         ),
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
         decoration: BoxDecoration(
-          color: isUser ? PsyGuardTheme.primary : Colors.white,
+          color: isUser ? LumiTheme.primary : Colors.white,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(22),
             topRight: const Radius.circular(22),
@@ -552,7 +552,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           ),
           boxShadow: [
             BoxShadow(
-              color: (isUser ? PsyGuardTheme.primary : Colors.black).withValues(
+              color: (isUser ? LumiTheme.primary : Colors.black).withValues(
                 alpha: 0.08,
               ),
               blurRadius: 12,
@@ -566,7 +566,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             Text(
               msg.content,
               style: TextStyle(
-                color: isUser ? Colors.white : PsyGuardTheme.textPrimary,
+                color: isUser ? Colors.white : LumiTheme.textPrimary,
                 fontSize: 15,
                 height: 1.6,
               ),
@@ -619,19 +619,19 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: PsyGuardTheme.primary.withValues(alpha: 0.08),
+          color: LumiTheme.primary.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 14, color: PsyGuardTheme.primary),
+            Icon(icon, size: 14, color: LumiTheme.primary),
             const SizedBox(width: 4),
             Text(
               label,
               style: TextStyle(
                 fontSize: 12,
-                color: PsyGuardTheme.primary,
+                color: LumiTheme.primary,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -668,15 +668,15 @@ class _ChatPageState extends ConsumerState<ChatPage> {
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: _isListening
-                    ? PsyGuardTheme.error.withValues(alpha: 0.1)
-                    : PsyGuardTheme.primary.withValues(alpha: 0.1),
+                    ? LumiTheme.error.withValues(alpha: 0.1)
+                    : LumiTheme.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Icon(
                 _isListening ? Icons.mic_off_rounded : Icons.mic_rounded,
                 color: _isListening
-                    ? PsyGuardTheme.error
-                    : PsyGuardTheme.primary,
+                    ? LumiTheme.error
+                    : LumiTheme.primary,
                 size: 22,
               ),
             ),
@@ -687,7 +687,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: PsyGuardTheme.background,
+                color: LumiTheme.background,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: TextField(
@@ -697,7 +697,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                 textInputAction: TextInputAction.send,
                 style: const TextStyle(
                   fontSize: 15,
-                  color: PsyGuardTheme.textPrimary,
+                  color: LumiTheme.textPrimary,
                 ),
                 decoration: InputDecoration(
                   hintText: copy.chatHint,
@@ -717,11 +717,11 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: PsyGuardTheme.primary,
+                color: LumiTheme.primary,
                 borderRadius: BorderRadius.circular(14),
                 boxShadow: [
                   BoxShadow(
-                    color: PsyGuardTheme.primary.withValues(alpha: 0.3),
+                    color: LumiTheme.primary.withValues(alpha: 0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 3),
                   ),

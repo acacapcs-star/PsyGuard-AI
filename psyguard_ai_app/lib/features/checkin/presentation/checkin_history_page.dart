@@ -18,16 +18,16 @@ class CheckinHistoryPage extends ConsumerWidget {
     final copy = AppStrings.of(ref.watch(appLanguageControllerProvider));
 
     return Scaffold(
-      backgroundColor: PsyGuardTheme.background,
+      backgroundColor: LumiTheme.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
-        leading: BackButton(color: PsyGuardTheme.textPrimary),
+        leading: BackButton(color: LumiTheme.textPrimary),
         title: Text(
           copy.isZhTw ? '筆記紀錄歷史' : 'Check-in History',
           style: GoogleFonts.varelaRound(
-            color: PsyGuardTheme.textPrimary,
+            color: LumiTheme.textPrimary,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -37,7 +37,7 @@ class CheckinHistoryPage extends ConsumerWidget {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
-              child: CircularProgressIndicator(color: PsyGuardTheme.primary),
+              child: CircularProgressIndicator(color: LumiTheme.primary),
             );
           }
           if (snapshot.hasError) {
@@ -54,13 +54,13 @@ class CheckinHistoryPage extends ConsumerWidget {
                   Icon(
                     Icons.note_alt_outlined,
                     size: 64,
-                    color: PsyGuardTheme.textLight,
+                    color: LumiTheme.textLight,
                   ),
                   const SizedBox(height: 16),
                   Text(
                     copy.isZhTw ? '尚無紀錄' : 'No records yet',
                     style: theme.textTheme.bodyLarge?.copyWith(
-                      color: PsyGuardTheme.textSecondary,
+                      color: LumiTheme.textSecondary,
                     ),
                   ),
                 ],
@@ -90,7 +90,7 @@ class CheckinHistoryPage extends ConsumerWidget {
                         Text(
                           DateFormat('yyyy/MM/dd HH:mm').format(checkin.date),
                           style: GoogleFonts.nunitoSans(
-                            color: PsyGuardTheme.textSecondary,
+                            color: LumiTheme.textSecondary,
                             fontWeight: FontWeight.w600,
                             fontSize: 14,
                           ),
@@ -103,7 +103,7 @@ class CheckinHistoryPage extends ConsumerWidget {
                       Text(
                         checkin.note!,
                         style: GoogleFonts.nunitoSans(
-                          color: PsyGuardTheme.textPrimary,
+                          color: LumiTheme.textPrimary,
                           fontSize: 16,
                           height: 1.5,
                         ),
@@ -112,7 +112,7 @@ class CheckinHistoryPage extends ConsumerWidget {
                       Text(
                         copy.isZhTw ? '無文字筆記' : 'No text note',
                         style: GoogleFonts.nunitoSans(
-                          color: PsyGuardTheme.textLight,
+                          color: LumiTheme.textLight,
                           fontSize: 14,
                           fontStyle: FontStyle.italic,
                         ),
@@ -138,11 +138,11 @@ class CheckinHistoryPage extends ConsumerWidget {
   Widget _buildScoreBadge(String label, int score) {
     Color color;
     if (score >= 70) {
-      color = PsyGuardTheme.success;
+      color = LumiTheme.success;
     } else if (score >= 40) {
-      color = PsyGuardTheme.textSecondary;
+      color = LumiTheme.textSecondary;
     } else {
-      color = PsyGuardTheme.error;
+      color = LumiTheme.error;
     }
 
     return Container(
@@ -166,7 +166,7 @@ class CheckinHistoryPage extends ConsumerWidget {
     return Text(
       '$label: $score%',
       style: GoogleFonts.nunitoSans(
-        color: PsyGuardTheme.textSecondary,
+        color: LumiTheme.textSecondary,
         fontSize: 12,
       ),
     );

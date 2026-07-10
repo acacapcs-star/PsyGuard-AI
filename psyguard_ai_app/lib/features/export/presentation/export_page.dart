@@ -53,7 +53,7 @@ class _ExportPageState extends ConsumerState<ExportPage> {
   Widget build(BuildContext context) {
     final copy = AppStrings.of(ref.watch(appLanguageControllerProvider));
     return Scaffold(
-      backgroundColor: PsyGuardTheme.background,
+      backgroundColor: LumiTheme.background,
       appBar: AppBar(
         title: Text(copy.exportTitle),
         leading: IconButton(
@@ -89,19 +89,19 @@ class _ExportPageState extends ConsumerState<ExportPage> {
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(24),
-                  decoration: PsyGuardTheme.softCard,
+                  decoration: LumiTheme.softCard,
                   child: Column(
                     children: [
                       Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: PsyGuardTheme.surface,
+                          color: LumiTheme.surface,
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
                           Icons.description_rounded,
                           size: 48,
-                          color: PsyGuardTheme.primary.withValues(alpha: 0.6),
+                          color: LumiTheme.primary.withValues(alpha: 0.6),
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -110,7 +110,7 @@ class _ExportPageState extends ConsumerState<ExportPage> {
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
-                          color: PsyGuardTheme.textPrimary,
+                          color: LumiTheme.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -119,7 +119,7 @@ class _ExportPageState extends ConsumerState<ExportPage> {
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 14,
-                          color: PsyGuardTheme.textSecondary,
+                          color: LumiTheme.textSecondary,
                           height: 1.5,
                         ),
                       ),
@@ -139,12 +139,12 @@ class _ExportPageState extends ConsumerState<ExportPage> {
                                   setState(() => _days = days);
                                 }
                               },
-                              selectedColor: PsyGuardTheme.primary,
-                              backgroundColor: PsyGuardTheme.surface,
+                              selectedColor: LumiTheme.primary,
+                              backgroundColor: LumiTheme.surface,
                               labelStyle: TextStyle(
                                 color: _days == days
                                     ? Colors.white
-                                    : PsyGuardTheme.textSecondary,
+                                    : LumiTheme.textSecondary,
                                 fontWeight: _days == days
                                     ? FontWeight.w600
                                     : FontWeight.normal,
@@ -181,14 +181,14 @@ class _ExportPageState extends ConsumerState<ExportPage> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
-                    color: PsyGuardTheme.primary.withValues(alpha: 0.06),
+                    color: LumiTheme.primary.withValues(alpha: 0.06),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Row(
                     children: [
                       Icon(
                         Icons.info_outline_rounded,
-                        color: PsyGuardTheme.primary,
+                        color: LumiTheme.primary,
                         size: 20,
                       ),
                       const SizedBox(width: 12),
@@ -196,7 +196,7 @@ class _ExportPageState extends ConsumerState<ExportPage> {
                         child: Text(
                           copy.reportDisclaimer,
                           style: TextStyle(
-                            color: PsyGuardTheme.primary,
+                            color: LumiTheme.primary,
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
                           ),
@@ -213,7 +213,7 @@ class _ExportPageState extends ConsumerState<ExportPage> {
                   icon: const Icon(Icons.dataset_linked_rounded, size: 18),
                   label: Text(copy.resetDemoData),
                   style: TextButton.styleFrom(
-                    foregroundColor: PsyGuardTheme.textLight,
+                    foregroundColor: LumiTheme.textLight,
                   ),
                 ),
               ],
@@ -238,7 +238,7 @@ class _ExportPageState extends ConsumerState<ExportPage> {
           ), // TextButton
           FilledButton(
             style: FilledButton.styleFrom(
-              backgroundColor: PsyGuardTheme.error,
+              backgroundColor: LumiTheme.error,
               foregroundColor: Colors.white,
             ),
             onPressed: () => Navigator.pop(context, true),

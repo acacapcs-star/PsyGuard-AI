@@ -51,7 +51,7 @@ class TrendsPage extends ConsumerWidget {
     final copy = AppStrings.of(ref.watch(appLanguageControllerProvider));
 
     return Scaffold(
-      backgroundColor: PsyGuardTheme.background,
+      backgroundColor: LumiTheme.background,
       appBar: AppBar(
         title: Text(copy.trendsTitle),
         leading: IconButton(
@@ -103,13 +103,13 @@ class TrendsPage extends ConsumerWidget {
                         labelStyle: TextStyle(
                           color: range == days
                               ? Colors.white
-                              : PsyGuardTheme.textSecondary,
+                              : LumiTheme.textSecondary,
                           fontWeight: range == days
                               ? FontWeight.w600
                               : FontWeight.normal,
                         ),
-                        backgroundColor: PsyGuardTheme.surface,
-                        selectedColor: PsyGuardTheme.primary,
+                        backgroundColor: LumiTheme.surface,
+                        selectedColor: LumiTheme.primary,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20),
                           side: BorderSide(
@@ -138,7 +138,7 @@ class TrendsPage extends ConsumerWidget {
                   final latestRiskScore = bundle.risks.isNotEmpty
                       ? bundle.risks.last.riskScore
                       : 20;
-                  final riskIconColor = PsyGuardTheme.riskColor(
+                  final riskIconColor = LumiTheme.riskColor(
                     latestRiskScore,
                   );
 
@@ -163,7 +163,7 @@ class TrendsPage extends ConsumerWidget {
                               child: Icon(
                                 Icons.timeline_rounded,
                                 size: 48,
-                                color: PsyGuardTheme.primary.withValues(
+                                color: LumiTheme.primary.withValues(
                                   alpha: 0.55,
                                 ),
                               ),
@@ -173,7 +173,7 @@ class TrendsPage extends ConsumerWidget {
                               copy.noTrendData,
                               style: theme.textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.w700,
-                                color: PsyGuardTheme.textPrimary,
+                                color: LumiTheme.textPrimary,
                               ),
                               textAlign: TextAlign.center,
                             ),
@@ -181,7 +181,7 @@ class TrendsPage extends ConsumerWidget {
                             Text(
                               copy.noTrendDataBody,
                               style: theme.textTheme.bodyMedium?.copyWith(
-                                color: PsyGuardTheme.textSecondary,
+                                color: LumiTheme.textSecondary,
                                 height: 1.5,
                               ),
                               textAlign: TextAlign.center,
@@ -323,7 +323,7 @@ class TrendsPage extends ConsumerWidget {
   }) {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: PsyGuardTheme.softCard,
+      decoration: LumiTheme.softCard,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -343,7 +343,7 @@ class TrendsPage extends ConsumerWidget {
                 style: const TextStyle(
                   fontWeight: FontWeight.w700,
                   fontSize: 15,
-                  color: PsyGuardTheme.textPrimary,
+                  color: LumiTheme.textPrimary,
                 ),
               ),
               if (trailing != null) ...[const Spacer(), trailing],
@@ -383,7 +383,7 @@ class TrendsPage extends ConsumerWidget {
                         (formatYLabel ?? _formatDefaultAxis)(value),
                         style: TextStyle(
                           fontSize: 11,
-                          color: PsyGuardTheme.textLight,
+                          color: LumiTheme.textLight,
                         ),
                       ),
                     ),

@@ -7,8 +7,8 @@ import '../core/security/local_settings_service.dart';
 import '../core/theme/app_theme.dart';
 import 'router.dart';
 
-class PsyGuardApp extends ConsumerWidget {
-  const PsyGuardApp({super.key});
+class LumiApp extends ConsumerWidget {
+  const LumiApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -19,13 +19,13 @@ class PsyGuardApp extends ConsumerWidget {
         statusBarColor: Colors.transparent,
         statusBarIconBrightness: Brightness.dark,
         statusBarBrightness: Brightness.light,
-        systemNavigationBarColor: PsyGuardTheme.background,
+        systemNavigationBarColor: LumiTheme.background,
         systemNavigationBarIconBrightness: Brightness.dark,
       ),
       child: MaterialApp.router(
-        title: 'PsyGuard AI',
+        title: 'Lumi',
         debugShowCheckedModeBanner: false,
-        theme: PsyGuardTheme.lightTheme,
+        theme: LumiTheme.lightTheme,
         routerConfig: router,
         locale: language.locale,
         supportedLocales: const [Locale('en'), Locale('zh', 'TW')],

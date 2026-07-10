@@ -77,10 +77,10 @@ class HomePage extends ConsumerWidget {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.dark.copyWith(
         statusBarColor: Colors.transparent,
-        systemNavigationBarColor: PsyGuardTheme.background,
+        systemNavigationBarColor: LumiTheme.background,
       ),
       child: Scaffold(
-        backgroundColor: PsyGuardTheme.background,
+        backgroundColor: LumiTheme.background,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
@@ -97,11 +97,11 @@ class HomePage extends ConsumerWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                'PsyGuard',
+                'Lumi',
                 style: GoogleFonts.varelaRound(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: PsyGuardTheme.textPrimary,
+                  color: LumiTheme.textPrimary,
                 ),
               ),
             ],
@@ -161,11 +161,11 @@ class HomePage extends ConsumerWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'PsyGuard AI',
+                  'Lumi',
                   style: GoogleFonts.varelaRound(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: PsyGuardTheme.textPrimary,
+                    color: LumiTheme.textPrimary,
                   ),
                 ),
               ],
@@ -187,20 +187,20 @@ class HomePage extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     tileColor: isActive
-                        ? PsyGuardTheme.primary.withValues(alpha: 0.1)
+                        ? LumiTheme.primary.withValues(alpha: 0.1)
                         : null,
                     leading: Icon(
                       item.$3,
                       color: isActive
-                          ? PsyGuardTheme.primary
-                          : PsyGuardTheme.textSecondary,
+                          ? LumiTheme.primary
+                          : LumiTheme.textSecondary,
                     ),
                     title: Text(
                       item.$2,
                       style: GoogleFonts.nunitoSans(
                         color: isActive
-                            ? PsyGuardTheme.primary
-                            : PsyGuardTheme.textPrimary,
+                            ? LumiTheme.primary
+                            : LumiTheme.textPrimary,
                         fontWeight: isActive
                             ? FontWeight.w700
                             : FontWeight.w500,
@@ -243,7 +243,7 @@ class _HomeContentState extends State<_HomeContent> {
   // Bold logic: check recent notes for negative keywords
   bool get _hasNegativeSignal {
     final notes = widget.data.recentNotes.join(' ');
-    return PsyGuardTheme.negativeKeywords.any((kw) => notes.contains(kw));
+    return LumiTheme.negativeKeywords.any((kw) => notes.contains(kw));
   }
 
   int get _riskScore =>
@@ -265,7 +265,7 @@ class _HomeContentState extends State<_HomeContent> {
   Widget build(BuildContext context) {
     final theme = widget.theme;
     final copy = widget.copy;
-    final riskColor = PsyGuardTheme.riskColor(_riskScore);
+    final riskColor = LumiTheme.riskColor(_riskScore);
     final riskLabel = switch (_riskLevel) {
       'high' => copy.statusNeedsAttention,
       'medium' => copy.statusWatchful,
@@ -324,13 +324,13 @@ class _HomeContentState extends State<_HomeContent> {
         Text(
           widget.greeting,
           style: theme.textTheme.displayMedium?.copyWith(
-            color: PsyGuardTheme.textPrimary,
+            color: LumiTheme.textPrimary,
           ),
         ),
         Text(
           copy.peacefulDay,
           style: theme.textTheme.bodyLarge?.copyWith(
-            color: PsyGuardTheme.textSecondary,
+            color: LumiTheme.textSecondary,
           ),
         ),
         const SizedBox(height: 32),
@@ -338,7 +338,7 @@ class _HomeContentState extends State<_HomeContent> {
         // ── Status Card ──────────────────────────────────────────────
         Container(
           padding: const EdgeInsets.all(24),
-          decoration: PsyGuardTheme.softCard,
+          decoration: LumiTheme.softCard,
           child: Row(
             children: [
               Container(
@@ -359,7 +359,7 @@ class _HomeContentState extends State<_HomeContent> {
                       riskLabel,
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w700,
-                        color: PsyGuardTheme.textPrimary,
+                        color: LumiTheme.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -585,7 +585,7 @@ class _InteractiveCardState extends State<_InteractiveCard>
                         fontWeight: widget.isBold
                             ? FontWeight.w900
                             : FontWeight.w700,
-                        color: PsyGuardTheme.textPrimary,
+                        color: LumiTheme.textPrimary,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -602,7 +602,7 @@ class _InteractiveCardState extends State<_InteractiveCard>
                         widget.subtitle,
                         style: GoogleFonts.nunitoSans(
                           fontSize: 12,
-                          color: PsyGuardTheme.textSecondary,
+                          color: LumiTheme.textSecondary,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -610,7 +610,7 @@ class _InteractiveCardState extends State<_InteractiveCard>
                     Icon(
                       Icons.arrow_forward_ios_rounded,
                       size: 12,
-                      color: PsyGuardTheme.textLight,
+                      color: LumiTheme.textLight,
                     ),
                   ],
                 ),

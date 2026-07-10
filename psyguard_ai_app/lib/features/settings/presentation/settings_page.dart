@@ -72,7 +72,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     }
 
     return Scaffold(
-      backgroundColor: PsyGuardTheme.background,
+      backgroundColor: LumiTheme.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -82,7 +82,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           style: GoogleFonts.nunitoSans(
             fontSize: 18,
             fontWeight: FontWeight.w800,
-            color: PsyGuardTheme.textPrimary,
+            color: LumiTheme.textPrimary,
           ),
         ),
       ),
@@ -101,7 +101,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     style: GoogleFonts.nunitoSans(
                       fontSize: 13,
                       height: 1.6,
-                      color: PsyGuardTheme.textSecondary,
+                      color: LumiTheme.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 14),
@@ -150,7 +150,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                         : Icons.offline_bolt_rounded,
                     color: aiEnabled
                         ? const Color(0xFF2E7D32)
-                        : PsyGuardTheme.textSecondary,
+                        : LumiTheme.textSecondary,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -162,7 +162,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                           style: GoogleFonts.nunitoSans(
                             fontSize: 15,
                             fontWeight: FontWeight.w800,
-                            color: PsyGuardTheme.textPrimary,
+                            color: LumiTheme.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 6),
@@ -176,7 +176,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                           style: GoogleFonts.nunitoSans(
                             fontSize: 13,
                             height: 1.5,
-                            color: PsyGuardTheme.textSecondary,
+                            color: LumiTheme.textSecondary,
                           ),
                         ),
                       ],
@@ -197,7 +197,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     style: GoogleFonts.nunitoSans(
                       fontSize: 13,
                       height: 1.6,
-                      color: PsyGuardTheme.textSecondary,
+                      color: LumiTheme.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -237,7 +237,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     child: ElevatedButton(
                       onPressed: _isSaving ? null : _saveAiSettings,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: PsyGuardTheme.primary,
+                        backgroundColor: LumiTheme.primary,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
@@ -259,7 +259,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     child: OutlinedButton(
                       onPressed: _isSaving ? null : _clearAiSettings,
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: PsyGuardTheme.textPrimary,
+                        foregroundColor: LumiTheme.textPrimary,
                         side: BorderSide(
                           color: Colors.black.withValues(alpha: 0.1),
                         ),
@@ -290,7 +290,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                           style: GoogleFonts.nunitoSans(
                             fontSize: 13,
                             height: 1.6,
-                            color: PsyGuardTheme.textSecondary,
+                            color: LumiTheme.textSecondary,
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -301,7 +301,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                               style: GoogleFonts.nunitoSans(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w800,
-                                color: PsyGuardTheme.textPrimary,
+                                color: LumiTheme.textPrimary,
                               ),
                             ),
                             const Spacer(),
@@ -310,7 +310,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                               style: GoogleFonts.nunitoSans(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
-                                color: PsyGuardTheme.primary,
+                                color: LumiTheme.primary,
                               ),
                             ),
                           ],
@@ -323,8 +323,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                               ((maxTtsSpeechRate - minTtsSpeechRate) / 0.05)
                                   .round(),
                           label: _ttsSpeechRate.toStringAsFixed(2),
-                          activeColor: PsyGuardTheme.primary,
-                          inactiveColor: PsyGuardTheme.primary.withValues(
+                          activeColor: LumiTheme.primary,
+                          inactiveColor: LumiTheme.primary.withValues(
                             alpha: 0.18,
                           ),
                           onChanged: (value) {
@@ -340,7 +340,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                               copy.slower,
                               style: GoogleFonts.nunitoSans(
                                 fontSize: 12,
-                                color: PsyGuardTheme.textSecondary,
+                                color: LumiTheme.textSecondary,
                               ),
                             ),
                             const Spacer(),
@@ -348,7 +348,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                               copy.faster,
                               style: GoogleFonts.nunitoSans(
                                 fontSize: 12,
-                                color: PsyGuardTheme.textSecondary,
+                                color: LumiTheme.textSecondary,
                               ),
                             ),
                           ],
@@ -364,7 +364,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                                 ? null
                                 : _saveTtsSpeechRate,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: PsyGuardTheme.primary,
+                              backgroundColor: LumiTheme.primary,
                               foregroundColor: Colors.white,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14),
@@ -394,7 +394,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 style: GoogleFonts.nunitoSans(
                   fontSize: 13,
                   height: 1.6,
-                  color: PsyGuardTheme.textSecondary,
+                  color: LumiTheme.textSecondary,
                 ),
               ),
             ),
@@ -410,7 +410,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     style: GoogleFonts.nunitoSans(
                       fontSize: 15,
                       fontWeight: FontWeight.w800,
-                      color: PsyGuardTheme.textPrimary,
+                      color: LumiTheme.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -419,7 +419,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     style: GoogleFonts.nunitoSans(
                       fontSize: 13,
                       height: 1.6,
-                      color: PsyGuardTheme.textSecondary,
+                      color: LumiTheme.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 14),
@@ -495,7 +495,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       style: GoogleFonts.nunitoSans(
         fontSize: 14,
         fontWeight: FontWeight.w900,
-        color: PsyGuardTheme.textPrimary,
+        color: LumiTheme.textPrimary,
       ),
     );
   }
@@ -528,7 +528,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           style: GoogleFonts.nunitoSans(
             fontSize: 13,
             fontWeight: FontWeight.w800,
-            color: PsyGuardTheme.textPrimary,
+            color: LumiTheme.textPrimary,
           ),
         ),
         const SizedBox(height: 8),
@@ -557,7 +557,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: PsyGuardTheme.primary),
+              borderSide: const BorderSide(color: LumiTheme.primary),
             ),
           ),
         ),

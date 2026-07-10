@@ -513,7 +513,7 @@ class AiChatRepositoryImpl implements AiChatRepository {
 
   String get _systemPrompt {
     if (_usesZhTw) {
-      return '你在 PsyGuard AI 中扮演一位心理輔導師風格的 AI 陪伴者。'
+      return '你在 Lumi 中扮演一位心理輔導師風格的 AI 陪伴者。'
           '請全程使用繁體中文，以支持性會談方式回應：先同理、再澄清、最後提供一個可執行的小步驟。'
           '你需要記住先前對話脈絡，延續使用者已提過的壓力來源、情緒、支持系統與已嘗試的方法。'
           '你必須根據使用者最近的對話內容，自行判斷當下更需要哪一種回應方式。'
@@ -525,7 +525,7 @@ class AiChatRepositoryImpl implements AiChatRepository {
           '避免條列過多理論，優先使用自然對話。';
     }
 
-    return 'In PsyGuard AI, you act as an AI companion with the style of a mental health counselor. '
+    return 'In Lumi, you act as an AI companion with the style of a mental health counselor. '
         'Use English throughout. Respond like a supportive conversation: start with empathy, then clarify, then offer one actionable small step. '
         'Remember prior context and continue the relationship using the user\'s stressors, emotions, support system, and tried strategies. '
         'Decide from the recent conversation whether the user needs comfort, reflection, or practical suggestions right now. '

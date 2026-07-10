@@ -68,7 +68,7 @@ class ToolHistoryPage extends ConsumerWidget {
     final copy = AppStrings.of(ref.watch(appLanguageControllerProvider));
 
     return Scaffold(
-      backgroundColor: PsyGuardTheme.background,
+      backgroundColor: LumiTheme.background,
       appBar: AppBar(
         title: Text(copy.toolHistory),
         leading: IconButton(
@@ -86,13 +86,13 @@ class ToolHistoryPage extends ConsumerWidget {
                   Icon(
                     Icons.history_toggle_off_rounded,
                     size: 64,
-                    color: PsyGuardTheme.textLight,
+                    color: LumiTheme.textLight,
                   ),
                   const SizedBox(height: 16),
                   Text(
                     copy.isZhTw ? '還沒有練習紀錄' : 'No practice records yet',
                     style: TextStyle(
-                      color: PsyGuardTheme.textSecondary,
+                      color: LumiTheme.textSecondary,
                       fontSize: 16,
                     ),
                   ),
@@ -146,7 +146,7 @@ class ToolHistoryPage extends ConsumerWidget {
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
-                              color: PsyGuardTheme.textPrimary,
+                              color: LumiTheme.textPrimary,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -154,7 +154,7 @@ class ToolHistoryPage extends ConsumerWidget {
                             dateStr,
                             style: TextStyle(
                               fontSize: 13,
-                              color: PsyGuardTheme.textSecondary,
+                              color: LumiTheme.textSecondary,
                             ),
                           ),
                         ],
@@ -167,14 +167,14 @@ class ToolHistoryPage extends ConsumerWidget {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: PsyGuardTheme.success.withValues(alpha: 0.1),
+                          color: LumiTheme.success.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
                           copy.isZhTw ? '完成' : 'Done',
                           style: TextStyle(
                             fontSize: 12,
-                            color: PsyGuardTheme.success,
+                            color: LumiTheme.success,
                             fontWeight: FontWeight.w500,
                           ),
                         ),

@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -19,6 +20,8 @@ import '../features/trends/presentation/ai_report_history_page.dart';
 import '../features/tools_library/presentation/tool_history_page.dart';
 import '../features/welcome/presentation/welcome_page.dart';
 import '../features/welcome/presentation/consent_page.dart';
+import '../features/voice/voice_wake_page.dart';
+import '../features/penguin/penguin_park_page.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -143,6 +146,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'export',
         pageBuilder: (context, state) =>
             _buildPageWithSlide(context, state, const ExportPage()),
+      ),
+      GoRoute(
+        path: '/voice',
+        name: 'voice',
+        pageBuilder: (context, state) =>
+            _buildPageWithSlide(context, state, const VoiceWakePage()),
+      ),
+      GoRoute(
+        path: '/penguin',
+        name: 'penguin',
+        pageBuilder: (context, state) =>
+            _buildPageWithSlide(context, state, const PenguinParkPage()),
       ),
       GoRoute(
         path: '/settings',

@@ -70,7 +70,7 @@ class ToolsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final copy = AppStrings.of(ref.watch(appLanguageControllerProvider));
     return Scaffold(
-      backgroundColor: PsyGuardTheme.background,
+      backgroundColor: LumiTheme.background,
       appBar: AppBar(
         title: Text(copy.toolsTitle),
         leading: IconButton(
@@ -140,7 +140,7 @@ class _ToolCard extends ConsumerWidget {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: PsyGuardTheme.textSecondary,
+                  color: LumiTheme.textSecondary,
                 ),
               ),
               const SizedBox(height: 16),
@@ -151,7 +151,7 @@ class _ToolCard extends ConsumerWidget {
                   fontSize: 20,
                   height: 1.5,
                   fontWeight: FontWeight.w600,
-                  color: PsyGuardTheme.textPrimary,
+                  color: LumiTheme.textPrimary,
                 ),
               ),
               const SizedBox(height: 24),
@@ -270,7 +270,7 @@ class _ToolCard extends ConsumerWidget {
     final toolDescription = _toolDescription(tool.id, copy);
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: PsyGuardTheme.softCard,
+      decoration: LumiTheme.softCard,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -291,7 +291,7 @@ class _ToolCard extends ConsumerWidget {
                   style: const TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w700,
-                    color: PsyGuardTheme.textPrimary,
+                    color: LumiTheme.textPrimary,
                   ),
                 ),
               ),
@@ -302,7 +302,7 @@ class _ToolCard extends ConsumerWidget {
             toolDescription,
             style: const TextStyle(
               fontSize: 14,
-              color: PsyGuardTheme.textSecondary,
+              color: LumiTheme.textSecondary,
               height: 1.5,
             ),
           ),

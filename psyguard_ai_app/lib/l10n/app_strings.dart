@@ -9,7 +9,7 @@ class AppStrings {
 
   bool get isZhTw => language == AppLanguage.zhTw;
 
-  String get appName => 'PsyGuard AI';
+  String get appName => 'Lumi';
 
   String get welcomeTagline =>
       isZhTw ? '你的心理健康\n陪伴夥伴' : 'Your mental health\nsupport companion';

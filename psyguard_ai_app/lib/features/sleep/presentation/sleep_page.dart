@@ -73,7 +73,7 @@ class _SleepPageState extends ConsumerState<SleepPage> {
     final difficultyLabels = copy.sleepDifficultyLabels;
 
     return Scaffold(
-      backgroundColor: PsyGuardTheme.background,
+      backgroundColor: LumiTheme.background,
       appBar: AppBar(
         title: Text(copy.sleepTitle),
         leading: IconButton(
@@ -83,7 +83,7 @@ class _SleepPageState extends ConsumerState<SleepPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.history_rounded),
-            color: PsyGuardTheme.textPrimary,
+            color: LumiTheme.textPrimary,
             onPressed: () => context.push('/sleep/history'),
           ),
         ],
@@ -95,7 +95,7 @@ class _SleepPageState extends ConsumerState<SleepPage> {
           // Sleep duration
           Container(
             padding: const EdgeInsets.all(20),
-            decoration: PsyGuardTheme.softCard,
+            decoration: LumiTheme.softCard,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -119,7 +119,7 @@ class _SleepPageState extends ConsumerState<SleepPage> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        color: PsyGuardTheme.textPrimary,
+                        color: LumiTheme.textPrimary,
                       ),
                     ),
                     const Spacer(),
@@ -175,7 +175,7 @@ class _SleepPageState extends ConsumerState<SleepPage> {
           // Difficulty
           Container(
             padding: const EdgeInsets.all(20),
-            decoration: PsyGuardTheme.softCard,
+            decoration: LumiTheme.softCard,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -199,7 +199,7 @@ class _SleepPageState extends ConsumerState<SleepPage> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        color: PsyGuardTheme.textPrimary,
+                        color: LumiTheme.textPrimary,
                       ),
                     ),
                   ],
@@ -213,11 +213,11 @@ class _SleepPageState extends ConsumerState<SleepPage> {
                       label: Text('$i — ${difficultyLabels[i]}'),
                       selected: isSelected,
                       onSelected: (_) => setState(() => _difficulty = i),
-                      selectedColor: PsyGuardTheme.primary,
+                      selectedColor: LumiTheme.primary,
                       labelStyle: TextStyle(
                         color: isSelected
                             ? Colors.white
-                            : PsyGuardTheme.textPrimary,
+                            : LumiTheme.textPrimary,
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
                       ),
@@ -232,7 +232,7 @@ class _SleepPageState extends ConsumerState<SleepPage> {
           // Time pickers
           Container(
             padding: const EdgeInsets.all(20),
-            decoration: PsyGuardTheme.softCard,
+            decoration: LumiTheme.softCard,
             child: Column(
               children: [
                 _timeTile(
@@ -253,7 +253,7 @@ class _SleepPageState extends ConsumerState<SleepPage> {
                   label: copy.waketime,
                   time: _waketime,
                   icon: Icons.wb_sunny_rounded,
-                  color: PsyGuardTheme.accent,
+                  color: LumiTheme.accent,
                   onTap: () async {
                     final picked = await showTimePicker(
                       context: context,
@@ -318,7 +318,7 @@ class _SleepPageState extends ConsumerState<SleepPage> {
               style: const TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
-                color: PsyGuardTheme.textPrimary,
+                color: LumiTheme.textPrimary,
               ),
             ),
             const Spacer(),
@@ -326,14 +326,14 @@ class _SleepPageState extends ConsumerState<SleepPage> {
               time.format(context),
               style: TextStyle(
                 fontSize: 15,
-                color: PsyGuardTheme.textSecondary,
+                color: LumiTheme.textSecondary,
                 fontWeight: FontWeight.w500,
               ),
             ),
             const SizedBox(width: 4),
             Icon(
               Icons.chevron_right_rounded,
-              color: PsyGuardTheme.textLight,
+              color: LumiTheme.textLight,
               size: 20,
             ),
           ],

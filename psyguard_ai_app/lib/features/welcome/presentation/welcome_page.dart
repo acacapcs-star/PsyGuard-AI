@@ -36,7 +36,7 @@ class WelcomePage extends ConsumerWidget {
               Text(
                 strings.appName,
                 style: GoogleFonts.nunitoSans(
-                  color: PsyGuardTheme.textPrimary,
+                  color: LumiTheme.textPrimary,
                   fontSize: 42,
                   fontWeight: FontWeight.w800,
                   letterSpacing: -1.0,
@@ -47,7 +47,7 @@ class WelcomePage extends ConsumerWidget {
               Text(
                 strings.welcomeTagline,
                 style: GoogleFonts.nunitoSans(
-                  color: PsyGuardTheme.textSecondary,
+                  color: LumiTheme.textSecondary,
                   fontSize: 24,
                   fontWeight: FontWeight.w600,
                   height: 1.4,
@@ -59,7 +59,7 @@ class WelcomePage extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: PsyGuardTheme.surface,
+                  color: LumiTheme.surface,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: const Color(0xFFE5E7EB)),
                 ),
@@ -70,7 +70,7 @@ class WelcomePage extends ConsumerWidget {
                       children: [
                         const Icon(
                           Icons.info_outline_rounded,
-                          color: PsyGuardTheme.textPrimary,
+                          color: LumiTheme.textPrimary,
                           size: 20,
                         ),
                         const SizedBox(width: 10),
@@ -79,7 +79,7 @@ class WelcomePage extends ConsumerWidget {
                           style: GoogleFonts.nunitoSans(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
-                            color: PsyGuardTheme.textPrimary,
+                            color: LumiTheme.textPrimary,
                           ),
                         ),
                       ],
@@ -88,7 +88,7 @@ class WelcomePage extends ConsumerWidget {
                     Text(
                       strings.disclaimerBody,
                       style: GoogleFonts.nunitoSans(
-                        color: PsyGuardTheme.textSecondary,
+                        color: LumiTheme.textSecondary,
                         fontSize: 14,
                         height: 1.6,
                       ),
@@ -116,7 +116,7 @@ class WelcomePage extends ConsumerWidget {
                     context.go(hasConsent ? '/home' : '/consent');
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: PsyGuardTheme.primary,
+                    backgroundColor: LumiTheme.primary,
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(

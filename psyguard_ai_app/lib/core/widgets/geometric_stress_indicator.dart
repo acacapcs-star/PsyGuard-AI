@@ -24,7 +24,7 @@ class GeometricStressIndicator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final level = _riskLevel;
-    final color = PsyGuardTheme.riskColor(riskScore);
+    final color = LumiTheme.riskColor(riskScore);
 
     return Column(
       mainAxisSize: MainAxisSize.min,

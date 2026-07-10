@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 /// 首頁呼吸環動畫
 ///
-/// 中央 PsyGuard 圓圈隨情緒起伏調整縮放頻率。
+/// 中央 Lumi 圓圈隨情緒起伏調整縮放頻率。
 /// - 冷靜 (low risk) → 慢速呼吸 3 秒週期
 /// - 留意 (medium risk) → 中速 2 秒
 /// - 焦慮 (high risk) → 快速 1 秒

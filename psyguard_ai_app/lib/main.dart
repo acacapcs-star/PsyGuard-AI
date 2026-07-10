@@ -15,5 +15,5 @@ Future<void> main() async {
       // Allow running with --dart-define when env files are unavailable.
     }
   }
-  runApp(const ProviderScope(child: PsyGuardApp()));
+  runApp(const ProviderScope(child: LumiApp()));
 }
