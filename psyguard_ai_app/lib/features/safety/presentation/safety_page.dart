@@ -10,6 +10,7 @@ import '../../../core/storage/database_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../l10n/app_language.dart';
 import '../../../l10n/app_strings.dart';
+import '../../../features/ai_safety/ai_safety_models.dart';
 
 final latestRiskLevelProvider = FutureProvider<RiskLevel>((ref) async {
   final snapshot = await ref.read(appDatabaseProvider).getLatestRiskSnapshot();
@@ -46,10 +47,53 @@ class SafetyPage extends ConsumerWidget {
                 locale: language == AppLanguage.zhTw ? 'zh-TW' : 'en-US',
               );
 
+          final aiSafety = AISafetyEngine();
+          final ersScore = switch (riskLevel) {
+            RiskLevel.high => 80.0,
+            RiskLevel.medium => 55.0,
+            _ => 20.0,
+          };
+          final intervention = aiSafety.evaluate(ersScore, 0);
+
           return ListView(
             physics: const BouncingScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
             children: [
+              // 守護精靈訊息卡片
+              Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: riskLevel == RiskLevel.high
+                      ? const Color(0xFFFFEBEE)
+                      : riskLevel == RiskLevel.medium
+                          ? const Color(0xFFFFF8E1)
+                          : const Color(0xFFE8F5E9),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: riskLevel == RiskLevel.high
+                        ? const Color(0xFFEF9A9A)
+                        : riskLevel == RiskLevel.medium
+                            ? const Color(0xFFFFE082)
+                            : const Color(0xFFA5D6A7),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Text(
+                      riskLevel == RiskLevel.high ? '🔴' : riskLevel == RiskLevel.medium ? '🟡' : '🟢',
+                      style: const TextStyle(fontSize: 24),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        intervention.message,
+                        style: const TextStyle(fontSize: 14, height: 1.5),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
