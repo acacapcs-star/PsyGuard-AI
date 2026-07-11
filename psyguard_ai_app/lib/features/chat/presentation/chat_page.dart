@@ -257,10 +257,69 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     if (mounted) setState(() => _isListening = true);
   }
 
+  // 危機關鍵字清單（藍宥欣設計）
+  static const List<String> _crisisKeywords = [
+    '不想活', '想死', '自殺', '割腕',
+    '結束生命', '消失算了', '不如死了',
+    '活著沒意義', '沒有人在乎', '撐不下去',
+    '不想了', '太累了不想活',
+  ];
+
+  bool _isCrisis(String text) {
+    return _crisisKeywords.any((kw) => text.contains(kw));
+  }
+
   Future<void> _send() async {
     if (_isSending) return;
     final content = _textController.text.trim();
     if (content.isEmpty) return;
+
+    // 危機關鍵字偵測
+    if (_isCrisis(content)) {
+      _textController.clear();
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            backgroundColor: const Color(0xFFFFEBEE),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('🔴', style: TextStyle(fontSize: 40)),
+                const SizedBox(height: 12),
+                const Text(
+                  '我注意到你說的話讓我有點擔心你',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  '我在這裡陪你，我們一起找人幫忙好嗎？',
+                  style: TextStyle(fontSize: 14),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD14343)),
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    context.go('/safety');
+                  },
+                  child: const Text('前往求助資源', style: TextStyle(color: Colors.white)),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('繼續對話'),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+      return;
+    }
 
     setState(() => _isSending = true);
 
