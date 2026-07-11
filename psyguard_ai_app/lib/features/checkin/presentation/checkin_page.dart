@@ -81,17 +81,21 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
       await Future.delayed(const Duration(milliseconds: 300));
       if (!mounted) return;
       final ersEngine = ERSEngine();
+      // 語言串流根據心理負荷感推算
+      final inferredSpeechRate = stress > 70 ? 130.0 : stress > 50 ? 200.0 : 300.0;
+      final inferredNegRatio = stress / 100.0 * 0.8;
+      final inferredPauseFreq = stress > 70 ? 8.0 : stress > 50 ? 5.0 : 2.0;
       final ersResult = ersEngine.calculate(
         ERSInput(
-          speechRate: 300,
-          negativeWordRatio: stress / 200.0,
-          pauseFrequency: 2,
+          speechRate: inferredSpeechRate,
+          negativeWordRatio: inferredNegRatio,
+          pauseFrequency: inferredPauseFreq,
           moodScore: mood.toDouble(),
           stressScore: stress.toDouble(),
           energyScore: energy.toDouble(),
-          sleepDuration: 7,
-          appUsageStreak: 5,
-          checkInConsistency: 0.8,
+          sleepDuration: energy < 30 ? 4.0 : energy < 50 ? 6.0 : 7.5,
+          appUsageStreak: mood < 30 ? 1.0 : mood < 50 ? 3.0 : 7.0,
+          checkInConsistency: mood < 30 ? 0.2 : mood < 50 ? 0.5 : 0.8,
         ),
         const PersonalBaseline(),
       );
@@ -110,13 +114,13 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
               ElevatedButton(
                 onPressed: () {
                   Navigator.pop(ctx);
-                  if (risk.riskLevel == RiskLevel.high) {
+                  if (risk.riskLevel == RiskLevel.high || ersResult.riskLevel == 'red') {
                     context.go('/safety');
                   } else {
                     context.go('/home');
                   }
                 },
-                child: const Text('了解了'),
+                child: Text(ersResult.riskLevel == 'red' ? '⚠️ 前往求助資源' : '了解了'),
               ),
             ],
           ),

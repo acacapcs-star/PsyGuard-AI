@@ -87,7 +87,7 @@ class SafetyPage extends ConsumerWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        intervention.message,
+                        riskLevel == RiskLevel.high ? '守護精靈注意到你最近狀態需要支持，不管你選哪條路，我都在 💙' : riskLevel == RiskLevel.medium ? '最近感覺如何？守護精靈想和你說說話 💙' : '今天狀態不錯！繼續保持 ✨',
                         style: const TextStyle(fontSize: 14, height: 1.5),
                       ),
                     ),
