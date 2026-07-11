@@ -51,9 +51,9 @@ class _VoiceWakePageState extends State<VoiceWakePage>
       });
       await _service.startListening(
         onWakeWordDetected: (text) {
-          setState(() => _statusText = '我在！有什麼我可以幫你的嗎？ 💙');
-          Future.delayed(const Duration(seconds: 2), () {
-            if (mounted) context.go('/chat');
+          setState(() {
+            _statusText = 'Lumi：Hey! I\'m here for you 💙';
+            _isListening = false;
           });
         },
         onResult: (text) {

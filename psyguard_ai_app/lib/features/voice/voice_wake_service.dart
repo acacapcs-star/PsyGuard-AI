@@ -11,8 +11,9 @@ class VoiceWakeService {
 
   Future<void> initialize() async {
     _isAvailable = await _speech.initialize();
-    await _tts.setLanguage('zh-TW');
-    await _tts.setSpeechRate(0.5);
+    await _tts.setLanguage('en-US');
+    await _tts.setSpeechRate(0.45);
+    await _tts.setPitch(1.1);
   }
 
   bool get isListening => _isListening;
@@ -49,10 +50,10 @@ class VoiceWakeService {
   Future<void> _respond({String locale = 'zh-TW'}) async {
     if (locale.startsWith('en')) {
       await _tts.setLanguage('en-US');
-      await _tts.speak("I'm here. What can I help you with?");
+      await _tts.speak("Hey! I'm Lumi. I'm here for you.");
     } else {
       await _tts.setLanguage('zh-TW');
-      await _tts.speak('我在，有什麼我可以幫你的嗎？');
+      await _tts.speak('嘿！我是Lumi，我在這裡陪你。');
     }
   }
 

@@ -462,6 +462,28 @@ class _HomeContentState extends State<_HomeContent> {
                   ? '把你的狀態整理成一份安心，需要時也能分享給專業的人。'
                   : 'Turn your records into a clear summary you can share with a professional.',
             ),
+            _InteractiveCard(
+              title: copy.isZhTw ? '🐧 Lumi 樂園' : '🐧 Lumi Park',
+              subtitle: copy.isZhTw ? '和企鵝互動紓壓' : 'Play with Lumi',
+              icon: Icons.pets_rounded,
+              color: const Color(0xFF0ABFBC),
+              route: '/penguin',
+              tooltipTitle: copy.isZhTw ? 'Lumi 樂園' : 'Lumi Park',
+              tooltipDescription: copy.isZhTw
+                  ? '和Lumi互動、丟魚、摸摸，讓心情好一點。'
+                  : 'Feed Lumi, pet Lumi, and feel a little better.',
+            ),
+            _InteractiveCard(
+              title: copy.isZhTw ? '嘿，在嗎？' : 'Hey, Lumi?',
+              subtitle: copy.isZhTw ? '聲控喚醒Lumi' : 'Voice wake Lumi',
+              icon: Icons.mic_rounded,
+              color: const Color(0xFF5B6EAE),
+              route: '/voice',
+              tooltipTitle: copy.isZhTw ? '聲控喚醒' : 'Voice Wake',
+              tooltipDescription: copy.isZhTw
+                  ? '說「嘿，在嗎？」喚醒Lumi陪你聊聊。'
+                  : 'Say "Hey Lumi" to wake up your companion.',
+            ),
           ],
         ),
 
