@@ -81,6 +81,14 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
       await Future.delayed(const Duration(milliseconds: 300));
       if (!mounted) return;
       final ersEngine = ERSEngine();
+      // 讀取真實睡眠數據（行為串流）
+      final db = ref.read(appDatabaseProvider);
+      final yesterday = now.subtract(const Duration(days: 1));
+      final sleepLogs = await db.getSleepLogsSince(yesterday);
+      final realSleepHours = sleepLogs.isNotEmpty
+          ? sleepLogs.last.sleepHours
+          : (energy < 30 ? 4.0 : energy < 50 ? 6.0 : 7.5);
+
       // 語言串流根據心理負荷感推算
       final inferredSpeechRate = stress > 70 ? 130.0 : stress > 50 ? 200.0 : 300.0;
       final inferredNegRatio = stress / 100.0 * 0.8;
@@ -93,7 +101,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
           moodScore: mood.toDouble(),
           stressScore: stress.toDouble(),
           energyScore: energy.toDouble(),
-          sleepDuration: energy < 30 ? 4.0 : energy < 50 ? 6.0 : 7.5,
+          sleepDuration: realSleepHours,
           appUsageStreak: mood < 30 ? 1.0 : mood < 50 ? 3.0 : 7.0,
           checkInConsistency: mood < 30 ? 0.2 : mood < 50 ? 0.5 : 0.8,
         ),
