@@ -15,6 +15,7 @@ class _PenguinParkPageState extends State<PenguinParkPage>
   int _xp = 0;
   int _igloo = 1;
   String _outfit = 'happy';
+  String _petType = 'otter';
   String _penguinState = 'happy';
   bool _showFish = false;
   String _selectedFish = 'fish_clown';
@@ -53,15 +54,20 @@ class _PenguinParkPageState extends State<PenguinParkPage>
   }
 
   String get _penguinImage {
-    switch (_outfit) {
-      case 'cool': return 'assets/images/penguin_cool.jpeg';
-      case 'cool2': return 'assets/images/penguin_cool2.jpeg';
-      case 'work': return 'assets/images/penguin_work.jpeg';
-      case 'love': return 'assets/images/penguin_love.jpeg';
-      case 'eating': return 'assets/images/penguin_eating.jpeg';
-      case 'tired': return 'assets/images/penguin_tired.png';
-      default: return 'assets/images/penguin_happy.png';
+    if (_outfit == 'eating' || _outfit == 'love') {
+      return _petType == 'capybara'
+          ? 'assets/images/pet_capybara_bg.jpeg'
+          : 'assets/images/pet_otter_bg.jpeg';
     }
+    if (_outfit.startsWith('outfit')) {
+      final num = _outfit.replaceAll('outfit', '');
+      return _petType == 'capybara'
+          ? 'assets/images/capy_outfit$num.jpeg'
+          : 'assets/images/otter_outfit$num.jpeg';
+    }
+    return _petType == 'capybara'
+        ? 'assets/images/pet_capybara.jpeg'
+        : 'assets/images/pet_otter.jpeg';
   }
 
   @override
@@ -89,6 +95,7 @@ class _PenguinParkPageState extends State<PenguinParkPage>
       _xp = prefs.getInt('penguin_xp') ?? 0;
       _igloo = prefs.getInt('igloo_level') ?? 1;
       _outfit = prefs.getString('penguin_outfit') ?? 'happy';
+      _petType = prefs.getString('pet_type') ?? 'otter';
     });
   }
 
@@ -259,19 +266,28 @@ class _PenguinParkPageState extends State<PenguinParkPage>
   }
 
   void _showOutfitPicker() {
-    final outfits = [
-      {'key': 'happy', 'name': '原味企鵝', 'img': 'assets/images/penguin_happy.png'},
-      {'key': 'cool', 'name': '墨鏡帥帥', 'img': 'assets/images/penguin_cool.jpeg'},
-      {'key': 'cool2', 'name': '酷酷抱胸', 'img': 'assets/images/penguin_cool2.jpeg'},
-      {'key': 'work', 'name': '工作狂企鵝', 'img': 'assets/images/penguin_work.jpeg'},
-      {'key': 'tired', 'name': '躺平企鵝', 'img': 'assets/images/penguin_tired.png'},
+    final isCapybara = _petType == 'capybara';
+    final outfits = isCapybara ? [
+      {'key': 'happy', 'name': '原味水豚', 'img': 'assets/images/pet_capybara.jpeg'},
+      {'key': 'outfit1', 'name': '換裝一', 'img': 'assets/images/capy_outfit1.jpeg'},
+      {'key': 'outfit2', 'name': '換裝二', 'img': 'assets/images/capy_outfit2.jpeg'},
+      {'key': 'outfit3', 'name': '換裝三', 'img': 'assets/images/capy_outfit3.jpeg'},
+      {'key': 'outfit4', 'name': '換裝四', 'img': 'assets/images/capy_outfit4.jpeg'},
+    ] : [
+      {'key': 'happy', 'name': '原味水獺', 'img': 'assets/images/pet_otter.jpeg'},
+      {'key': 'outfit1', 'name': '換裝一', 'img': 'assets/images/otter_outfit1.jpeg'},
+      {'key': 'outfit2', 'name': '換裝二', 'img': 'assets/images/otter_outfit2.jpeg'},
+      {'key': 'outfit3', 'name': '換裝三', 'img': 'assets/images/otter_outfit3.jpeg'},
+      {'key': 'outfit4', 'name': '換裝四', 'img': 'assets/images/otter_outfit4.jpeg'},
     ];
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1A3558),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('👗 幫企鵝換衣服'),
+        title: Text(_petType == 'capybara' ? '👗 幫巴拉換衣服' : '👗 幫水獺換衣服',
+          style: const TextStyle(color: Colors.white)),
         content: SizedBox(
           width: 300,
           child: GridView.count(
@@ -304,7 +320,7 @@ class _PenguinParkPageState extends State<PenguinParkPage>
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text('🐧 企鵝樂園', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text(_petType == 'capybara' ? '🦫 巴拉說' : '🦦 水獺想說', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16),
