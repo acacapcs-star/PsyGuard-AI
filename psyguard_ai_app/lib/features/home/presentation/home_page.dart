@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import '../../ers/silence_detector.dart';
+import '../../ers/cumulative_risk_engine.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/risk_engine/risk_models.dart';
 import '../../../core/risk_engine/risk_provider.dart';
@@ -243,6 +244,45 @@ class _HomeContent extends StatefulWidget {
 }
 
 class _HomeContentState extends State<_HomeContent> {
+  int _cumulativeCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _init();
+  }
+
+  Future<void> _init() async {
+    await SilenceDetector().recordActivity();
+    final count = await CumulativeRiskEngine().getRedCount();
+    final alert = await SilenceDetector().checkSilence();
+    if (mounted) {
+      setState(() => _cumulativeCount = count);
+      if (alert != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('🌙', style: TextStyle(fontSize: 40)),
+                  const SizedBox(height: 12),
+                  Text(alert.message, textAlign: TextAlign.center),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text('我在'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        });
+      }
+    }
+  }
   // Bold logic: check recent notes for negative keywords
   bool get _hasNegativeSignal {
     final notes = widget.data.recentNotes.join(' ');
@@ -268,12 +308,10 @@ class _HomeContentState extends State<_HomeContent> {
   Widget build(BuildContext context) {
     final theme = widget.theme;
     final copy = widget.copy;
-    final riskColor = LumiTheme.riskColor(_riskScore);
-    final riskLabel = switch (_riskLevel) {
-      'high' => copy.statusNeedsAttention,
-      'medium' => copy.statusWatchful,
-      _ => copy.statusGood,
-    };
+    final engine = CumulativeRiskEngine();
+    final cumulativeColor = Color(int.parse(engine.colorForCount(_cumulativeCount).replaceAll('#', '0xFF')));
+    final riskColor = _cumulativeCount > 0 ? cumulativeColor : LumiTheme.riskColor(_riskScore);
+    final riskLabel = engine.labelForCount(_cumulativeCount);
 
     final exploreCards = [
       _cardData(
