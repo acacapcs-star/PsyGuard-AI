@@ -1,3 +1,5 @@
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -139,6 +141,30 @@ class AiChatRepositoryImpl implements AiChatRepository {
     required String userText,
     String? contextSummary,
   }) async {
+    String todayNoteContext = "";
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final now = DateTime.now();
+      final dateKey = 'note_${now.year}_${now.month}_${now.day}';
+      final raw = prefs.getString(dateKey);
+      if (raw != null) {
+        final list = jsonDecode(raw) as List;
+        if (list.isNotEmpty) {
+          todayNoteContext = "\n【使用者今日手刻筆記與待辦事項】\n";
+          for (var item in list) {
+            String status = item['checked'] == true ? "[已完成]" : "[未完成]";
+            String priority = "綠色(輕)";
+            if (item['priority'] == 0) priority = "紅色(最緊急!)";
+            if (item['priority'] == 1) priority = "黃色(重要)";
+            todayNoteContext += "- $status 優先級:$priority 内容: ${item['text']}\n";
+          }
+          todayNoteContext += "（請在接下來的對話中，主動關心、整合、或協助使用者優化上述提及的目標與情緒狀態。）\n";
+        }
+      }
+    } catch (e) {
+      print("[Note System Link Error]: $e");
+    }
+
     final trimmedUserText = userText.trim();
     final history = await _db.getSessionMessages(sessionId);
     final storedSummary = await _db.getChatContextSummary(sessionId);

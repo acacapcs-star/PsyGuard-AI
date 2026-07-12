@@ -1,3 +1,4 @@
+import 'note_page.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -226,14 +227,55 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                TextField(
-                  controller: _noteController,
-                  maxLines: 3,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: LumiTheme.textPrimary,
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const NotePage()),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFF0ABFBC).withOpacity(0.3)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.02),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        )
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        const Text('📝', style: TextStyle(fontSize: 18)),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: const [
+                              Text(
+                                '開啟獨立今日筆記本',
+                                style: TextStyle(
+                                  fontSize: 14, 
+                                  fontWeight: FontWeight.bold, 
+                                  color: Color(0xFF2C5282),
+                                ),
+                              ),
+                              SizedBox(height: 2),
+                              Text(
+                                '支援待辦勾選、列點與輕重緩急顏色標記',
+                                style: TextStyle(fontSize: 11, color: Colors.grey),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Color(0xFF0ABFBC)),
+                      ],
+                    ),
                   ),
-                  decoration: InputDecoration(hintText: copy.noteHint),
                 ),
               ],
             ),
