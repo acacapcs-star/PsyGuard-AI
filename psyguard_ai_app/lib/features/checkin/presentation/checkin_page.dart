@@ -185,6 +185,8 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
             value: _stress,
             icon: _stressEmoji(_stress.round()),
             color: const Color(0xFFF5576C),
+            minAssistiveLabel: copy.veryBad,
+            maxAssistiveLabel: copy.veryGood,
             onChanged: (v) => setState(() => _stress = v),
           ),
           const SizedBox(height: 16),
@@ -193,6 +195,8 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
             value: _energy,
             icon: _energyEmoji(_energy.round()),
             color: const Color(0xFF43E97B),
+            minAssistiveLabel: copy.veryBad,
+            maxAssistiveLabel: copy.veryGood,
             onChanged: (v) => setState(() => _energy = v),
           ),
           const SizedBox(height: 24),
@@ -271,7 +275,11 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
     final copy = AppStrings.of(ref.watch(appLanguageControllerProvider));
     final moodLabel = title == copy.mood
         ? _moodDescriptor(percent, copy)
-        : null;
+        : title == copy.stress
+            ? _stressDescriptor(percent, copy)
+            : title == copy.energy
+                ? _energyDescriptor(percent, copy)
+                : null;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -401,6 +409,22 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
   }
 
   String _moodDescriptor(int value, AppStrings copy) {
+    if (value <= 20) return copy.veryBad;
+    if (value <= 40) return copy.bad;
+    if (value <= 60) return copy.okay;
+    if (value <= 80) return copy.good;
+    return copy.veryGood;
+  }
+
+  String _stressDescriptor(int value, AppStrings copy) {
+    if (value <= 20) return copy.veryGood;
+    if (value <= 40) return copy.good;
+    if (value <= 60) return copy.okay;
+    if (value <= 80) return copy.bad;
+    return copy.veryBad;
+  }
+
+  String _energyDescriptor(int value, AppStrings copy) {
     if (value <= 20) return copy.veryBad;
     if (value <= 40) return copy.bad;
     if (value <= 60) return copy.okay;

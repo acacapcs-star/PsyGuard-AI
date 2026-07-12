@@ -20,6 +20,7 @@ import '../features/trends/presentation/ai_report_history_page.dart';
 import '../features/tools_library/presentation/tool_history_page.dart';
 import '../features/welcome/presentation/welcome_page.dart';
 import '../features/welcome/presentation/consent_page.dart';
+import '../features/welcome/presentation/pet_selection_page.dart';
 import '../features/voice/voice_wake_page.dart';
 import '../features/penguin/penguin_park_page.dart';
 
@@ -125,6 +126,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'export',
         pageBuilder: (context, state) =>
             _buildPageWithSlide(context, state, const ExportPage()),
+      ),
+      GoRoute(
+        path: '/pet',
+        name: 'pet',
+        pageBuilder: (context, state) =>
+            _buildPageWithSlide(context, state, const PetSelectionPage()),
       ),
       GoRoute(
         path: '/voice',

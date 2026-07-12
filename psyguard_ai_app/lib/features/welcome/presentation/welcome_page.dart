@@ -54,7 +54,7 @@ class WelcomePage extends ConsumerWidget {
                           final settings = ref.read(localSettingsServiceProvider);
                           await settings.setWelcomeSeen();
                           await settings.setConsentAccepted(version: 1);
-                          if (context.mounted) context.go('/home');
+                          if (context.mounted) context.go('/pet');
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white,
