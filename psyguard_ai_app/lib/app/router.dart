@@ -26,28 +26,7 @@ import '../features/penguin/penguin_park_page.dart';
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/welcome',
-    redirect: (context, state) async {
-      final hasSeenWelcome = await ref.read(welcomeSeenProvider.future);
-      final hasConsent = await ref.read(consentAcceptedProvider.future);
-      final location = state.uri.toString();
-      final isWelcome = location == '/welcome';
-      final isConsent = location == '/consent';
-      final isSafety = location == '/safety';
-      if (!hasSeenWelcome && !isWelcome && !isSafety) {
-        return '/welcome';
-      }
-      if (hasSeenWelcome && hasConsent && (isWelcome || isConsent)) {
-        return '/home';
-      }
-      if (hasSeenWelcome &&
-          !hasConsent &&
-          !isWelcome &&
-          !isConsent &&
-          !isSafety) {
-        return '/consent';
-      }
-      return null;
-    },
+    redirect: (context, state) async { return null; },
     routes: [
       GoRoute(
         path: '/welcome',

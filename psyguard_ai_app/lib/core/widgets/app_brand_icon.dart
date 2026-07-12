@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class AppBrandIcon extends StatelessWidget {
   const AppBrandIcon({
@@ -36,10 +37,9 @@ class AppBrandIcon extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(radius - padding),
-        child: Image.asset(
-          'assets/icon.png',
+        child: SvgPicture.asset(
+          'assets/lii_logo.svg',
           fit: BoxFit.contain,
-          filterQuality: FilterQuality.high,
         ),
       ),
     );
