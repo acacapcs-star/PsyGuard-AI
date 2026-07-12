@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -97,11 +98,13 @@ class HomePage extends ConsumerWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                'Lumi',
-                style: GoogleFonts.varelaRound(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: LumiTheme.textPrimary,
+                'lii',
+                style: GoogleFonts.playfairDisplay(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w400,
+                  fontStyle: FontStyle.italic,
+                  letterSpacing: 6,
+                  color: const Color(0xFF2C5282),
                 ),
               ),
             ],
@@ -161,7 +164,7 @@ class HomePage extends ConsumerWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Lumi',
+                  'lii',
                   style: GoogleFonts.varelaRound(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,

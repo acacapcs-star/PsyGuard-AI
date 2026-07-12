@@ -23,7 +23,7 @@ class LumiApp extends ConsumerWidget {
         systemNavigationBarIconBrightness: Brightness.dark,
       ),
       child: MaterialApp.router(
-        title: 'Lumi',
+        title: 'lii',
         debugShowCheckedModeBanner: false,
         theme: LumiTheme.lightTheme,
         routerConfig: router,
