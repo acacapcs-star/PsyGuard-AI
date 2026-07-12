@@ -43,15 +43,15 @@ class NotePage extends StatefulWidget {
 
 class _NotePageState extends State<NotePage> {
   List<NoteItem> _items = [];
-  final _today = DateTime.now();
+  DateTime _selectedDate = DateTime.now();
 
   String get _dateKey {
-    return 'note_${_today.year}_${_today.month}_${_today.day}';
+    return 'note_${_selectedDate.year}_${_selectedDate.month}_${_selectedDate.day}';
   }
 
   String get _dateLabel {
     const months = ['一','二','三','四','五','六','七','八','九','十','十一','十二'];
-    return '${_today.year} 年 ${months[_today.month-1]} 月 ${_today.day} 日';
+    return '${_selectedDate.year} 年 ${months[_selectedDate.month-1]} 月 ${_selectedDate.day} 日';
   }
 
   @override
@@ -66,12 +66,109 @@ class _NotePageState extends State<NotePage> {
     if (raw != null) {
       final list = jsonDecode(raw) as List;
       setState(() => _items = list.map((e) => NoteItem.fromJson(e)).toList());
+    } else {
+      setState(() => _items = []);
     }
   }
 
   Future<void> _saveNotes() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_dateKey, jsonEncode(_items.map((e) => e.toJson()).toList()));
+  }
+
+  void _changeDate(int days) {
+    setState(() {
+      _selectedDate = _selectedDate.add(Duration(days: days));
+    });
+    _loadNotes();
+  }
+
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2025),
+      lastDate: DateTime(2030),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF0ABFBC),
+              onPrimary: Colors.white,
+              onSurface: Color(0xFF2D3748),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() => _selectedDate = picked);
+      _loadNotes();
+    }
+  }
+
+  // 新增功能：一鍵清空（橡皮擦演算法）
+  Future<void> _clearAllNotes() async {
+    if (_items.isEmpty) return;
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('📝 清空今日筆記？', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        content: const Text('確定要清除這一天所有的待辦事項與筆記嗎？此動作無法復原喔。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消', style: TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('確定清空', style: TextStyle(color: Color(0xFFEF5350), fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      setState(() => _items = []);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_dateKey);
+    }
+  }
+
+  // 新增功能：彈出精美使用指南
+  void _showGuideDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Text('💡 ', style: TextStyle(fontSize: 20)),
+            Text('PsyGuard 筆記指南', style: GoogleFonts.playfairDisplay(
+              fontWeight: FontWeight.bold, color: const Color(0xFF2C5282), fontSize: 18
+            )),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const _GuideRow(icon: '•', text: '【列點模式】適合記錄零碎靈感或重點。'),
+            const _GuideRow(icon: '☑', text: '【待辦清單】點擊左側方框可打勾，會全自動畫上刪除線。'),
+            const _GuideRow(icon: '🟢', text: '【輕重緩急】點擊右側圓點可循環切換 紅(緊急) ➔ 黃(重要) ➔ 綠(一般) 顏色標記。'),
+            const _GuideRow(icon: '↕', text: '【長按拖拽】在列表任意處長按，即可上下拖動調整事情順序。'),
+            const _GuideRow(icon: '🤖', text: '【AI 連動】此頁面寫下的所有筆記，都會全自動同步為 AI 聊天室的背景知識，Lumi 會主動關心妳的紅色緊急任務喔！'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('我知道了 0_0/', style: TextStyle(color: Color(0xFF0ABFBC), fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
   }
 
   void _addItem(NoteItemType type) {
@@ -107,6 +204,10 @@ class _NotePageState extends State<NotePage> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_rounded, color: Color(0xFF2C5282)),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -114,19 +215,55 @@ class _NotePageState extends State<NotePage> {
               fontSize: 20, fontStyle: FontStyle.italic,
               color: const Color(0xFF2C5282),
             )),
-            Text(_dateLabel, style: const TextStyle(fontSize: 11, color: Color(0xFF718096))),
+            Text('支援即時連動 AI 對話', style: const TextStyle(fontSize: 10, color: Color(0xFF0ABFBC))),
           ],
         ),
         actions: [
+          // 指南按鈕
           IconButton(
-            icon: const Icon(Icons.save_rounded, color: Color(0xFF0ABFBC)),
-            onPressed: _saveNotes,
+            icon: const Icon(Icons.lightbulb_outline_rounded, color: Color(0xFF0ABFBC)),
+            onPressed: _showGuideDialog,
           ),
+          // 橡皮擦清空按鈕
+          IconButton(
+            icon: const Icon(Icons.cleaning_services_rounded, color: Color(0xFFEF5350), size: 20),
+            onPressed: _clearAllNotes,
+          ),
+          const SizedBox(width: 8),
         ],
       ),
       body: Column(
         children: [
-          // 快捷按鈕
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF0ABFBC)),
+                  onPressed: () => _changeDate(-1),
+                ),
+                GestureDetector(
+                  onTap: _pickDate,
+                  child: Row(
+                    children: [
+                      const Icon(Icons.calendar_month_rounded, size: 16, color: Color(0xFF2C5282)),
+                      const SizedBox(width: 6),
+                      Text(_dateLabel, style: const TextStyle(
+                        fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF2D3748)
+                      )),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.arrow_forward_rounded, color: Color(0xFF0ABFBC)),
+                  onPressed: () => _changeDate(1),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
@@ -140,7 +277,6 @@ class _NotePageState extends State<NotePage> {
             ),
           ),
           const Divider(height: 1),
-          // 筆記列表
           Expanded(
             child: _items.isEmpty
                 ? Center(
@@ -149,11 +285,8 @@ class _NotePageState extends State<NotePage> {
                       children: [
                         const Text('📝', style: TextStyle(fontSize: 48)),
                         const SizedBox(height: 12),
-                        Text('今天還沒有筆記',
+                        Text('這天還沒有筆記',
                           style: TextStyle(color: Colors.grey.shade400, fontSize: 14)),
-                        const SizedBox(height: 4),
-                        Text('點上方按鈕新增',
-                          style: TextStyle(color: Colors.grey.shade300, fontSize: 12)),
                       ],
                     ),
                   )
@@ -171,7 +304,7 @@ class _NotePageState extends State<NotePage> {
                     itemBuilder: (ctx, i) {
                       final item = _items[i];
                       return _NoteItemWidget(
-                        key: ValueKey(i),
+                        key: ValueKey('${_dateKey}_$i'),
                         item: item,
                         priorityColor: _priorityColor(item.priority),
                         onTextChange: (v) {
@@ -194,6 +327,27 @@ class _NotePageState extends State<NotePage> {
   }
 }
 
+class _GuideRow extends StatelessWidget {
+  final String icon;
+  final String text;
+  const _GuideRow({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(icon, style: const TextStyle(fontSize: 14)),
+          const SizedBox(width: 8),
+          Expanded(child: Text(text, style: const TextStyle(fontSize: 13, color: Color(0xFF4A5568), height: 1.4))),
+        ],
+      ),
+    );
+  }
+}
+
 class _QuickButton extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
@@ -206,9 +360,9 @@ class _QuickButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: const Color(0xFF0ABFBC).withValues(alpha: 0.1),
+          color: const Color(0xFF0ABFBC).withOpacity(0.1),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFF0ABFBC).withValues(alpha: 0.3)),
+          border: Border.all(color: const Color(0xFF0ABFBC).withOpacity(0.3)),
         ),
         child: Text(label, style: const TextStyle(fontSize: 13, color: Color(0xFF0ABFBC))),
       ),
@@ -248,6 +402,14 @@ class _NoteItemWidgetState extends State<_NoteItemWidget> {
   }
 
   @override
+  void didUpdateWidget(_NoteItemWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.item.text != widget.item.text) {
+      _ctrl.text = widget.item.text;
+    }
+  }
+
+  @override
   void dispose() {
     _ctrl.dispose();
     super.dispose();
@@ -262,11 +424,10 @@ class _NoteItemWidgetState extends State<_NoteItemWidget> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border(left: BorderSide(color: widget.priorityColor, width: 4)),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8)],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8)],
       ),
       child: Row(
         children: [
-          // 左側icon
           if (widget.item.type == NoteItemType.checkbox)
             GestureDetector(
               onTap: widget.onCheckToggle,
@@ -281,7 +442,6 @@ class _NoteItemWidgetState extends State<_NoteItemWidget> {
           else
             Icon(Icons.edit_note_rounded, size: 20, color: Colors.grey.shade300),
           const SizedBox(width: 8),
-          // 文字輸入
           Expanded(
             child: TextField(
               controller: _ctrl,
@@ -300,7 +460,6 @@ class _NoteItemWidgetState extends State<_NoteItemWidget> {
               onChanged: widget.onTextChange,
             ),
           ),
-          // 優先級顏色
           GestureDetector(
             onTap: widget.onPriorityCycle,
             child: Container(
@@ -313,7 +472,6 @@ class _NoteItemWidgetState extends State<_NoteItemWidget> {
             ),
           ),
           const SizedBox(width: 8),
-          // 刪除
           GestureDetector(
             onTap: widget.onDelete,
             child: Icon(Icons.close_rounded, size: 16, color: Colors.grey.shade300),
