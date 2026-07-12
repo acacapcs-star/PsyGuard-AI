@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import '../../../features/ers/incongruence_detector.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -273,6 +274,55 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     if (_isSending) return;
     final content = _textController.text.trim();
     if (content.isEmpty) return;
+
+    // 語義—情緒不一致偵測
+    final incongruence = IncongruenceDetector().analyze(content);
+    if (incongruence.needsAttention && !_isCrisis(content)) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          backgroundColor: const Color(0xFFFFF8E1),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('💭', style: TextStyle(fontSize: 36)),
+              const SizedBox(height: 12),
+              Text(
+                incongruence.alertMessage,
+                style: const TextStyle(fontSize: 14),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text('繼續說'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF0ABFBC),
+                        foregroundColor: Colors.white,
+                      ),
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        context.go('/safety');
+                      },
+                      child: const Text('求助資源'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     // 危機關鍵字偵測
     if (_isCrisis(content)) {
