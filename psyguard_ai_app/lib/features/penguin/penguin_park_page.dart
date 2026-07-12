@@ -99,6 +99,19 @@ class _PenguinParkPageState extends State<PenguinParkPage>
     });
   }
 
+  
+  String get _petLabelName {
+    if (_petType == 'capybara') return '巴拉';
+    if (_petType == 'otter') return '水獺';
+    return '企鵝';
+  }
+
+  String get _petEmoji {
+    if (_petType == 'capybara') return '🦫';
+    if (_petType == 'otter') return '🦦';
+    return '🐧';
+  }
+
   Future<void> _saveData() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('penguin_xp', _xp);
@@ -142,7 +155,7 @@ class _PenguinParkPageState extends State<PenguinParkPage>
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('🐧 企鵝想跟你說...', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Text('$_petEmoji $_petLabelName想跟你說...', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             Text(quote, style: const TextStyle(fontSize: 14), textAlign: TextAlign.center),
             const SizedBox(height: 16),
@@ -151,7 +164,7 @@ class _PenguinParkPageState extends State<PenguinParkPage>
                 Navigator.pop(ctx);
                 setState(() => _outfit = 'happy');
               },
-              child: const Text('謝謝企鵝 💙'),
+              child: Text('謝謝$_petLabelName 💙'),
             ),
           ],
         ),
@@ -177,7 +190,7 @@ class _PenguinParkPageState extends State<PenguinParkPage>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('🐧 企鵝出題啦！', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                Text('$_petEmoji $_petLabelName出題啦！', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 12),
                 Text(joke['q']!, style: const TextStyle(fontSize: 14), textAlign: TextAlign.center),
                 const SizedBox(height: 16),
@@ -211,6 +224,8 @@ class _PenguinParkPageState extends State<PenguinParkPage>
 
                 if (_mode == 1) ...[
                   TextField(
+                    autofocus: false,
+                    enableIMEPersonalizedLearning: false,
                     decoration: const InputDecoration(hintText: '你的答案...'),
                     onChanged: (v) => _userInput = v,
                   ),
@@ -356,8 +371,11 @@ class _PenguinParkPageState extends State<PenguinParkPage>
           ),
 
           SafeArea(
-            child: Column(
-              children: [
+            child: SingleChildScrollView(
+              child: SizedBox(
+                height: MediaQuery.of(context).size.height - MediaQuery.of(context).padding.top - MediaQuery.of(context).padding.bottom,
+                child: Column(
+                  children: [
                 const SizedBox(height: 20),
 
                 // igloo
@@ -384,8 +402,18 @@ class _PenguinParkPageState extends State<PenguinParkPage>
                           ),
                           child: GestureDetector(
                             onTap: _petPenguin,
-                            child: Image.asset(_penguinImage, width: 150, height: 150, fit: BoxFit.contain,
-                              errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported, size: 100, color: Colors.white)),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 10, spreadRadius: 1)],
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(75),
+                                child: Image.asset(_penguinImage, width: 150, height: 150, fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported, size: 100, color: Colors.grey)),
+                              ),
+                            ),
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -413,7 +441,7 @@ class _PenguinParkPageState extends State<PenguinParkPage>
                         ),
                         onPressed: () => setState(() => _showFish = !_showFish),
                         icon: const Text('🐟', style: TextStyle(fontSize: 20)),
-                        label: const Text('丟魚給企鵝', style: TextStyle(color: Colors.white, fontSize: 16)),
+                        label: Text('餵食$_petLabelName', style: TextStyle(color: Colors.white, fontSize: 16)),
                       ),
 
                       // 魚選擇
@@ -461,7 +489,8 @@ class _PenguinParkPageState extends State<PenguinParkPage>
               ],
             ),
           ),
-        ],
+          ),
+        ),
       ),
     );
   }
