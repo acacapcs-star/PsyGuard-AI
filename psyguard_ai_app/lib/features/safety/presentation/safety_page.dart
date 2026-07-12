@@ -4,15 +4,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/risk_engine/risk_models.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/safety/safety_flow_service.dart';
 import '../../../core/security/local_settings_service.dart';
 import '../../../core/storage/database_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../l10n/app_language.dart';
 import '../../../l10n/app_strings.dart';
-import '../../../features/ai_safety/ai_safety_models.dart';
 
 final latestRiskLevelProvider = FutureProvider<RiskLevel>((ref) async {
+  final prefs = await SharedPreferences.getInstance();
+  final ersLevel = prefs.getString('last_ers_level') ?? 'green';
+  if (ersLevel == 'red') return RiskLevel.high;
+  if (ersLevel == 'yellow') return RiskLevel.medium;
   final snapshot = await ref.read(appDatabaseProvider).getLatestRiskSnapshot();
   return switch (snapshot?.riskLevel) {
     'high' => RiskLevel.high,
@@ -47,18 +51,71 @@ class SafetyPage extends ConsumerWidget {
                 locale: language == AppLanguage.zhTw ? 'zh-TW' : 'en-US',
               );
 
-          final aiSafety = AISafetyEngine();
-          final ersScore = switch (riskLevel) {
-            RiskLevel.high => 80.0,
-            RiskLevel.medium => 55.0,
-            _ => 20.0,
-          };
-          final intervention = aiSafety.evaluate(ersScore, 0);
+          final effectiveHigh = riskLevel == RiskLevel.high;
 
           return ListView(
             physics: const BouncingScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
             children: [
+              if (effectiveHigh) ...[
+                Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFEF9A9A)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const Text(
+                        'lii 在這裡陪你',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF0ABFBC),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: () => context.go('/chat'),
+                        child: const Text('A. 繼續跟 LUNA 說話'),
+                      ),
+                      const SizedBox(height: 8),
+                      OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Color(0xFF0ABFBC)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              title: const Text('B. 聯繫輔導老師'),
+                              content: const Text('請前往校內輔導室，或請導師協助聯繫輔導老師。'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx),
+                                  child: const Text('了解'),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                        child: const Text('B. 聯繫輔導老師'),
+                      ),
+                      const SizedBox(height: 8),
+                      TextButton(
+                        onPressed: () {},
+                        child: const Text('C. 查看求助資源 (1925) ↓'),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               // 守護精靈訊息卡片
               Container(
                 margin: const EdgeInsets.only(bottom: 16),
@@ -87,7 +144,7 @@ class SafetyPage extends ConsumerWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        riskLevel == RiskLevel.high ? '守護精靈注意到你最近狀態需要支持，不管你選哪條路，我都在 💙' : riskLevel == RiskLevel.medium ? '最近感覺如何？守護精靈想和你說說話 💙' : '今天狀態不錯！繼續保持 ✨',
+                        effectiveHigh ? '守護精靈注意到你最近狀態需要支持，不管你選哪條路，我都在 🤍' : riskLevel == RiskLevel.medium ? '最近感覺如何？守護精靈想和你說說話 💙' : '今天狀態不錯！繼續保持 ✨',
                         style: const TextStyle(fontSize: 14, height: 1.5),
                       ),
                     ),

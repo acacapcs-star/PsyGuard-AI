@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -87,7 +88,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
       final sleepLogs = await db.getSleepLogsSince(yesterday);
       final realSleepHours = sleepLogs.isNotEmpty
           ? sleepLogs.last.sleepHours
-          : (energy < 30 ? 4.0 : energy < 50 ? 6.0 : 7.5);
+          : 3.0;
 
       // 語言串流根據心理負荷感推算
       final inferredSpeechRate = stress > 70 ? 130.0 : stress > 50 ? 200.0 : 300.0;
@@ -107,6 +108,9 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
         ),
         const PersonalBaseline(),
       );
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setDouble('last_ers_score', ersResult.adjustedERS);
+      await prefs.setString('last_ers_level', ersResult.riskLevel);
       if (!mounted) return;
       showDialog(
         context: context,
