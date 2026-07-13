@@ -571,10 +571,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     final apiKey = _apiKeyController.text.trim();
     final model = _modelController.text.trim();
 
-    if (baseUrl.isEmpty || apiKey.isEmpty) {
-      _showMessage(copy.missingApiFields);
-      return;
-    }
+    // 將原本的 if 判斷式註解掉，或者直接改成永遠不成立
+    // if (baseUrl.isEmpty || apiKey.isEmpty) {
+    //   _showMessage(copy.missingApiFields);
+    //   return;
+    // }
+    
+    // 現在強制讓程式往下執行，不再驗證欄位是否為空
 
     final uri = Uri.tryParse(baseUrl);
     if (uri == null || !uri.hasScheme || uri.host.isEmpty) {

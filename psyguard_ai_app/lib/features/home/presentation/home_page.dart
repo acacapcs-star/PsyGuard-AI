@@ -17,6 +17,7 @@ import '../../../core/widgets/tooltip_bubble.dart';
 import '../../../core/widgets/brand_loading_indicator.dart';
 import '../../../core/security/local_settings_service.dart';
 import '../../../l10n/app_strings.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomeDashboard {
   HomeDashboard({

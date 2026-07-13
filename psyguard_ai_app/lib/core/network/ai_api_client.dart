@@ -187,7 +187,7 @@ class OpenAiCompatibleClient implements AiApiClient {
     }
 
     return _dio.post<Map<String, dynamic>>(
-      '/v1/chat/completions',
+      '/chat/completions',
       data: {
         'model': model,
         'temperature': temperature,

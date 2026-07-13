@@ -4,7 +4,55 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
 enum NoteItemType { text, bullet, checkbox }
-enum NotePriority { red, yellow, green }
+
+enum NotePriority {
+  // 紅系 (緊急) — 淺到深
+  red1, red2, red3, red4, red5,
+  // 黃系 (重要) — 淺到深
+  yellow1, yellow2, yellow3, yellow4, yellow5,
+  // 綠系 (一般) — 淺到深
+  green1, green2, green3, green4, green5,
+}
+
+Color priorityColor(NotePriority p) {
+  switch (p) {
+    case NotePriority.red1:    return const Color(0xFFFFCDD2);
+    case NotePriority.red2:    return const Color(0xFFEF9A9A);
+    case NotePriority.red3:    return const Color(0xFFEF5350);
+    case NotePriority.red4:    return const Color(0xFFC62828);
+    case NotePriority.red5:    return const Color(0xFF7B2B2B);
+    case NotePriority.yellow1: return const Color(0xFFFFF9C4);
+    case NotePriority.yellow2: return const Color(0xFFFFEE58);
+    case NotePriority.yellow3: return const Color(0xFFFFCA28);
+    case NotePriority.yellow4: return const Color(0xFFF57F17);
+    case NotePriority.yellow5: return const Color(0xFF7B5800);
+    case NotePriority.green1:  return const Color(0xFFC8E6C9);
+    case NotePriority.green2:  return const Color(0xFF81C784);
+    case NotePriority.green3:  return const Color(0xFF66BB6A);
+    case NotePriority.green4:  return const Color(0xFF2E7D32);
+    case NotePriority.green5:  return const Color(0xFF1B4B1B);
+  }
+}
+
+String priorityLabel(NotePriority p) {
+  switch (p) {
+    case NotePriority.red1:    return '🔴 緊急 1';
+    case NotePriority.red2:    return '🔴 緊急 2';
+    case NotePriority.red3:    return '🔴 緊急 3';
+    case NotePriority.red4:    return '🔴 緊急 4';
+    case NotePriority.red5:    return '🔴 緊急 5';
+    case NotePriority.yellow1: return '🟡 重要 1';
+    case NotePriority.yellow2: return '🟡 重要 2';
+    case NotePriority.yellow3: return '🟡 重要 3';
+    case NotePriority.yellow4: return '🟡 重要 4';
+    case NotePriority.yellow5: return '🟡 重要 5';
+    case NotePriority.green1:  return '🟢 一般 1';
+    case NotePriority.green2:  return '🟢 一般 2';
+    case NotePriority.green3:  return '🟢 一般 3';
+    case NotePriority.green4:  return '🟢 一般 4';
+    case NotePriority.green5:  return '🟢 一般 5';
+  }
+}
 
 class NoteItem {
   String text;
@@ -16,7 +64,7 @@ class NoteItem {
     required this.text,
     this.type = NoteItemType.text,
     this.checked = false,
-    this.priority = NotePriority.green,
+    this.priority = NotePriority.green3,
   });
 
   Map<String, dynamic> toJson() => {
@@ -30,7 +78,7 @@ class NoteItem {
     text: j['text'] ?? '',
     type: NoteItemType.values[j['type'] ?? 0],
     checked: j['checked'] ?? false,
-    priority: NotePriority.values[j['priority'] ?? 2],
+    priority: NotePriority.values[j['priority'] ?? 12],
   );
 }
 
@@ -108,27 +156,25 @@ class _NotePageState extends State<NotePage> {
     }
   }
 
-  // 新增功能：一鍵清空（橡皮擦演算法）
   Future<void> _clearAllNotes() async {
     if (_items.isEmpty) return;
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('📝 清空今日筆記？', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-        content: const Text('確定要清除這一天所有的待辦事項與筆記嗎？此動作無法復原喔。'),
+        title: const Text('📝 Clear all notes?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        content: const Text('This will delete all notes for this day. This cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('取消', style: TextStyle(color: Colors.grey)),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('確定清空', style: TextStyle(color: Color(0xFFEF5350), fontWeight: FontWeight.bold)),
+            child: const Text('Clear All', style: TextStyle(color: Color(0xFFEF5350), fontWeight: FontWeight.bold)),
           ),
         ],
       ),
     );
-
     if (confirm == true) {
       setState(() => _items = []);
       final prefs = await SharedPreferences.getInstance();
@@ -136,7 +182,6 @@ class _NotePageState extends State<NotePage> {
     }
   }
 
-  // 新增功能：彈出精美使用指南
   void _showGuideDialog() {
     showDialog(
       context: context,
@@ -145,7 +190,7 @@ class _NotePageState extends State<NotePage> {
         title: Row(
           children: [
             const Text('💡 ', style: TextStyle(fontSize: 20)),
-            Text('PsyGuard 筆記指南', style: GoogleFonts.playfairDisplay(
+            Text('Note Guide', style: GoogleFonts.playfairDisplay(
               fontWeight: FontWeight.bold, color: const Color(0xFF2C5282), fontSize: 18
             )),
           ],
@@ -154,17 +199,17 @@ class _NotePageState extends State<NotePage> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const _GuideRow(icon: '•', text: '【列點模式】適合記錄零碎靈感或重點。'),
-            const _GuideRow(icon: '☑', text: '【待辦清單】點擊左側方框可打勾，會全自動畫上刪除線。'),
-            const _GuideRow(icon: '🟢', text: '【輕重緩急】點擊右側圓點可循環切換 紅(緊急) ➔ 黃(重要) ➔ 綠(一般) 顏色標記。'),
-            const _GuideRow(icon: '↕', text: '【長按拖拽】在列表任意處長按，即可上下拖動調整事情順序。'),
-            const _GuideRow(icon: '🤖', text: '【AI 連動】此頁面寫下的所有筆記，都會全自動同步為 AI 聊天室的背景知識，Lumi 會主動關心妳的紅色緊急任務喔！'),
+            const _GuideRow(icon: '•', text: '[Bullet] Great for quick ideas and key points.'),
+            const _GuideRow(icon: '☑', text: '[Todo] Tap the checkbox to mark done.'),
+            const _GuideRow(icon: '🟢', text: '[Priority] Tap dot to cycle 15 levels. Long press to pick directly.'),
+            const _GuideRow(icon: '↕', text: '[Reorder] Long press any item to drag and reorder.'),
+            const _GuideRow(icon: '🤖', text: '[AI Sync] All notes sync to AI chat. Luna will check in on your urgent red tasks!'),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('我知道了 0_0/', style: TextStyle(color: Color(0xFF0ABFBC), fontWeight: FontWeight.bold)),
+            child: const Text('Got it 0_0/', style: TextStyle(color: Color(0xFF0ABFBC), fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -184,17 +229,66 @@ class _NotePageState extends State<NotePage> {
   void _cyclePriority(int index) {
     setState(() {
       final current = _items[index].priority.index;
-      _items[index].priority = NotePriority.values[(current + 1) % 3];
+      _items[index].priority = NotePriority.values[(current + 1) % 15];
     });
     _saveNotes();
   }
 
-  Color _priorityColor(NotePriority p) {
-    switch (p) {
-      case NotePriority.red: return const Color(0xFFEF5350);
-      case NotePriority.yellow: return const Color(0xFFFFCA28);
-      case NotePriority.green: return const Color(0xFF66BB6A);
-    }
+  // 長按直接選等級
+  void _showPriorityPicker(int index) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Choose Priority Level', style: GoogleFonts.playfairDisplay(
+              fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFF2C5282),
+            )),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: NotePriority.values.map((p) {
+                final selected = _items[index].priority == p;
+                return GestureDetector(
+                  onTap: () {
+                    setState(() => _items[index].priority = p);
+                    _saveNotes();
+                    Navigator.pop(ctx);
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: priorityColor(p).withOpacity(selected ? 1.0 : 0.2),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: priorityColor(p),
+                        width: selected ? 2 : 1,
+                      ),
+                    ),
+                    child: Text(
+                      priorityLabel(p),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                        color: selected ? Colors.white : priorityColor(p),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -211,20 +305,18 @@ class _NotePageState extends State<NotePage> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('今日筆記', style: GoogleFonts.playfairDisplay(
+            Text("Today's Diary \0_0/", style: GoogleFonts.playfairDisplay(
               fontSize: 20, fontStyle: FontStyle.italic,
               color: const Color(0xFF2C5282),
             )),
-            Text('支援即時連動 AI 對話', style: const TextStyle(fontSize: 10, color: Color(0xFF0ABFBC))),
+            Text('Syncs with AI chat in real time', style: const TextStyle(fontSize: 10, color: Color(0xFF0ABFBC))),
           ],
         ),
         actions: [
-          // 指南按鈕
           IconButton(
             icon: const Icon(Icons.lightbulb_outline_rounded, color: Color(0xFF0ABFBC)),
             onPressed: _showGuideDialog,
           ),
-          // 橡皮擦清空按鈕
           IconButton(
             icon: const Icon(Icons.cleaning_services_rounded, color: Color(0xFFEF5350), size: 20),
             onPressed: _clearAllNotes,
@@ -251,7 +343,7 @@ class _NotePageState extends State<NotePage> {
                       const Icon(Icons.calendar_month_rounded, size: 16, color: Color(0xFF2C5282)),
                       const SizedBox(width: 6),
                       Text(_dateLabel, style: const TextStyle(
-                        fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF2D3748)
+                        fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF2D3748)
                       )),
                     ],
                   ),
@@ -268,11 +360,11 @@ class _NotePageState extends State<NotePage> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
               children: [
-                _QuickButton(label: '• 列點', onTap: () => _addItem(NoteItemType.bullet)),
+                _QuickButton(label: '• Bullet', onTap: () => _addItem(NoteItemType.bullet)),
                 const SizedBox(width: 8),
-                _QuickButton(label: '☑ 待辦', onTap: () => _addItem(NoteItemType.checkbox)),
+                _QuickButton(label: '☑ Todo', onTap: () => _addItem(NoteItemType.checkbox)),
                 const SizedBox(width: 8),
-                _QuickButton(label: '✏ 文字', onTap: () => _addItem(NoteItemType.text)),
+                _QuickButton(label: '✏ Text', onTap: () => _addItem(NoteItemType.text)),
               ],
             ),
           ),
@@ -285,7 +377,7 @@ class _NotePageState extends State<NotePage> {
                       children: [
                         const Text('📝', style: TextStyle(fontSize: 48)),
                         const SizedBox(height: 12),
-                        Text('這天還沒有筆記',
+                        Text('No notes for this day',
                           style: TextStyle(color: Colors.grey.shade400, fontSize: 14)),
                       ],
                     ),
@@ -306,7 +398,7 @@ class _NotePageState extends State<NotePage> {
                       return _NoteItemWidget(
                         key: ValueKey('${_dateKey}_$i'),
                         item: item,
-                        priorityColor: _priorityColor(item.priority),
+                        priorityColor: priorityColor(item.priority),
                         onTextChange: (v) {
                           item.text = v;
                           _saveNotes();
@@ -316,6 +408,7 @@ class _NotePageState extends State<NotePage> {
                           _saveNotes();
                         },
                         onPriorityCycle: () => _cyclePriority(i),
+                        onPriorityLongPress: () => _showPriorityPicker(i),
                         onDelete: () => _deleteItem(i),
                       );
                     },
@@ -376,6 +469,7 @@ class _NoteItemWidget extends StatefulWidget {
   final ValueChanged<String> onTextChange;
   final VoidCallback onCheckToggle;
   final VoidCallback onPriorityCycle;
+  final VoidCallback onPriorityLongPress;
   final VoidCallback onDelete;
 
   const _NoteItemWidget({
@@ -385,6 +479,7 @@ class _NoteItemWidget extends StatefulWidget {
     required this.onTextChange,
     required this.onCheckToggle,
     required this.onPriorityCycle,
+    required this.onPriorityLongPress,
     required this.onDelete,
   });
 
@@ -447,12 +542,12 @@ class _NoteItemWidgetState extends State<_NoteItemWidget> {
               controller: _ctrl,
               decoration: const InputDecoration(
                 border: InputBorder.none,
-                hintText: '輸入內容...',
+                hintText: 'Write something...',
                 isDense: true,
                 contentPadding: EdgeInsets.zero,
               ),
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 16,
                 decoration: widget.item.checked ? TextDecoration.lineThrough : null,
                 color: widget.item.checked ? Colors.grey.shade400 : const Color(0xFF2D3748),
               ),
@@ -462,9 +557,10 @@ class _NoteItemWidgetState extends State<_NoteItemWidget> {
           ),
           GestureDetector(
             onTap: widget.onPriorityCycle,
+            onLongPress: widget.onPriorityLongPress,
             child: Container(
-              width: 14,
-              height: 14,
+              width: 18,
+              height: 18,
               decoration: BoxDecoration(
                 color: widget.priorityColor,
                 shape: BoxShape.circle,

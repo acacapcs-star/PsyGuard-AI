@@ -257,7 +257,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: const [
                               Text(
-                                '開啟獨立今日筆記本',
+                                'Open Today Diary',
                                 style: TextStyle(
                                   fontSize: 14, 
                                   fontWeight: FontWeight.bold, 
@@ -266,7 +266,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
                               ),
                               SizedBox(height: 2),
                               Text(
-                                '支援待辦勾選、列點與輕重緩急顏色標記',
+                                'Bullet, todo, and 15-level priority tags',
                                 style: TextStyle(fontSize: 11, color: Colors.grey),
                               ),
                             ],
