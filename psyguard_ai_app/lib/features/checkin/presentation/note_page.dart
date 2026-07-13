@@ -98,8 +98,8 @@ class _NotePageState extends State<NotePage> {
   }
 
   String get _dateLabel {
-    const months = ['一','二','三','四','五','六','七','八','九','十','十一','十二'];
-    return '${_selectedDate.year} 年 ${months[_selectedDate.month-1]} 月 ${_selectedDate.day} 日';
+    //
+    return '${_selectedDate.year} 年 ${_selectedDate.month} 月 ${_selectedDate.day} 日';
   }
 
   @override

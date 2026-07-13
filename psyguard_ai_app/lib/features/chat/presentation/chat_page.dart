@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter/material.dart';
 import '../../ers/incongruence_detector.dart';
@@ -421,12 +422,34 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         contextSummary: contextSummary,
       );
 
+      // 過濾固定開場白
+      String filteredReply = reply.content;
+      final bannedPhrases = [
+        '謝謝你願意說出來',
+        '謝謝你說出來',
+        '這很不容易',
+        '聽起來你',
+        'Thank you for sharing',
+        'Thank you for telling me',
+        "It sounds like you're",
+        'I can hear that',
+      ];
+      for (final phrase in bannedPhrases) {
+        if (filteredReply.startsWith(phrase) || filteredReply.startsWith('，') || filteredReply.contains(phrase + '，')) {
+          filteredReply = filteredReply.replaceFirst(RegExp(phrase + r'[，,。\.\s]*'), '');
+          if (filteredReply.isNotEmpty) {
+            filteredReply = filteredReply[0].toUpperCase() + filteredReply.substring(1);
+          }
+        }
+      }
+
       await db.insertChatMessage(
         sessionId: sessionId,
         role: 'ai',
-        content: reply.content,
+        content: filteredReply,
       );
       _scrollToBottom();
+      _autoSaveToNote(content, reply.content);
       if (mounted && reply.warningMessage != null) {
         ScaffoldMessenger.of(
           context,
@@ -864,4 +887,38 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   String _speechLocaleFor(AppLanguage language) {
     return language == AppLanguage.zhTw ? 'zh_TW' : 'en_US';
   }
+
+  Future<void> _autoSaveToNote(String userText, String aiReply) async {
+    final now = DateTime.now();
+    DateTime targetDate = now;
+    final combined = userText.toLowerCase();
+    if (combined.contains('明天') || combined.contains('tomorrow') || combined.contains('tmr') || combined.contains('tom') || combined.contains('2moro') || combined.contains('2mrw')) {
+      targetDate = now.add(const Duration(days: 1));
+    } else if (combined.contains('後天') || combined.contains('day after tomorrow') || combined.contains('dat')) {
+      targetDate = now.add(const Duration(days: 2));
+    } else if (combined.contains('下週') || combined.contains('下周') || combined.contains('next week') || combined.contains('nxt wk') || combined.contains('next wk')) {
+      targetDate = now.add(const Duration(days: 7));
+    } else {
+      final dateRegex = RegExp(r'(\d{1,2})[/月](\d{1,2})');
+      final match = dateRegex.firstMatch(combined);
+      if (match != null) {
+        final month = int.tryParse(match.group(1) ?? '') ?? now.month;
+        final day = int.tryParse(match.group(2) ?? '') ?? now.day;
+        targetDate = DateTime(now.year, month, day);
+      } else {
+        return;
+      }
+    }
+    final prefs = await SharedPreferences.getInstance();
+    final key = 'note_${targetDate.year}_${targetDate.month}_${targetDate.day}';
+    final raw = prefs.getString(key);
+    final List items = raw != null ? (jsonDecode(raw) as List) : [];
+    if (items.isNotEmpty) {
+      items.add({'text': '── 來自 Luna 對話 ──', 'type': 0, 'checked': false, 'priority': 12});
+    }
+    final summary = userText.length > 60 ? userText.substring(0, 60) + '...' : userText;
+    items.add({'text': '📌 ' + summary, 'type': 1, 'checked': false, 'priority': 2});
+    await prefs.setString(key, jsonEncode(items));
+  }
+
 }

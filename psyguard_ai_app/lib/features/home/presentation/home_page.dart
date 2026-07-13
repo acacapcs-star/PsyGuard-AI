@@ -376,42 +376,62 @@ class _HomeContentState extends State<_HomeContent> {
           ),
         ),
         const SizedBox(height: 32),
-
-        // ── Status Card ──────────────────────────────────────────────
-        Container(
-          padding: const EdgeInsets.all(24),
-          decoration: LumiTheme.softCard,
-          child: Row(
+        // ── Status Card + Sticky Note (PageView) ─────────────────────────
+        SizedBox(
+          height: 140,
+          child: PageView(
+            physics: const BouncingScrollPhysics(),
             children: [
               Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: riskColor.withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(_statusIcon, color: riskColor, size: 30),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                padding: const EdgeInsets.all(24),
+                decoration: LumiTheme.softCard,
+                child: Row(
                   children: [
-                    Text(
-                      riskLabel,
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: LumiTheme.textPrimary,
+                    Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: riskColor.withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(_statusIcon, color: riskColor, size: 30),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            riskLabel,
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: LumiTheme.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(copy.todayStatus, style: theme.textTheme.bodyMedium),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(copy.todayStatus, style: theme.textTheme.bodyMedium),
                   ],
                 ),
+              ),
+              StickyNotePage(
+                color: const Color(0xFFFFE4EC),
+                borderColor: const Color(0xFFFFB3C6),
+                hintText: 'Jot anything down... 🌸',
+                storageKey: 'sticky_pink',
+              ),
+              StickyNotePage(
+                color: const Color(0xFFE4F9F0),
+                borderColor: const Color(0xFF9FDEBD),
+                hintText: 'Key priorities today... 🌿',
+                storageKey: 'sticky_mint',
               ),
             ],
           ),
         ),
+        const SizedBox(height: 32),
         const SizedBox(height: 32),
 
         if (_isHighRisk) ...[
@@ -682,6 +702,89 @@ class _InteractiveCardState extends State<_InteractiveCard>
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class StickyNotePage extends StatefulWidget {
+  final Color color;
+  final Color borderColor;
+  final String hintText;
+  final String storageKey;
+  const StickyNotePage({
+    required this.color,
+    required this.borderColor,
+    required this.hintText,
+    required this.storageKey,
+  });
+  @override
+  State<StickyNotePage> createState() => StickyNotePageState();
+}
+
+class StickyNotePageState extends State<StickyNotePage> {
+  late TextEditingController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = TextEditingController();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final prefs = await SharedPreferences.getInstance();
+    final val = prefs.getString(widget.storageKey) ?? '';
+    if (mounted) setState(() => _ctrl.text = val);
+  }
+
+  Future<void> _save(String val) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(widget.storageKey, val);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: widget.color,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: widget.borderColor, width: 1.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(width: 3, height: 14, color: widget.borderColor),
+              const SizedBox(width: 6),
+              Text('✏️', style: TextStyle(fontSize: 12, color: widget.borderColor)),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Expanded(
+            child: TextField(
+              controller: _ctrl,
+              maxLines: null,
+              style: const TextStyle(fontSize: 13, height: 1.6),
+              decoration: InputDecoration(
+                border: InputBorder.none,
+                hintText: widget.hintText,
+                hintStyle: TextStyle(color: widget.borderColor.withOpacity(0.6), fontSize: 13),
+                isDense: true,
+                contentPadding: EdgeInsets.zero,
+              ),
+              onChanged: _save,
+            ),
+          ),
+        ],
       ),
     );
   }
