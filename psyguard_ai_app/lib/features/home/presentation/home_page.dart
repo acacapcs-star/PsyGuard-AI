@@ -376,62 +376,14 @@ class _HomeContentState extends State<_HomeContent> {
           ),
         ),
         const SizedBox(height: 32),
-        // ── Status Card + Sticky Note (PageView) ─────────────────────────
-        SizedBox(
-          height: 140,
-          child: PageView(
-            physics: const BouncingScrollPhysics(),
-            children: [
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: LumiTheme.softCard,
-                child: Row(
-                  children: [
-                    Container(
-                      width: 56,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        color: riskColor.withValues(alpha: 0.15),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(_statusIcon, color: riskColor, size: 30),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            riskLabel,
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: LumiTheme.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(copy.todayStatus, style: theme.textTheme.bodyMedium),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              StickyNotePage(
-                color: const Color(0xFFFFE4EC),
-                borderColor: const Color(0xFFFFB3C6),
-                hintText: 'Jot anything down... 🌸',
-                storageKey: 'sticky_pink',
-              ),
-              StickyNotePage(
-                color: const Color(0xFFE4F9F0),
-                borderColor: const Color(0xFF9FDEBD),
-                hintText: 'Key priorities today... 🌿',
-                storageKey: 'sticky_mint',
-              ),
-            ],
-          ),
+        // ── Status Card + Sticky Note + Pet (PageView with arrows) ─────
+        _SwipeableCards(
+          riskColor: riskColor,
+          riskLabel: riskLabel,
+          todayStatus: copy.todayStatus,
+          statusIcon: _statusIcon,
+          theme: theme,
         ),
-        const SizedBox(height: 32),
         const SizedBox(height: 32),
 
         if (_isHighRisk) ...[
@@ -786,6 +738,199 @@ class StickyNotePageState extends State<StickyNotePage> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _SwipeableCards extends StatefulWidget {
+  final Color riskColor;
+  final String riskLabel;
+  final String todayStatus;
+  final IconData statusIcon;
+  final ThemeData theme;
+
+  const _SwipeableCards({
+    required this.riskColor,
+    required this.riskLabel,
+    required this.todayStatus,
+    required this.statusIcon,
+    required this.theme,
+  });
+
+  @override
+  State<_SwipeableCards> createState() => _SwipeableCardsState();
+}
+
+class _SwipeableCardsState extends State<_SwipeableCards> {
+  final PageController _ctrl = PageController();
+  int _page = 0;
+  String _petName = '';
+  String _petType = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPet();
+  }
+
+  Future<void> _loadPet() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _petName = prefs.getString('pet_name') ?? 'Lumi';
+      _petType = prefs.getString('pet_type') ?? 'otter';
+    });
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final pages = 4;
+    return Column(
+      children: [
+        SizedBox(
+          height: 160,
+          child: PageView(
+            controller: _ctrl,
+            onPageChanged: (i) => setState(() => _page = i),
+            children: [
+              // 頁1：狀態卡片
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: LumiTheme.softCard,
+                child: Row(
+                  children: [
+                    Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: widget.riskColor.withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(widget.statusIcon, color: widget.riskColor, size: 30),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(widget.riskLabel,
+                            style: widget.theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: LumiTheme.textPrimary,
+                            )),
+                          const SizedBox(height: 4),
+                          Text(widget.todayStatus, style: widget.theme.textTheme.bodyMedium),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // 頁2：寵物卡片
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF0F8FF),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFBDD7EE), width: 1.5),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Image.asset(
+                      'assets/images/${_petType}_happy.png',
+                      width: 80,
+                      height: 80,
+                      errorBuilder: (_, __, ___) => Text(
+                        _petType == 'otter' ? '🦦' : '🐹',
+                        style: const TextStyle(fontSize: 60),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(_petName,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF2C5282),
+                          )),
+                        const SizedBox(height: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF0ABFBC).withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            _petType == 'otter' ? '🦦 水獺' : '🐹 豚鼠',
+                            style: const TextStyle(fontSize: 12, color: Color(0xFF0ABFBC)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              // 頁3：桃紅便條紙
+              StickyNotePage(
+                color: const Color(0xFFFFE4EC),
+                borderColor: const Color(0xFFFFB3C6),
+                hintText: 'Jot anything down... 🌸',
+                storageKey: 'sticky_pink',
+              ),
+              // 頁4：薄荷綠便條紙
+              StickyNotePage(
+                color: const Color(0xFFE4F9F0),
+                borderColor: const Color(0xFF9FDEBD),
+                hintText: 'Key priorities today... 🌿',
+                storageKey: 'sticky_mint',
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        // 頁面指示點 + 箭頭
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.arrow_back_ios_rounded, size: 16),
+              color: _page > 0 ? const Color(0xFF0ABFBC) : Colors.grey.shade300,
+              onPressed: _page > 0 ? () => _ctrl.previousPage(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+              ) : null,
+            ),
+            Row(
+              children: List.generate(pages, (i) => Container(
+                width: 6, height: 6,
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: i == _page ? const Color(0xFF0ABFBC) : Colors.grey.shade300,
+                ),
+              )),
+            ),
+            IconButton(
+              icon: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
+              color: _page < pages - 1 ? const Color(0xFF0ABFBC) : Colors.grey.shade300,
+              onPressed: _page < pages - 1 ? () => _ctrl.nextPage(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+              ) : null,
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
