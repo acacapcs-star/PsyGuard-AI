@@ -910,15 +910,35 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       }
     }
     final prefs = await SharedPreferences.getInstance();
-    final key = 'note_${targetDate.year}_${targetDate.month}_${targetDate.day}';
-    final raw = prefs.getString(key);
-    final List items = raw != null ? (jsonDecode(raw) as List) : [];
-    if (items.isNotEmpty) {
-      items.add({'text': '── 來自 Luna 對話 ──', 'type': 0, 'checked': false, 'priority': 12});
+    // 移除日期關鍵字，只保留事項本身
+    String cleanText = userText;
+    for (final word in ['明天', '後天', '下週', '下周', 'tomorrow', 'tmr', 'tom', 'next week', 'nxt wk', '2moro', '2mrw', 'day after tomorrow', 'dat']) {
+      cleanText = cleanText.replaceAll(word, '').trim();
     }
-    final summary = userText.length > 60 ? userText.substring(0, 60) + '...' : userText;
-    items.add({'text': '📌 ' + summary, 'type': 1, 'checked': false, 'priority': 2});
-    await prefs.setString(key, jsonEncode(items));
+    cleanText = cleanText.replaceAll(RegExp(r'^[要去，,、\s]+'), '').trim();
+    if (cleanText.isEmpty) cleanText = userText;
+    final summary = cleanText.length > 60 ? cleanText.substring(0, 60) + '...' : cleanText;
+    final daysUntil = targetDate.difference(DateTime(now.year, now.month, now.day)).inDays;
+
+    // 存進目標日期的 diary
+    final targetKey = 'note_${targetDate.year}_${targetDate.month}_${targetDate.day}';
+    final targetRaw = prefs.getString(targetKey);
+    final List targetItems = targetRaw != null ? (jsonDecode(targetRaw) as List) : [];
+    if (targetItems.isNotEmpty) {
+      targetItems.add({'text': '── 來自 Luna 對話 ──', 'type': 0, 'checked': false, 'priority': 12});
+    }
+    targetItems.add({'text': '📌 ' + summary, 'type': 1, 'checked': false, 'priority': 2});
+    await prefs.setString(targetKey, jsonEncode(targetItems));
+
+    // 如果不是今天，也在今天存一條倒數提醒
+    if (daysUntil > 0) {
+      final todayKey = 'note_${now.year}_${now.month}_${now.day}';
+      final todayRaw = prefs.getString(todayKey);
+      final List todayItems = todayRaw != null ? (jsonDecode(todayRaw) as List) : [];
+      final countdown = daysUntil == 1 ? '明天' : '還有 ${daysUntil} 天';
+      todayItems.add({'text': '⏰ ${countdown}：${summary}', 'type': 1, 'checked': false, 'priority': 6});
+      await prefs.setString(todayKey, jsonEncode(todayItems));
+    }
   }
 
 }
