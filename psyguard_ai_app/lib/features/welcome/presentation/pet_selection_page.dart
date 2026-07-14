@@ -70,7 +70,8 @@ class _PetSelectionPageState extends State<PetSelectionPage> {
             ),
           ),
           SafeArea(
-            child: Column(
+            child: SingleChildScrollView(
+              child: Column(
               children: [
                 const SizedBox(height: 24),
                 Text('選一個夥伴陪你',
@@ -131,7 +132,7 @@ class _PetSelectionPageState extends State<PetSelectionPage> {
                     ],
                   ),
                 ),
-                const Spacer(),
+                const SizedBox(height: 20),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 40),
                   child: Column(
@@ -174,6 +175,7 @@ class _PetSelectionPageState extends State<PetSelectionPage> {
                   ),
                 ),
               ],
+            ),
             ),
           ),
         ],

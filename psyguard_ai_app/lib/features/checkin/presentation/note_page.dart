@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 enum NoteItemType { text, bullet, checkbox }
 
@@ -91,6 +92,7 @@ class NotePage extends StatefulWidget {
 
 class _NotePageState extends State<NotePage> {
   List<NoteItem> _items = [];
+  bool _isZh = true;
   DateTime _selectedDate = DateTime.now();
 
   String get _dateKey {
@@ -106,6 +108,13 @@ class _NotePageState extends State<NotePage> {
   void initState() {
     super.initState();
     _loadNotes();
+    _loadLanguage();
+  }
+
+  Future<void> _loadLanguage() async {
+    final prefs = await SharedPreferences.getInstance();
+    final lang = prefs.getString('app_language') ?? 'zh_TW';
+    setState(() => _isZh = lang != 'en');
   }
 
   Future<void> _loadNotes() async {
@@ -190,7 +199,7 @@ class _NotePageState extends State<NotePage> {
         title: Row(
           children: [
             const Text('💡 ', style: TextStyle(fontSize: 20)),
-            Text('Note Guide', style: GoogleFonts.playfairDisplay(
+            Text(_isZh ? 'PsyGuard 筆記指南' : 'Note Guide', style: GoogleFonts.playfairDisplay(
               fontWeight: FontWeight.bold, color: const Color(0xFF2C5282), fontSize: 18
             )),
           ],
@@ -209,7 +218,7 @@ class _NotePageState extends State<NotePage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Got it 0_0/', style: TextStyle(color: Color(0xFF0ABFBC), fontWeight: FontWeight.bold)),
+            child: Text(_isZh ? '我知道了 0_0/' : 'Got it 0_0/', style: TextStyle(color: Color(0xFF0ABFBC), fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -247,7 +256,7 @@ class _NotePageState extends State<NotePage> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Choose Priority Level', style: GoogleFonts.playfairDisplay(
+            Text(_isZh ? '選擇優先等級' : 'Choose Priority Level', style: GoogleFonts.playfairDisplay(
               fontSize: 16, fontWeight: FontWeight.bold, color: const Color(0xFF2C5282),
             )),
             const SizedBox(height: 12),
@@ -309,7 +318,7 @@ class _NotePageState extends State<NotePage> {
               fontSize: 20, fontStyle: FontStyle.italic,
               color: const Color(0xFF2C5282),
             )),
-            Text('Syncs with AI chat in real time', style: const TextStyle(fontSize: 10, color: Color(0xFF0ABFBC))),
+            Text(_isZh ? '支援即時連動 AI 對話' : 'Syncs with AI chat in real time', style: const TextStyle(fontSize: 10, color: Color(0xFF0ABFBC))),
           ],
         ),
         actions: [
@@ -360,11 +369,11 @@ class _NotePageState extends State<NotePage> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
               children: [
-                _QuickButton(label: '• Bullet', onTap: () => _addItem(NoteItemType.bullet)),
+                _QuickButton(label: _isZh ? '• 列點' : '• Bullet', onTap: () => _addItem(NoteItemType.bullet)),
                 const SizedBox(width: 8),
-                _QuickButton(label: '☑ Todo', onTap: () => _addItem(NoteItemType.checkbox)),
+                _QuickButton(label: _isZh ? '☑ 待辦' : '☑ Todo', onTap: () => _addItem(NoteItemType.checkbox)),
                 const SizedBox(width: 8),
-                _QuickButton(label: '✏ Text', onTap: () => _addItem(NoteItemType.text)),
+                _QuickButton(label: _isZh ? '✏ 文字' : '✏ Text', onTap: () => _addItem(NoteItemType.text)),
               ],
             ),
           ),
@@ -377,7 +386,7 @@ class _NotePageState extends State<NotePage> {
                       children: [
                         const Text('📝', style: TextStyle(fontSize: 48)),
                         const SizedBox(height: 12),
-                        Text('No notes for this day',
+                        Text(_isZh ? '這天還沒有筆記' : 'No notes for this day',
                           style: TextStyle(color: Colors.grey.shade400, fontSize: 14)),
                       ],
                     ),
@@ -540,9 +549,9 @@ class _NoteItemWidgetState extends State<_NoteItemWidget> {
           Expanded(
             child: TextField(
               controller: _ctrl,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 border: InputBorder.none,
-                hintText: 'Write something...',
+                hintText: '輸入內容...',
                 isDense: true,
                 contentPadding: EdgeInsets.zero,
               ),
