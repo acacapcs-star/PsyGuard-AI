@@ -725,6 +725,7 @@ class StickyNotePageState extends State<StickyNotePage> {
             child: TextField(
               controller: _ctrl,
               maxLines: null,
+                  onTap: () {},
               style: const TextStyle(fontSize: 13, height: 1.6),
               decoration: InputDecoration(
                 border: InputBorder.none,

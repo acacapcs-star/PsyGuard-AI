@@ -28,12 +28,26 @@ class _PenguinParkPageState extends State<PenguinParkPage>
 
   static const _skinLabels = ['原味', '二號', '三號', '四號', '五號'];
 
+  String _petEmoji() {
+    switch (_petType) {
+      case 'otter': return '🦦';
+      case 'capybara': return '🦫';
+      default: return '🐧';
+    }
+  }
+  String _bgImage() {
+  switch (_petType) {
+    case 'otter':    return 'assets/images/bg_otter.jpeg';
+    case 'capybara': return 'assets/images/bg_capybara.jpeg';
+    default:         return 'assets/images/bg_penguin.jpeg';
+  }
+}
   String _animalImage(String type, int skin) {
     final s = skin + 1;
     switch (type) {
-      case 'otter':    return 'assets/images/otter_s$s.jpeg';
-      case 'capybara': return 'assets/images/capy_s$s.jpeg';
-      default:         return 'assets/images/penguin_s$s.jpeg';
+      case 'otter':    return 'assets/images/otter_s$s.png';
+      case 'capybara': return 'assets/images/capy_s$s.png';
+      default:         return 'assets/images/penguin_s$s.png';
     }
   }
 
@@ -103,7 +117,7 @@ class _PenguinParkPageState extends State<PenguinParkPage>
       _jokeAnswerShown = true;
       _xp += 1;
       _message = JokeData.penguinLazyResponses[
-          _random.nextInt(JokeData.penguinLazyResponses.length)];
+          _random.nextInt(JokeData.penguinLazyResponses.length)].replaceAll("企鵝", _petType == "otter" ? "水獺" : _petType == "capybara" ? "卡皮巴拉" : "企鵝");
     });
     _saveXp();
   }
@@ -180,13 +194,12 @@ class _PenguinParkPageState extends State<PenguinParkPage>
   @override
   void dispose() {
     _bounceCtrl.dispose();
-    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D3B5E),
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -211,7 +224,14 @@ class _PenguinParkPageState extends State<PenguinParkPage>
           ),
         ],
       ),
-      body: SafeArea(
+      body: Container(
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage(_bgImage()),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: SafeArea(
         child: Column(
           children: [
             // ── 主角動物 ───────────────────────────────────────
@@ -237,8 +257,8 @@ class _PenguinParkPageState extends State<PenguinParkPage>
                             width: 200,
                             height: 200,
                             fit: BoxFit.contain,
-                            errorBuilder: (_, __, ___) => const Text(
-                                '🐧', style: TextStyle(fontSize: 100)),
+                            errorBuilder: (_, __, ___) => Text(
+                                _petEmoji(), style: const TextStyle(fontSize: 100)),
                           ),
                         ),
                       ),
@@ -278,8 +298,7 @@ class _PenguinParkPageState extends State<PenguinParkPage>
                 ),
                 child: Column(
                   children: [
-                    Text('🐧 ${_currentJoke!['q']}',
-                        style: const TextStyle(color: Colors.white, fontSize: 13),
+                    Text('${_petEmoji()} ${_currentJoke!['q']}',                        style: const TextStyle(color: Colors.white, fontSize: 13),
                         textAlign: TextAlign.center),
                     if (_jokeAnswerShown) ...[
                       const SizedBox(height: 6),
@@ -320,6 +339,7 @@ class _PenguinParkPageState extends State<PenguinParkPage>
           ],
         ),
       ),
+        ),
     );
   }
 }
