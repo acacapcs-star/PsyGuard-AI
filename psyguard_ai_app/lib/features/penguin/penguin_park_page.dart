@@ -14,7 +14,7 @@ class _PenguinParkPageState extends State<PenguinParkPage>
     with TickerProviderStateMixin {
   int _xp = 0;
   int _skin = 0;
-  String _petType = 'penguin';
+  String _petType = 'otter';
   String _petName = 'Lumi';
   bool _isZh = true;
   bool _showFish = false;
@@ -34,27 +34,27 @@ class _PenguinParkPageState extends State<PenguinParkPage>
     switch (_petType) {
       case 'otter': return '🦦';
       case 'capybara': return '🦫';
-      default: return '🐧';
+      default: return '🦦';
     }
   }
   String _shyImage() {
     switch (_petType) {
       case 'otter':    return 'assets/images/shy_otter.jpeg';
       case 'capybara': return 'assets/images/shy_capybara.jpeg';
-      default:         return 'assets/images/shy_penguin.jpeg';
+      default:         return 'assets/images/shy_otter.jpeg';
     }
   }
 
   String _shyTextZh() {
     switch (_petType) {
-      case 'penguin': return '人家快被你摸融化惹 >///<';
+      case 'otter': return '人家快被你摸融化惹 >///<';
       default:        return '哎呀>///<被摸摸，好害羞捏';
     }
   }
 
   String _shyTextEn() {
     switch (_petType) {
-      case 'penguin': return "I'm melting from your touch~ >///<";
+      case 'otter': return "I'm melting from your touch~ >///<";
       default:        return 'awww love it>///<';
     }
   }
@@ -63,7 +63,7 @@ class _PenguinParkPageState extends State<PenguinParkPage>
   switch (_petType) {
     case 'otter':    return 'assets/images/bg_otter.jpeg';
     case 'capybara': return 'assets/images/bg_capybara.jpeg';
-    default:         return 'assets/images/bg_penguin.jpeg';
+    default:         return 'assets/images/bg_otter.jpeg';
   }
 }
   String _animalImage(String type, int skin) {
@@ -71,7 +71,7 @@ class _PenguinParkPageState extends State<PenguinParkPage>
     switch (type) {
       case 'otter':    return 'assets/images/otter_s$s.png';
       case 'capybara': return 'assets/images/capy_s$s.png';
-      default:         return 'assets/images/penguin_s$s.png';
+      default:         return 'assets/images/otter_s$s.png';
     }
   }
 
@@ -92,7 +92,7 @@ class _PenguinParkPageState extends State<PenguinParkPage>
     setState(() {
       _xp      = prefs.getInt('lumi_xp')    ?? 0;
       _skin    = prefs.getInt('lumi_skin')   ?? 0;
-      _petType = prefs.getString('pet_type') ?? 'penguin';
+      _petType = prefs.getString('pet_type') ?? 'otter';
       _petName = prefs.getString('pet_name') ?? 'Lumi';
       _isZh    = lang != 'en';
       debugPrint('[LangDebug] 判斷結果 _isZh = $_isZh');
@@ -144,8 +144,14 @@ class _PenguinParkPageState extends State<PenguinParkPage>
     setState(() {
       _jokeAnswerShown = true;
       _xp += 1;
-      _message = JokeData.penguinLazyResponses[
-          _random.nextInt(JokeData.penguinLazyResponses.length)].replaceAll("企鵝", _petType == "otter" ? "水獺" : _petType == "capybara" ? "卡皮巴拉" : "企鵝");
+      final petLabelZh = _petType == "otter" ? "水獺" : _petType == "capybara" ? "卡皮巴拉" : "水獺";
+      final petLabelEn = _petType == "otter" ? "otter" : _petType == "capybara" ? "capybara" : "otter";
+      _message = JokeData.lazyResponse(
+        _random.nextInt(4),
+        isZh: _isZh,
+        petNameZh: petLabelZh,
+        petNameEn: petLabelEn,
+      );
     });
     _saveXp();
   }

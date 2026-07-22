@@ -23,26 +23,26 @@ class JokeData {
     {'q_zh': '在哪裡跌倒？', 'a_zh': '就在那裡哭', 'q_en': 'Where should you fall down?', 'a_en': 'Right where you can cry about it!'},
   ];
 
-  static const List<String> penguinLazyResponses = [
-    '企鵝嘆了口氣...🐧',
-    '企鵝：算了，直接給你看吧 -_-',
-    '企鵝搖搖頭，決定不評論你的懶惰',
-    '企鵝：懶得理你，但還是給你答案',
-  ];
+  static String lazyResponse(int index, {required bool isZh, required String petNameZh, required String petNameEn}) {
+    final listZh = ['$petNameZh嘆了口氣...🐧', '$petNameZh：算了，直接給你看吧 -_-', '$petNameZh搖搖頭，決定不評論你的懶惰', '$petNameZh：懶得理你，但還是給你答案'];
+    final listEn = ['The $petNameEn sighs...🐧', "$petNameEn: Fine, I'll just show you -_-", "The $petNameEn shakes its head, choosing not to comment on your laziness", "$petNameEn: Can't be bothered, but here's the answer anyway"];
+    final list = isZh ? listZh : listEn;
+    return list[index % list.length];
+  }
 
-  static const List<String> penguinCorrectResponses = [
-    '哇你好聰明！企鵝決定多給你一條魚🐟',
-    '答對了！企鵝開心地跳了一下🎉',
-    '企鵝對你點點頭，表示讚許👏',
-    '正確！企鵝：我就知道你可以的！',
-  ];
+  static String correctResponse(int index, {required bool isZh, required String petNameZh, required String petNameEn}) {
+    final listZh = ['哇你好聰明！$petNameZh決定多給你一條魚🐟', '答對了！$petNameZh開心地跳了一下🎉', '$petNameZh對你點點頭，表示讚許👏', '正確！$petNameZh：我就知道你可以的！'];
+    final listEn = ["Wow, you're so smart! The $petNameEn decides to give you an extra fish🐟", "Correct! The $petNameEn happily hops with joy🎉", "The $petNameEn nods at you approvingly👏", "Correct! $petNameEn: I knew you could do it!"];
+    final list = isZh ? listZh : listEn;
+    return list[index % list.length];
+  }
 
-  static const List<String> penguinWrongResponses = [
-    '嗯...企鵝看了你一眼，決定假裝沒看見😶',
-    '企鵝：？？？我看你是餓壞了',
-    '不對！但企鵝還是愛你的🐧',
-    '企鵝搖搖頭，輕輕嘆了口氣...',
-  ];
+  static String wrongResponse(int index, {required bool isZh, required String petNameZh, required String petNameEn}) {
+    final listZh = ['嗯...$petNameZh看了你一眼，決定假裝沒看見😶', '$petNameZh：？？？我看你是餓壞了', '不對！但$petNameZh還是愛你的🐧', '$petNameZh搖搖頭，輕輕嘆了口氣...'];
+    final listEn = ["Hmm... the $petNameEn glances at you and decides to pretend it didn't see that😶", "$petNameEn: ??? You must be really hungry", "Nope! But the $petNameEn still loves you🐧", "The $petNameEn shakes its head with a soft sigh..."];
+    final list = isZh ? listZh : listEn;
+    return list[index % list.length];
+  }
 
   static const List<String> inspirationalQuotes = [
     '幸福就像香水，灑給別人也一定會感染自己。',
