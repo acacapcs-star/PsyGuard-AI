@@ -7,6 +7,12 @@ class VoiceWakeService {
   bool _isListening = false;
   bool _isAvailable = false;
 
+  // 🔧 修正「重複 prompt」的問題：同一句話在講的過程中，
+  // onResult 會連續觸發好幾次「部分結果」，如果每次都判斷喚醒詞，
+  // 會導致 _respond() 被重複呼叫好幾次。這個旗標確保同一次聆聽，
+  // 喚醒詞只會真正觸發一次，直到重新開始聆聽才會重置。
+  bool _wakeWordTriggered = false;
+
   static const List<String> wakeWords = ['嘿在嗎', '嘿，在嗎', '在嗎', 'hey psyguard', 'hey lumi'];
 
   Future<void> initialize() async {
@@ -22,28 +28,32 @@ class VoiceWakeService {
   Future<void> startListening({
     required Function(String) onWakeWordDetected,
     required Function(String) onResult,
+    bool isZh = true,
   }) async {
     if (!_isAvailable) return;
     _isListening = true;
+    _wakeWordTriggered = false;
     await _speech.listen(
       onResult: (result) {
         final text = result.recognizedWords.toLowerCase();
         final hasWakeWord = wakeWords.any((w) => text.contains(w.toLowerCase()));
-        if (hasWakeWord) {
+        if (hasWakeWord && !_wakeWordTriggered) {
+          _wakeWordTriggered = true;
           onWakeWordDetected(text);
-          _respond();
-        } else if (result.finalResult) {
+          _respond(locale: isZh ? 'zh-TW' : 'en-US');
+        } else if (result.finalResult && !hasWakeWord) {
           onResult(text);
         }
       },
       listenFor: const Duration(seconds: 30),
       pauseFor: const Duration(seconds: 3),
-      localeId: 'zh_TW',
+      localeId: isZh ? 'zh_TW' : 'en_US',
     );
   }
 
   Future<void> stopListening() async {
     _isListening = false;
+    _wakeWordTriggered = false;
     await _speech.stop();
   }
 

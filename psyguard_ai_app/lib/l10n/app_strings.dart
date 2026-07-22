@@ -11,6 +11,8 @@ class AppStrings {
 
   String get appName => 'Lumi';
 
+  String get todayMentalStateAnalysis => isZhTw ? '今日心理狀態分析' : "Today's Mental State Analysis";
+
   String get welcomeTagline =>
       isZhTw ? '你的心理健康\n陪伴夥伴' : 'Your mental health\nsupport companion';
 

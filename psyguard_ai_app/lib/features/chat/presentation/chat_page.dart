@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter/material.dart';
@@ -54,10 +56,26 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   int _ttsSegmentStartOffset = 0;
   final ScrollController _scrollController = ScrollController();
 
+  // 🌬️ 靜陪：3 秒靜默後顯示呼吸動畫，8-12 秒隨機間隔
+  Timer? _idleTimer;
+  bool _showBreathing = false;
+
   @override
   void initState() {
     super.initState();
     // Voice features are lazy-loaded to prevent permissions crash on startup
+    _textController.addListener(_resetIdleTimer);
+    _resetIdleTimer();
+  }
+
+  void _resetIdleTimer() {
+    _idleTimer?.cancel();
+    if (_showBreathing && mounted) {
+      setState(() => _showBreathing = false);
+    }
+    _idleTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted) setState(() => _showBreathing = true);
+    });
   }
 
   Future<void> _ensureVoiceInitialized() async {
@@ -123,6 +141,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
   @override
   void dispose() {
+    _idleTimer?.cancel();
+    _textController.removeListener(_resetIdleTimer);
     _textController.dispose();
     _speech.stop();
     _tts.stop();
@@ -654,6 +674,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
               ),
             ),
           ),
+          if (_showBreathing) _buildBreathingIndicator(),
           _buildInputArea(context, copy),
         ],
       ),
@@ -880,6 +901,16 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     );
   }
 
+
+  Widget _buildBreathingIndicator() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Center(
+        child: _BreathingRing(),
+      ),
+    );
+  }
+
   String _ttsLanguageFor(AppLanguage language) {
     return language == AppLanguage.zhTw ? 'zh-TW' : 'en-US';
   }
@@ -889,15 +920,20 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   }
 
   Future<void> _autoSaveToNote(String userText, String aiReply) async {
+    debugPrint('[AutoNote] 開始處理，原始文字：$userText');
+    final isZh = ref.read(appLanguageControllerProvider) == AppLanguage.zhTw;
     final now = DateTime.now();
     DateTime targetDate = now;
     final combined = userText.toLowerCase();
     if (combined.contains('明天') || combined.contains('tomorrow') || combined.contains('tmr') || combined.contains('tom') || combined.contains('2moro') || combined.contains('2mrw')) {
       targetDate = now.add(const Duration(days: 1));
+      debugPrint('[AutoNote] 偵測到「明天」關鍵字');
     } else if (combined.contains('後天') || combined.contains('day after tomorrow') || combined.contains('dat')) {
       targetDate = now.add(const Duration(days: 2));
+      debugPrint('[AutoNote] 偵測到「後天」關鍵字');
     } else if (combined.contains('下週') || combined.contains('下周') || combined.contains('next week') || combined.contains('nxt wk') || combined.contains('next wk')) {
       targetDate = now.add(const Duration(days: 7));
+      debugPrint('[AutoNote] 偵測到「下週」關鍵字');
     } else {
       final dateRegex = RegExp(r'(\d{1,2})[/月](\d{1,2})');
       final match = dateRegex.firstMatch(combined);
@@ -905,10 +941,13 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         final month = int.tryParse(match.group(1) ?? '') ?? now.month;
         final day = int.tryParse(match.group(2) ?? '') ?? now.day;
         targetDate = DateTime(now.year, month, day);
+        debugPrint('[AutoNote] 偵測到日期格式：$month/$day');
       } else {
+        debugPrint('[AutoNote] ⚠️ 沒有偵測到任何日期關鍵字，中止寫入 Note');
         return;
       }
     }
+    debugPrint('[AutoNote] 目標日期：$targetDate，即將寫入 key：note_${targetDate.year}_${targetDate.month}_${targetDate.day}');
     final prefs = await SharedPreferences.getInstance();
     // 移除日期關鍵字，只保留事項本身
     String cleanText = userText;
@@ -925,9 +964,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     final targetRaw = prefs.getString(targetKey);
     final List targetItems = targetRaw != null ? (jsonDecode(targetRaw) as List) : [];
     if (targetItems.isNotEmpty) {
-      targetItems.add({'text': '── 來自 Luna 對話 ──', 'type': 0, 'checked': false, 'priority': 12});
+      targetItems.add({'text': isZh ? '── 來自 Luna 對話 ──' : '── From chat with Luna ──', 'type': 0, 'checked': false, 'priority': 12});
     }
-    targetItems.add({'text': '📌 ' + summary, 'type': 1, 'checked': false, 'priority': 2});
+    targetItems.add({'text': '📌 ' + summary, 'type': 2, 'checked': false, 'priority': 2});
     await prefs.setString(targetKey, jsonEncode(targetItems));
 
     // 如果不是今天，也在今天存一條倒數提醒
@@ -935,10 +974,75 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       final todayKey = 'note_${now.year}_${now.month}_${now.day}';
       final todayRaw = prefs.getString(todayKey);
       final List todayItems = todayRaw != null ? (jsonDecode(todayRaw) as List) : [];
-      final countdown = daysUntil == 1 ? '明天' : '還有 ${daysUntil} 天';
-      todayItems.add({'text': '⏰ ${countdown}：${summary}', 'type': 1, 'checked': false, 'priority': 6});
+      final countdown = isZh
+          ? (daysUntil == 1 ? '明天' : '還有 ${daysUntil} 天')
+          : (daysUntil == 1 ? 'Tomorrow' : 'In ${daysUntil} days');
+      todayItems.add({'text': '⏰ ${countdown}：${summary}', 'type': 2, 'checked': false, 'priority': 6});
       await prefs.setString(todayKey, jsonEncode(todayItems));
     }
   }
 
+}
+
+
+class _BreathingRing extends StatefulWidget {
+  @override
+  State<_BreathingRing> createState() => _BreathingRingState();
+}
+
+class _BreathingRingState extends State<_BreathingRing>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnim;
+  final _random = Random();
+
+  Duration _randomHalfCycle() {
+    final seconds = 4 + _random.nextInt(3);
+    return Duration(seconds: seconds);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: _randomHalfCycle());
+    _scaleAnim = Tween<double>(begin: 0.82, end: 1.18).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+    _controller.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        _controller.duration = _randomHalfCycle();
+        _controller.reverse();
+      } else if (status == AnimationStatus.dismissed) {
+        _controller.duration = _randomHalfCycle();
+        _controller.forward();
+      }
+    });
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: _scaleAnim,
+      child: Container(
+        width: 56,
+        height: 56,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(
+            colors: [
+              LumiTheme.primary.withValues(alpha: 0.32),
+              LumiTheme.primary.withValues(alpha: 0.04),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

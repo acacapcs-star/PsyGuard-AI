@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../l10n/app_language.dart';
+import '../../core/security/local_settings_service.dart';
 import 'ers_models.dart';
 
-class ERSPercentileWidget extends StatelessWidget {
+class ERSPercentileWidget extends ConsumerWidget {
   final ERSResult ersResult;
   final String ageGroup;
 
@@ -18,7 +21,8 @@ class ERSPercentileWidget extends StatelessWidget {
   };
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isZh = ref.watch(appLanguageControllerProvider) == AppLanguage.zhTw;
     final score = ersResult.adjustedERS;
     final percentile = _calculatePercentile(score);
 
@@ -47,7 +51,17 @@ class ERSPercentileWidget extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  ersResult.riskLabel,
+                  isZh
+                      ? switch (ersResult.riskLevel) {
+                          'red' => '⚠️ 需要關注',
+                          'yellow' => '🔔 請多留意',
+                          _ => '✅ 狀態良好',
+                        }
+                      : switch (ersResult.riskLevel) {
+                          'red' => '⚠️ Needs Attention',
+                          'yellow' => '🔔 Keep an Eye On This',
+                          _ => '✅ Doing Well',
+                        },
                   style: TextStyle(
                     color: _riskColor,
                     fontWeight: FontWeight.bold,
@@ -78,17 +92,19 @@ class ERSPercentileWidget extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            '你的心理負荷感高於$ageGroup同齡者的 $percentile%',
+            isZh
+                ? '你的心理負荷感高於$ageGroup同齡者的 $percentile%'
+                : 'Your mental load is higher than $percentile% of your $ageGroup peers',
             style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
           ),
           const SizedBox(height: 16),
           Row(
             children: [
-              _StreamBadge('語言', ersResult.streamScores['language'] ?? 0),
+              _StreamBadge(isZh ? '語言' : 'Language', ersResult.streamScores['language'] ?? 0),
               const SizedBox(width: 8),
-              _StreamBadge('生理', ersResult.streamScores['physical'] ?? 0),
+              _StreamBadge(isZh ? '生理' : 'Physical', ersResult.streamScores['physical'] ?? 0),
               const SizedBox(width: 8),
-              _StreamBadge('行為', ersResult.streamScores['behavior'] ?? 0),
+              _StreamBadge(isZh ? '行為' : 'Behavior', ersResult.streamScores['behavior'] ?? 0),
             ],
           ),
         ],

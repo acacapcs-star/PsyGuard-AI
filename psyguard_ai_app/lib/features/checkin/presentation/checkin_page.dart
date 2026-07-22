@@ -120,9 +120,9 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('今日心理狀態分析', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              Text(copy.todayMentalStateAnalysis, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
-              ERSPercentileWidget(ersResult: ersResult, ageGroup: '高中'),
+              ERSPercentileWidget(ersResult: ersResult, ageGroup: copy.isZhTw ? '高中' : 'high school'),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () {
@@ -186,8 +186,8 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
             value: _stress,
             icon: _stressEmoji(_stress.round()),
             color: const Color(0xFFF5576C),
-            minAssistiveLabel: copy.veryBad,
-            maxAssistiveLabel: copy.veryGood,
+            minAssistiveLabel: copy.veryGood,
+            maxAssistiveLabel: copy.veryBad,
             onChanged: (v) => setState(() => _stress = v),
           ),
           const SizedBox(height: 16),

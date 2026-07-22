@@ -16,7 +16,9 @@ class _PenguinParkPageState extends State<PenguinParkPage>
   int _skin = 0;
   String _petType = 'penguin';
   String _petName = 'Lumi';
+  bool _isZh = true;
   bool _showFish = false;
+  bool _showShy = false;
   String _message = '';
 
   late AnimationController _bounceCtrl;
@@ -35,6 +37,28 @@ class _PenguinParkPageState extends State<PenguinParkPage>
       default: return '🐧';
     }
   }
+  String _shyImage() {
+    switch (_petType) {
+      case 'otter':    return 'assets/images/shy_otter.jpeg';
+      case 'capybara': return 'assets/images/shy_capybara.jpeg';
+      default:         return 'assets/images/shy_penguin.jpeg';
+    }
+  }
+
+  String _shyTextZh() {
+    switch (_petType) {
+      case 'penguin': return '人家快被你摸融化惹 >///<';
+      default:        return '哎呀>///<被摸摸，好害羞捏';
+    }
+  }
+
+  String _shyTextEn() {
+    switch (_petType) {
+      case 'penguin': return "I'm melting from your touch~ >///<";
+      default:        return 'awww love it>///<';
+    }
+  }
+
   String _bgImage() {
   switch (_petType) {
     case 'otter':    return 'assets/images/bg_otter.jpeg';
@@ -63,12 +87,15 @@ class _PenguinParkPageState extends State<PenguinParkPage>
 
   Future<void> _load() async {
     final prefs = await SharedPreferences.getInstance();
+    final lang = prefs.getString('app_language') ?? 'zh_TW';
+    debugPrint('[LangDebug] SharedPreferences 讀到的 app_language 值是：「$lang」');
     setState(() {
       _xp      = prefs.getInt('lumi_xp')    ?? 0;
       _skin    = prefs.getInt('lumi_skin')   ?? 0;
       _petType = prefs.getString('pet_type') ?? 'penguin';
-      print('DEBUG pet_type: \$_petType');
       _petName = prefs.getString('pet_name') ?? 'Lumi';
+      _isZh    = lang != 'en';
+      debugPrint('[LangDebug] 判斷結果 _isZh = $_isZh');
     });
   }
 
@@ -83,7 +110,7 @@ class _PenguinParkPageState extends State<PenguinParkPage>
     setState(() {
       _showFish = true;
       _xp += 5;
-      _message = '$_petName 開心地吃掉了魚！+5 XP 🐟';
+      _message = _isZh ? '$_petName 開心地吃掉了魚！+5 XP 🐟' : '$_petName happily ate the fish! +5 XP 🐟';
     });
     _bounce();
     _saveXp();
@@ -95,12 +122,13 @@ class _PenguinParkPageState extends State<PenguinParkPage>
   void _pet() {
     setState(() {
       _xp += 2;
-      _message = '$_petName 好開心被摸摸！+2 XP 💙';
+      _showShy = true;
+      _message = '';
     });
     _bounce();
     _saveXp();
     Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) setState(() => _message = '');
+      if (mounted) setState(() => _showShy = false);
     });
   }
 
@@ -132,19 +160,19 @@ class _PenguinParkPageState extends State<PenguinParkPage>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('幫 $_petName 換造型 👗',
+            Text(_isZh ? '幫 $_petName 換造型 👗' : "Change $_petName's Outfit 👗",
                 style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: List.generate(5, (i) {
+              children: List.generate(_petType == 'otter' || _petType == 'capybara' ? 4 : 5, (i) {
                 final selected = _skin == i;
                 return GestureDetector(
                   onTap: () {
                     setState(() {
                       _skin = i;
                       _xp += 1;
-                      _message = '換上造型 ${i + 1}！+1 XP ✨';
+                      _message = _isZh ? '換上造型 ${i + 1}！+1 XP ✨' : 'Outfit ${i + 1} equipped! +1 XP ✨';
                     });
                     _saveSkin();
                     _saveXp();
@@ -204,7 +232,7 @@ class _PenguinParkPageState extends State<PenguinParkPage>
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black87),
           onPressed: () => context.go('/home'),
         ),
         title: Text('$_petName 的樂園 🏝',
@@ -234,44 +262,84 @@ class _PenguinParkPageState extends State<PenguinParkPage>
         child: SafeArea(
         child: Column(
           children: [
+            // ── 按鈕（上方）───────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _ActionBtn(icon: '🐟', label: _isZh ? '丟魚' : 'Feed', onTap: _feedFish),
+                  _ActionBtn(icon: '😂', label: _isZh ? '出題' : 'Joke', onTap: _newJoke),
+                  _ActionBtn(icon: '👗', label: _isZh ? '換造型' : 'Outfit', onTap: _showCostumePicker),
+                ],
+              ),
+            ),
+
             // ── 主角動物 ───────────────────────────────────────
-            Expanded(
-              flex: 5,
-              child: GestureDetector(
-                onTap: _pet,
-                child: Center(
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      ScaleTransition(
-                        scale: _bounceAnim,
-                        child: Container(
-                          width: 220,
-                          height: 220,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF0D3B5E),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Image.asset(
-                            _animalImage(_petType, _skin),
-                            width: 200,
-                            height: 200,
-                            fit: BoxFit.contain,
-                            errorBuilder: (_, __, ___) => Text(
-                                _petEmoji(), style: const TextStyle(fontSize: 100)),
-                          ),
+            GestureDetector(
+              onTap: _pet,
+              child: Center(
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    ScaleTransition(
+                      scale: _bounceAnim,
+                      child: Container(
+                        width: 220,
+                        height: 220,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF0D3B5E),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Image.asset(
+                          _animalImage(_petType, _skin),
+                          width: 200,
+                          height: 200,
+                          fit: BoxFit.contain,
+                          errorBuilder: (_, __, ___) => Text(
+                              _petEmoji(), style: const TextStyle(fontSize: 100)),
                         ),
                       ),
-                      if (_showFish)
-                        const Positioned(
-                          top: 10, right: 10,
-                          child: Text('🐟', style: TextStyle(fontSize: 40)),
-                        ),
-                    ],
-                  ),
+                    ),
+                    if (_showFish)
+                      const Positioned(
+                        top: 10, right: 10,
+                        child: Text('🐟', style: TextStyle(fontSize: 40)),
+                      ),
+                  ],
                 ),
               ),
             ),
+
+            const SizedBox(height: 12),
+
+            // ── 害羞泡泡 ───────────────────────────────────────
+            if (_showShy)
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 32),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.85),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 8)],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Image.asset(_shyImage(), width: 60, height: 60, fit: BoxFit.contain),
+                    const SizedBox(width: 10),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(_shyTextZh(), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
+                        Text(_shyTextEn(), style: const TextStyle(fontSize: 11, color: Colors.black54)),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
 
             // ── 訊息 ───────────────────────────────────────────
             if (_message.isNotEmpty)
@@ -279,11 +347,11 @@ class _PenguinParkPageState extends State<PenguinParkPage>
                 margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.12),
+                  color: Colors.black.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Text(_message,
-                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                    style: const TextStyle(color: Colors.black87, fontSize: 14),
                     textAlign: TextAlign.center),
               ),
 
@@ -293,18 +361,19 @@ class _PenguinParkPageState extends State<PenguinParkPage>
                 margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.08),
+                  color: Colors.black.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Column(
                   children: [
-                    Text('${_petEmoji()} ${_currentJoke!['q']}',                        style: const TextStyle(color: Colors.white, fontSize: 13),
+                    Text("Q: ${_isZh ? _currentJoke!['q_zh'] : _currentJoke!['q_en']}",
+                        style: const TextStyle(color: Colors.black87, fontSize: 13, fontWeight: FontWeight.bold),
                         textAlign: TextAlign.center),
                     if (_jokeAnswerShown) ...[
                       const SizedBox(height: 6),
-                      Text('答案：${_currentJoke!['a']}',
+                      Text("A: ${_isZh ? _currentJoke!['a_zh'] : _currentJoke!['a_en']}",
                           style: const TextStyle(
-                              color: Color(0xFF0ABFBC),
+                              color: Color(0xFF0A7A6B),
                               fontSize: 13,
                               fontWeight: FontWeight.bold),
                           textAlign: TextAlign.center),
@@ -312,29 +381,18 @@ class _PenguinParkPageState extends State<PenguinParkPage>
                       TextButton(
                         onPressed: _showAnswer,
                         child: const Text('直接看答案 😅',
-                            style: TextStyle(color: Color(0xFF0ABFBC))),
+                            style: TextStyle(color: Color(0xFF0A7A6B))),
                       ),
                   ],
                 ),
               ),
 
-            // ── 按鈕 ───────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _ActionBtn(icon: '🐟', label: '丟魚', onTap: _feedFish),
-                  _ActionBtn(icon: '😂', label: '出題', onTap: _newJoke),
-                  _ActionBtn(icon: '👗', label: '換造型', onTap: _showCostumePicker),
-                ],
-              ),
-            ),
+            const Spacer(),
 
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
-              child: Text('點擊 $_petName 可以摸摸牠 💙',
-                  style: const TextStyle(color: Colors.white38, fontSize: 12)),
+              child: Text(_isZh ? '點擊 $_petName 可以摸摸牠 💙' : 'Tap $_petName to give some pets 💙',
+                  style: const TextStyle(color: Colors.black45, fontSize: 12)),
             ),
           ],
         ),

@@ -312,7 +312,7 @@ class _HomeContentState extends State<_HomeContent> {
     final engine = CumulativeRiskEngine();
     final cumulativeColor = Color(int.parse(engine.colorForCount(_cumulativeCount).replaceAll('#', '0xFF')));
     final riskColor = _cumulativeCount > 0 ? cumulativeColor : LumiTheme.riskColor(_riskScore);
-    final riskLabel = engine.labelForCount(_cumulativeCount);
+    final riskLabel = engine.labelForCount(_cumulativeCount, isZh: copy.isZhTw);
 
     final exploreCards = [
       _cardData(

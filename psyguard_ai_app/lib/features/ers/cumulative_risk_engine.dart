@@ -17,6 +17,12 @@ class CumulativeRiskEngine {
     '高度警戒', '緊急', '危機狀態', '需立即協助',
   ];
 
+  static const List<String> riskLabelsEn = [
+    'Doing okay', 'Worth watching', 'Mild alert', 'Needs attention',
+    'Please look after yourself', 'Consider talking to someone', 'Ongoing concern', 'Active intervention',
+    'High alert', 'Urgent', 'Crisis state', 'Needs immediate help',
+  ];
+
   Future<int> getRedCount() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getInt(_redCountKey) ?? 0;
@@ -51,9 +57,10 @@ class CumulativeRiskEngine {
     return riskColors[index];
   }
 
-  String labelForCount(int count) {
-    final index = count < 0 ? 0 : (count >= riskLabels.length ? riskLabels.length - 1 : count);
-    return riskLabels[index];
+  String labelForCount(int count, {bool isZh = true}) {
+    final list = isZh ? riskLabels : riskLabelsEn;
+    final index = count < 0 ? 0 : (count >= list.length ? list.length - 1 : count);
+    return list[index];
   }
 
   bool shouldShowButtons(int count) => count >= 4;
