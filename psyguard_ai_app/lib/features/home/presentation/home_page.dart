@@ -636,13 +636,17 @@ class _InteractiveCardState extends State<_InteractiveCard>
             children: [
               Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: widget.color.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(12),
+                  // 秋天氛圍時，小狐狸可能躲在這個 icon 口袋後面
+                  FoxPocket(
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: widget.color.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(widget.icon,
+                          color: widget.color, size: 22),
                     ),
-                    child: Icon(widget.icon, color: widget.color, size: 22),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -1119,17 +1123,28 @@ class _CornerPenguinState extends ConsumerState<_CornerPenguin>
 
   @override
   Widget build(BuildContext context) {
-    final snowy =
-        ref.watch(moodThemeProvider).fallEffect == FallEffectType.snow;
-    if (!snowy) return const SizedBox.shrink(); // 非雪系氛圍：維持空位
+    final mood = ref.watch(moodThemeProvider);
+    final effect = mood.fallEffect;
+    if (mood == MoodTheme.christmas) {
+      return const _OrnamentCatCorner(); // 🎄 掛飾裡的貓
+    }
+    if (mood == MoodTheme.winterBreak) {
+      return const _SnowmanCorner(); // 🧣 一起堆雪人
+    }
+    if (mood == MoodTheme.newYear) {
+      return const _NyDragonsCorner(); // 🧧 小龍賀歲
+    }
+    if (effect != FallEffectType.snow && effect != FallEffectType.leaves) {
+      return const SizedBox.shrink(); // 沒有對應吉祥物的氛圍：維持空位
+    }
 
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
         _bounce.forward(from: 0);
       },
-      child: AnimatedBuilder(
-        animation: Listenable.merge([_sway, _bounce]),
+      child: ListenableBuilder(
+        listenable: Listenable.merge([_sway, _bounce]),
         builder: (context, child) {
           final swayAngle = (_sway.value - 0.5) * 0.06; // 微微左右搖
           final jump = math.sin(_bounce.value * math.pi) * 12; // 蹦跳高度
@@ -1142,13 +1157,248 @@ class _CornerPenguinState extends ConsumerState<_CornerPenguin>
             ),
           );
         },
+        child: effect == FallEffectType.snow
+            // ❄️ 冬系：工程師企鵝
+            ? Padding(
+                padding: const EdgeInsets.all(6),
+                child: Image.asset(
+                  'assets/images/mood_penguin.png',
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => const Center(
+                    child: Text('🐧', style: TextStyle(fontSize: 48)),
+                  ),
+                ),
+              )
+            // 🍁 秋：燈下讀書狐狸
+            : ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Image.asset(
+                  'assets/images/mood_fox_lamp.jpg',
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: double.infinity,
+                  errorBuilder: (_, __, ___) => const Center(
+                    child: Text('🦊', style: TextStyle(fontSize: 48)),
+                  ),
+                ),
+              ),
+      ),
+    );
+  }
+}
+
+/// 🎄 聖誕角落：掛飾裡的貓，像吊飾一樣輕輕搖擺，點他會叮一下。
+class _OrnamentCatCorner extends StatefulWidget {
+  const _OrnamentCatCorner();
+
+  @override
+  State<_OrnamentCatCorner> createState() => _OrnamentCatCornerState();
+}
+
+class _OrnamentCatCornerState extends State<_OrnamentCatCorner>
+    with TickerProviderStateMixin {
+  late final AnimationController _swing;
+  late final AnimationController _jingle;
+
+  @override
+  void initState() {
+    super.initState();
+    _swing = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2600),
+    )..repeat(reverse: true);
+    _jingle = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+  }
+
+  @override
+  void dispose() {
+    _swing.dispose();
+    _jingle.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        _jingle.forward(from: 0);
+      },
+      child: ListenableBuilder(
+        listenable: Listenable.merge([_swing, _jingle]),
+        builder: (context, child) {
+          final swing = (_swing.value - 0.5) * 0.16; // 吊飾擺動
+          final jingle =
+              math.sin(_jingle.value * math.pi * 3) * (1 - _jingle.value) * 0.2;
+          return Transform.rotate(
+            angle: swing + jingle,
+            alignment: Alignment.topCenter,
+            child: child,
+          );
+        },
         child: Padding(
           padding: const EdgeInsets.all(6),
           child: Image.asset(
-            'assets/images/mood_penguin.png',
+            'assets/images/mood_ornament_cat.png',
             fit: BoxFit.contain,
             errorBuilder: (_, __, ___) => const Center(
-              child: Text('🐧', style: TextStyle(fontSize: 48)),
+              child: Text('🐱', style: TextStyle(fontSize: 44)),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 🧣 寒假角落：跟著下雪一起堆雪人。
+/// 點球球下雪一次，雪人就長高一階（大雪球 → 身體＋頭 → 完成！）
+/// 堆到第三階，貓咪會蹦出來跟完成的雪人合照。
+class _SnowmanCorner extends ConsumerWidget {
+  const _SnowmanCorner();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final stage = ref.watch(snowAccumulationProvider).clamp(0, 3);
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 500),
+      switchInCurve: Curves.elasticOut,
+      transitionBuilder: (child, anim) =>
+          ScaleTransition(scale: anim, child: child),
+      child: stage >= 3
+          ? Padding(
+              key: const ValueKey('snowman_done'),
+              padding: const EdgeInsets.all(4),
+              child: Image.asset(
+                'assets/images/mood_snowman_cat.png',
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => const Center(
+                  child: Text('⛄', style: TextStyle(fontSize: 44)),
+                ),
+              ),
+            )
+          : stage == 0
+              ? const Center(
+                  key: ValueKey('snowman_hint'),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('⛄', style: TextStyle(fontSize: 28)),
+                      SizedBox(height: 4),
+                      Text(
+                        '點球球下雪\n一起堆雪人',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 11, color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                )
+              : CustomPaint(
+                  key: ValueKey('snowman_$stage'),
+                  size: Size.infinite,
+                  painter: _SnowmanPainter(stage: stage),
+                ),
+    );
+  }
+}
+
+class _SnowmanPainter extends CustomPainter {
+  _SnowmanPainter({required this.stage});
+
+  final int stage;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cx = size.width / 2;
+    final base = size.height * 0.88;
+    final body = Paint()..color = const Color(0xFFFAFDFF);
+    final outline = Paint()
+      ..color = const Color(0xFFBFD8E8)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.6;
+
+    // 第一階：底部大雪球
+    final r1 = size.shortestSide * 0.22;
+    canvas.drawCircle(Offset(cx, base - r1), r1, body);
+    canvas.drawCircle(Offset(cx, base - r1), r1, outline);
+
+    if (stage >= 2) {
+      // 第二階：身體 + 頭 + 眼睛
+      final r2 = r1 * 0.72;
+      final c2 = Offset(cx, base - r1 * 2 - r2 * 0.72);
+      canvas.drawCircle(c2, r2, body);
+      canvas.drawCircle(c2, r2, outline);
+      final r3 = r1 * 0.5;
+      final c3 = Offset(cx, c2.dy - r2 - r3 * 0.68);
+      canvas.drawCircle(c3, r3, body);
+      canvas.drawCircle(c3, r3, outline);
+      final eye = Paint()..color = const Color(0xFF4A5A66);
+      canvas.drawCircle(Offset(c3.dx - r3 * 0.35, c3.dy - r3 * 0.1), 1.6, eye);
+      canvas.drawCircle(Offset(c3.dx + r3 * 0.35, c3.dy - r3 * 0.1), 1.6, eye);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_SnowmanPainter old) => old.stage != stage;
+}
+
+/// 🧧 過年角落：小龍們賀歲，點一下會喜氣地晃一晃。
+class _NyDragonsCorner extends StatefulWidget {
+  const _NyDragonsCorner();
+
+  @override
+  State<_NyDragonsCorner> createState() => _NyDragonsCornerState();
+}
+
+class _NyDragonsCornerState extends State<_NyDragonsCorner>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _cheer;
+
+  @override
+  void initState() {
+    super.initState();
+    _cheer = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+  }
+
+  @override
+  void dispose() {
+    _cheer.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        _cheer.forward(from: 0);
+      },
+      child: ListenableBuilder(
+        listenable: _cheer,
+        builder: (context, child) {
+          final t = _cheer.value;
+          final wob = math.sin(t * math.pi * 4) * (1 - t) * 0.05;
+          final pop = 1 + math.sin(t * math.pi) * 0.05;
+          return Transform.scale(
+            scale: pop,
+            child: Transform.rotate(angle: wob, child: child),
+          );
+        },
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Image.asset(
+            'assets/images/mood_ny_dragons.jpg',
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
+            errorBuilder: (_, __, ___) => const Center(
+              child: Text('🐉', style: TextStyle(fontSize: 44)),
             ),
           ),
         ),
