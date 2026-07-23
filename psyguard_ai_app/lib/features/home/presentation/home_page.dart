@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import '../../ers/silence_detector.dart';
 import '../../ers/cumulative_risk_engine.dart';
@@ -5,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/background_theme_service.dart';
+import '../../../core/theme/mood_theme_service.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/risk_engine/risk_models.dart';
@@ -13,6 +16,9 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/storage/database_provider.dart';
 import '../../../core/storage/app_database.dart';
 import '../../../core/widgets/app_brand_icon.dart';
+import '../../../core/widgets/floating_app_brand.dart';
+import '../../../core/widgets/mood_fall_overlay.dart';
+import '../../../core/widgets/snow_cap.dart';
 import '../../../core/widgets/micro_shake.dart';
 import '../../../core/widgets/tooltip_bubble.dart';
 import '../../../core/widgets/brand_loading_indicator.dart';
@@ -84,45 +90,46 @@ class HomePage extends ConsumerWidget {
         systemNavigationBarColor: LumiTheme.background,
       ),
       child: Scaffold(
-        backgroundColor: ref.watch(backgroundThemeProvider).backgroundColor,
+        backgroundColor: (() {
+          final moodColor = ref.watch(moodThemeProvider).backgroundColor;
+          if (moodColor.a != 0) return moodColor; // 有選氛圍（非「無」），優先使用
+          return ref.watch(backgroundThemeProvider).backgroundColor; // 沒選氛圍，回到深淺模式
+        })(),
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
+          toolbarHeight: 76,
           centerTitle: true,
-          title: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const AppBrandIcon(
-                size: 28,
-                radius: 10,
-                padding: 2,
-                backgroundColor: Color(0xFFF7FAF6),
-                borderColor: Color(0xFFE1E9E2),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'lii',
-                style: GoogleFonts.playfairDisplay(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w400,
-                  fontStyle: FontStyle.italic,
-                  letterSpacing: 6,
-                  color: const Color(0xFF2C5282),
-                ),
-              ),
-            ],
+          title: Padding(
+            padding: const EdgeInsets.only(top: 10),
+            child: FloatingAppBrandIcon(size: 66),
           ),
         ),
-        body: dashboard.when(
-          data: (data) => _HomeContent(
-            data: data,
-            greeting: greeting,
-            theme: theme,
-            copy: copy,
-          ),
-          loading: () =>
-              Center(child: BrandLoadingIndicator(message: copy.loading)),
-          error: (error, stack) => Center(child: Text(copy.loadFailed(error))),
+        body: Stack(
+          children: [
+            // 原本的首頁內容
+            Positioned.fill(
+              child: dashboard.when(
+                data: (data) => _HomeContent(
+                  data: data,
+                  greeting: greeting,
+                  theme: theme,
+                  copy: copy,
+                ),
+                loading: () =>
+                    Center(child: BrandLoadingIndicator(message: copy.loading)),
+                error: (error, stack) =>
+                    Center(child: Text(copy.loadFailed(error))),
+              ),
+            ),
+            // 氛圍飄落動畫圖層（IgnorePointer，不會擋到任何互動）
+            Positioned.fill(
+              child: MoodFallOverlay(
+                controller: ref.watch(moodFallControllerProvider),
+                effect: ref.watch(moodThemeProvider).fallEffect,
+              ),
+            ),
+          ],
         ),
         drawer: _buildDrawer(context, copy),
       ),
@@ -435,7 +442,8 @@ class _HomeContentState extends State<_HomeContent> {
           mainAxisSpacing: 14,
           crossAxisSpacing: 14,
           childAspectRatio: 1.55,
-          children: exploreCards.map((card) {
+          children: [
+            ...exploreCards.map((card) {
             final isBoldTarget =
                 _hasNegativeSignal &&
                 (card['route'] == '/chat' || card['route'] == '/tools');
@@ -454,7 +462,10 @@ class _HomeContentState extends State<_HomeContent> {
                 tooltipDescription: card['tooltip'] as String,
               ),
             );
-          }).toList(),
+          }),
+            // 年度總覽旁的空位：雪系氛圍時企鵝來窩著
+            const _CornerPenguin(),
+          ],
         ),
         const SizedBox(height: 32),
 
@@ -581,7 +592,9 @@ class _InteractiveCardState extends State<_InteractiveCard>
   Widget build(BuildContext context) {
     final bgColor = widget.color.withValues(alpha: 0.08);
 
-    return GestureDetector(
+    return SnowCap(
+      // 雪系氛圍時，卡片頂端會積雪；按住雪堆用手溫融化它
+      child: GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
         context.push(widget.route);
@@ -673,6 +686,7 @@ class _InteractiveCardState extends State<_InteractiveCard>
             ],
           ),
         ),
+      ),
       ),
     );
   }
@@ -1063,6 +1077,80 @@ class _SunMoonToggle extends ConsumerWidget {
               child: const Icon(Icons.nightlight_round, size: 18, color: Color(0xFFC8E8FF)),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 年度總覽旁的空位：雪系氛圍（冬/聖誕/寒假）時，工程師企鵝會來這裡窩著。
+/// 點他會開心蹦跳一下；其他氛圍時維持原本的空位。
+class _CornerPenguin extends ConsumerStatefulWidget {
+  const _CornerPenguin();
+
+  @override
+  ConsumerState<_CornerPenguin> createState() => _CornerPenguinState();
+}
+
+class _CornerPenguinState extends ConsumerState<_CornerPenguin>
+    with TickerProviderStateMixin {
+  late final AnimationController _sway; // 平常微微搖晃
+  late final AnimationController _bounce; // 點擊蹦跳
+
+  @override
+  void initState() {
+    super.initState();
+    _sway = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    )..repeat(reverse: true);
+    _bounce = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 550),
+    );
+  }
+
+  @override
+  void dispose() {
+    _sway.dispose();
+    _bounce.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final snowy =
+        ref.watch(moodThemeProvider).fallEffect == FallEffectType.snow;
+    if (!snowy) return const SizedBox.shrink(); // 非雪系氛圍：維持空位
+
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        _bounce.forward(from: 0);
+      },
+      child: AnimatedBuilder(
+        animation: Listenable.merge([_sway, _bounce]),
+        builder: (context, child) {
+          final swayAngle = (_sway.value - 0.5) * 0.06; // 微微左右搖
+          final jump = math.sin(_bounce.value * math.pi) * 12; // 蹦跳高度
+          final squash = 1 + math.sin(_bounce.value * math.pi * 2) * 0.04;
+          return Transform.translate(
+            offset: Offset(0, -jump),
+            child: Transform.rotate(
+              angle: swayAngle,
+              child: Transform.scale(scaleY: squash, child: child),
+            ),
+          );
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(6),
+          child: Image.asset(
+            'assets/images/mood_penguin.png',
+            fit: BoxFit.contain,
+            errorBuilder: (_, __, ___) => const Center(
+              child: Text('🐧', style: TextStyle(fontSize: 48)),
+            ),
+          ),
         ),
       ),
     );

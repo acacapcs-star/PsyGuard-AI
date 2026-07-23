@@ -1,77 +1,105 @@
-<svg viewBox="0 0 160 160" width="168" height="168" xmlns="http://www.w3.org/2000/svg">
+<svg viewBox="0 0 160 160" width="220" height="220" xmlns="http://www.w3.org/2000/svg">
 <defs>
-<linearGradient id="bg_m" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#4a7fa5"/><stop offset="45%" stop-color="#2C5282"/><stop offset="100%" stop-color="#1a3558"/></linearGradient>
-<radialGradient id="lu_m" cx="46%" cy="25%" r="70%"><stop offset="0%" stop-color="#FFD166" stop-opacity="0.30"/><stop offset="25%" stop-color="#FFD166" stop-opacity="0.12"/><stop offset="100%" stop-color="#FFD166" stop-opacity="0"/></radialGradient>
-<radialGradient id="dk_m" cx="46%" cy="25%" r="105%"><stop offset="0%" stop-color="#000" stop-opacity="0"/><stop offset="52%" stop-color="#000" stop-opacity="0.15"/><stop offset="100%" stop-color="#000" stop-opacity="0.55"/></radialGradient>
-<radialGradient id="bl_m" cx="0%" cy="100%" r="48%"><stop offset="0%" stop-color="#000" stop-opacity="0.78"/><stop offset="40%" stop-color="#000" stop-opacity="0.35"/><stop offset="100%" stop-color="#000" stop-opacity="0"/></radialGradient>
-<radialGradient id="sw_m" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#fff" stop-opacity="0.9"/><stop offset="35%" stop-color="#fff" stop-opacity="0.22"/><stop offset="100%" stop-color="#fff" stop-opacity="0"/></radialGradient>
-<radialGradient id="sy_m" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#FFD166" stop-opacity="1"/><stop offset="30%" stop-color="#f5a030" stop-opacity="0.55"/><stop offset="100%" stop-color="#e88820" stop-opacity="0"/></radialGradient>
-<radialGradient id="sb_m" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#c8e8ff" stop-opacity="1"/><stop offset="30%" stop-color="#a0c8f0" stop-opacity="0.4"/><stop offset="100%" stop-color="#c8e8ff" stop-opacity="0"/></radialGradient>
-<radialGradient id="lg_m" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#FFD166" stop-opacity="0.4"/><stop offset="100%" stop-color="#FFD166" stop-opacity="0"/></radialGradient>
-<radialGradient id="yg_m" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#F0F8FC" stop-opacity="0.30"/><stop offset="100%" stop-color="#F0F8FC" stop-opacity="0"/></radialGradient>
+<linearGradient id="bg_m" x1="15%" y1="0%" x2="85%" y2="100%">
+  <stop offset="0%"   stop-color="#2a5f8f"/>
+  <stop offset="45%"  stop-color="#1a3d6e"/>
+  <stop offset="100%" stop-color="#0f2444"/>
+</linearGradient>
+<radialGradient id="lu_m" cx="44%" cy="25%" r="90%">
+  <stop offset="0%"   stop-color="#FFD166" stop-opacity="0.35"/>
+  <stop offset="25%"  stop-color="#FFB830" stop-opacity="0.18"/>
+  <stop offset="60%"  stop-color="#FF9500" stop-opacity="0.06"/>
+  <stop offset="100%" stop-color="#FF9500" stop-opacity="0"/>
+</radialGradient>
+<radialGradient id="rise_m" cx="85%" cy="5%" r="60%">
+  <stop offset="0%"   stop-color="#7ab8e8" stop-opacity="0.12"/>
+  <stop offset="100%" stop-color="#7ab8e8" stop-opacity="0"/>
+</radialGradient>
+<radialGradient id="dk_m" cx="50%" cy="90%" r="50%">
+  <stop offset="0%"   stop-color="#000" stop-opacity="0.40"/>
+  <stop offset="100%" stop-color="#000" stop-opacity="0"/>
+</radialGradient>
+<radialGradient id="bl_m" cx="0%" cy="100%" r="45%">
+  <stop offset="0%"   stop-color="#000" stop-opacity="0.50"/>
+  <stop offset="100%" stop-color="#000" stop-opacity="0"/>
+</radialGradient>
+<radialGradient id="sw_m" cx="50%" cy="50%" r="50%">
+  <stop offset="0%"   stop-color="#fff" stop-opacity="0.9"/>
+  <stop offset="35%"  stop-color="#fff" stop-opacity="0.22"/>
+  <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+</radialGradient>
+<radialGradient id="sb_m" cx="50%" cy="50%" r="50%">
+  <stop offset="0%"   stop-color="#c8e8ff" stop-opacity="1"/>
+  <stop offset="30%"  stop-color="#a0c8f0" stop-opacity="0.4"/>
+  <stop offset="100%" stop-color="#c8e8ff" stop-opacity="0"/>
+</radialGradient>
+<radialGradient id="lg_m" cx="50%" cy="50%" r="50%">
+  <stop offset="0%"   stop-color="#FFD166" stop-opacity="0.60"/>
+  <stop offset="100%" stop-color="#FFD166" stop-opacity="0"/>
+</radialGradient>
+<radialGradient id="yg_m" cx="50%" cy="50%" r="50%">
+  <stop offset="0%"   stop-color="#e8f0ff" stop-opacity="0.32"/>
+  <stop offset="100%" stop-color="#c8e8ff" stop-opacity="0"/>
+</radialGradient>
+<clipPath id="circle_clip">
+  <circle cx="80" cy="80" r="80"/>
+</clipPath>
 </defs>
-<rect width="160" height="160" rx="40" fill="url(#bg_m)"/>
-<rect width="160" height="160" rx="40" fill="url(#lu_m)"/>
-<rect width="160" height="160" rx="40" fill="url(#dk_m)"/>
-<rect width="160" height="160" rx="40" fill="url(#bl_m)"/>
-<!-- 遠景星 -->
-<circle cx="30" cy="22" r="0.35" fill="#fff" opacity="0.22"/>
-<circle cx="112" cy="18" r="0.35" fill="#fff" opacity="0.28"/>
-<circle cx="136" cy="24" r="0.3" fill="#fff" opacity="0.25"/>
-<circle cx="148" cy="38" r="0.35" fill="#fff" opacity="0.26"/>
-<circle cx="24" cy="55" r="0.3" fill="#fff" opacity="0.20"/>
-<circle cx="132" cy="50" r="0.35" fill="#fff" opacity="0.28"/>
-<circle cx="18" cy="88" r="0.3" fill="#fff" opacity="0.22"/>
-<circle cx="148" cy="72" r="0.35" fill="#fff" opacity="0.28"/>
-<circle cx="22" cy="118" r="0.35" fill="#fff" opacity="0.20"/>
-<circle cx="138" cy="100" r="0.3" fill="#fff" opacity="0.24"/>
-<circle cx="40" cy="145" r="0.3" fill="#fff" opacity="0.18"/>
-<!-- 中景星 -->
-<circle cx="26" cy="36" r="0.75" fill="#fff" opacity="0.38"/>
-<circle cx="128" cy="26" r="0.8" fill="#fff" opacity="0.50"/>
-<circle cx="150" cy="48" r="0.75" fill="#fff" opacity="0.44"/>
-<circle cx="18" cy="72" r="0.8" fill="#fff" opacity="0.38"/>
-<circle cx="146" cy="68" r="0.75" fill="#fff" opacity="0.46"/>
-<circle cx="148" cy="98" r="0.75" fill="#fff" opacity="0.44"/>
-<circle cx="28" cy="136" r="0.8" fill="#fff" opacity="0.36"/>
-<circle cx="140" cy="136" r="0.75" fill="#fff" opacity="0.38"/>
-<!-- ✦ 主角星 1 右上 純白 -->
-<circle cx="138" cy="20" r="6" fill="url(#sw_m)"/>
-<circle cx="138" cy="20" r="1.5" fill="#fff" opacity="0.96"/>
-<line x1="138" y1="15.5" x2="138" y2="24.5" stroke="#fff" stroke-width="0.5" stroke-linecap="round" opacity="0.58"/>
-<line x1="133.5" y1="20" x2="142.5" y2="20" stroke="#fff" stroke-width="0.5" stroke-linecap="round" opacity="0.58"/>
-<line x1="135.5" y1="17.5" x2="140.5" y2="22.5" stroke="#fff" stroke-width="0.22" stroke-linecap="round" opacity="0.26"/>
-<line x1="140.5" y1="17.5" x2="135.5" y2="22.5" stroke="#fff" stroke-width="0.22" stroke-linecap="round" opacity="0.26"/>
-<!-- ✦ 主角星 2 左下 黃橙老星 -->
-<circle cx="16" cy="140" r="12" fill="url(#sy_m)"/>
-<circle cx="16" cy="140" r="2.2" fill="#FFD166"/>
-<circle cx="16" cy="140" r="1" fill="#fff" opacity="0.90"/>
-<line x1="16" y1="134.5" x2="16" y2="145.5" stroke="#FFD166" stroke-width="0.65" stroke-linecap="round" opacity="0.82"/>
-<line x1="10.5" y1="140" x2="21.5" y2="140" stroke="#FFD166" stroke-width="0.65" stroke-linecap="round" opacity="0.82"/>
-<line x1="12.5" y1="136.5" x2="19.5" y2="143.5" stroke="#f5a030" stroke-width="0.32" stroke-linecap="round" opacity="0.50"/>
-<line x1="19.5" y1="136.5" x2="12.5" y2="143.5" stroke="#f5a030" stroke-width="0.32" stroke-linecap="round" opacity="0.50"/>
-<!-- ✦ 主角星 3 右下 冷藍白 -->
-<circle cx="136" cy="136" r="10" fill="url(#sb_m)"/>
-<circle cx="136" cy="136" r="2.2" fill="#c8e8ff"/>
-<line x1="136" y1="131" x2="136" y2="141" stroke="#c8e8ff" stroke-width="0.62" stroke-linecap="round" opacity="0.80"/>
-<line x1="131" y1="136" x2="141" y2="136" stroke="#c8e8ff" stroke-width="0.62" stroke-linecap="round" opacity="0.80"/>
-<line x1="132.8" y1="132.8" x2="139.2" y2="139.2" stroke="#c8e8ff" stroke-width="0.30" stroke-linecap="round" opacity="0.40"/>
-<line x1="139.2" y1="132.8" x2="132.8" y2="139.2" stroke="#c8e8ff" stroke-width="0.30" stroke-linecap="round" opacity="0.40"/>
-<!-- 膠囊 -->
-<rect x="28" y="42" width="18" height="64" rx="9" fill="#fff" opacity="0.97"/>
-<rect x="62" y="56" width="18" height="50" rx="9" fill="#fff" opacity="0.93"/>
-<rect x="88" y="56" width="18" height="50" rx="9" fill="#fff" opacity="0.86"/>
-<!-- Luna 黃點 -->
-<circle cx="71" cy="40" r="20" fill="url(#lg_m)"/>
-<circle cx="71" cy="40" r="13" fill="#FFD166"/>
-<circle cx="71" cy="40" r="6.5" fill="#2C5282"/>
-<circle cx="71" cy="40" r="3" fill="#FFD166"/>
-<!-- 你 白點 -->
-<circle cx="97" cy="40" r="20" fill="url(#yg_m)"/>
-<circle cx="97" cy="40" r="13" fill="#F0F8FC" opacity="0.08"/>
-<circle cx="97" cy="40" r="10" fill="#F0F8FC" opacity="0.16"/>
-<circle cx="97" cy="40" r="7" fill="#F0F8FC" opacity="0.32"/>
-<circle cx="97" cy="40" r="4.5" fill="#F0F8FC" opacity="0.62"/>
-<circle cx="97" cy="40" r="2.5" fill="#F0F8FC" opacity="0.90"/>
-<circle cx="97" cy="40" r="1.2" fill="#F0F8FC"/>
+
+<rect width="160" height="160" rx="80" fill="url(#bg_m)" clip-path="url(#circle_clip)"/>
+<rect width="160" height="160" rx="80" fill="url(#lu_m)" clip-path="url(#circle_clip)"/>
+<rect width="160" height="160" rx="80" fill="url(#rise_m)" clip-path="url(#circle_clip)"/>
+<rect width="160" height="160" rx="80" fill="url(#dk_m)" clip-path="url(#circle_clip)"/>
+<rect width="160" height="160" rx="80" fill="url(#bl_m)" clip-path="url(#circle_clip)"/>
+
+<circle cx="30"  cy="22"  r="0.35" fill="#fff"    opacity="0.32"/>
+<circle cx="112" cy="18"  r="0.35" fill="#fff"    opacity="0.40"/>
+<circle cx="136" cy="24"  r="0.30" fill="#ffe8b0" opacity="0.32"/>
+<circle cx="148" cy="38"  r="0.35" fill="#fff"    opacity="0.34"/>
+<circle cx="24"  cy="55"  r="0.30" fill="#fff"    opacity="0.28"/>
+<circle cx="132" cy="50"  r="0.35" fill="#ffe8b0" opacity="0.34"/>
+<circle cx="18"  cy="88"  r="0.30" fill="#fff"    opacity="0.30"/>
+<circle cx="148" cy="72"  r="0.35" fill="#fff"    opacity="0.36"/>
+<circle cx="22"  cy="118" r="0.35" fill="#fff"    opacity="0.26"/>
+<circle cx="138" cy="100" r="0.30" fill="#fff"    opacity="0.32"/>
+<circle cx="40"  cy="145" r="0.30" fill="#fff"    opacity="0.24"/>
+
+<circle cx="26"  cy="36"  r="0.75" fill="#fff"    opacity="0.52"/>
+<circle cx="128" cy="26"  r="0.80" fill="#ffe8b0" opacity="0.60"/>
+<circle cx="150" cy="48"  r="0.75" fill="#fff"    opacity="0.52"/>
+<circle cx="18"  cy="72"  r="0.80" fill="#fff"    opacity="0.48"/>
+<circle cx="146" cy="68"  r="0.75" fill="#fff"    opacity="0.54"/>
+<circle cx="148" cy="98"  r="0.75" fill="#fff"    opacity="0.52"/>
+<circle cx="28"  cy="136" r="0.80" fill="#fff"    opacity="0.44"/>
+<circle cx="140" cy="136" r="0.75" fill="#fff"    opacity="0.46"/>
+
+<circle cx="118" cy="36" r="5" fill="url(#sw_m)" opacity="0.585"/>
+<circle cx="118" cy="36" r="1.3" fill="#fff" opacity="0.86"/>
+<line x1="118" y1="31.5" x2="118" y2="40.5" stroke="#fff" stroke-width="0.5" stroke-linecap="round" opacity="0.55"/>
+<line x1="113.5" y1="36" x2="122.5" y2="36" stroke="#fff" stroke-width="0.5" stroke-linecap="round" opacity="0.55"/>
+
+<circle cx="132" cy="128" r="8" fill="url(#sb_m)" opacity="0.585"/>
+<circle cx="132" cy="128" r="1.8" fill="#c8e8ff"/>
+<line x1="132" y1="123" x2="132" y2="133"   stroke="#c8e8ff" stroke-width="0.62" stroke-linecap="round" opacity="0.72"/>
+<line x1="127" y1="128" x2="137" y2="128"   stroke="#c8e8ff" stroke-width="0.62" stroke-linecap="round" opacity="0.72"/>
+
+<rect x="42" y="46" width="18" height="64" rx="9" fill="#fff" opacity="0.97"/>
+<rect x="74" y="60" width="18" height="50" rx="9" fill="#fff" opacity="0.93"/>
+<rect x="100" y="60" width="18" height="50" rx="9" fill="#fff" opacity="0.86"/>
+
+<circle cx="83" cy="36" r="20"  fill="url(#lg_m)" opacity="0.42"/>
+<circle cx="83" cy="36" r="13"  fill="#FFD166" opacity="0.08"/>
+<circle cx="83" cy="36" r="10"  fill="#FFD166" opacity="0.16"/>
+<circle cx="83" cy="36" r="7"   fill="#FFD166" opacity="0.32"/>
+<circle cx="83" cy="36" r="4.5" fill="#FFD166" opacity="0.62"/>
+<circle cx="83" cy="36" r="2.5" fill="#FFD166" opacity="0.90"/>
+<circle cx="83" cy="36" r="1.2"  fill="#FFD166"/>
+
+<circle cx="109" cy="36" r="20"  fill="url(#yg_m)" opacity="0.18"/>
+<circle cx="109" cy="36" r="13"  fill="#c8e8ff" opacity="0.08"/>
+<circle cx="109" cy="36" r="10"  fill="#c8e8ff" opacity="0.16"/>
+<circle cx="109" cy="36" r="7"   fill="#c8e8ff" opacity="0.32"/>
+<circle cx="109" cy="36" r="4.5" fill="#c8e8ff" opacity="0.62"/>
+<circle cx="109" cy="36" r="2.5" fill="#c8e8ff" opacity="0.90"/>
+<circle cx="109" cy="36" r="1.2"  fill="#c8e8ff"/>
 </svg>
