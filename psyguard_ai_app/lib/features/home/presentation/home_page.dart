@@ -4,6 +4,7 @@ import '../../ers/cumulative_risk_engine.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/theme/background_theme_service.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/risk_engine/risk_models.dart';
@@ -83,7 +84,7 @@ class HomePage extends ConsumerWidget {
         systemNavigationBarColor: LumiTheme.background,
       ),
       child: Scaffold(
-        backgroundColor: LumiTheme.background,
+        backgroundColor: ref.watch(backgroundThemeProvider).backgroundColor,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
@@ -355,6 +356,16 @@ class _HomeContentState extends State<_HomeContent> {
             ? '看見每晚的睡眠變化，慢慢找回適合自己的作息節奏。'
             : 'Track nightly sleep changes and rebuild a rhythm that fits you.',
       ),
+      _cardData(
+        copy.isZhTw ? '年度總覽' : 'Year Overview',
+        copy.isZhTw ? '重點行事曆' : 'Key Calendar',
+        Icons.calendar_month_rounded,
+        const Color(0xFF0ABFBC),
+        '/calendar-overview',
+        copy.isZhTw
+            ? '一眼看見全年重要事項，紅色緊急、黃色重要，一目了然。'
+            : 'See all important items at a glance — red for urgent, yellow for important.',
+      ),
     ];
 
     return ListView(
@@ -363,11 +374,19 @@ class _HomeContentState extends State<_HomeContent> {
       children: [
         const SizedBox(height: 12),
         // ── Greeting ──────────────────────────────────
-        Text(
-          widget.greeting,
-          style: theme.textTheme.displayMedium?.copyWith(
-            color: LumiTheme.textPrimary,
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Text(
+                widget.greeting,
+                style: theme.textTheme.displayMedium?.copyWith(
+                  color: LumiTheme.textPrimary,
+                ),
+              ),
+            ),
+            const _SunMoonToggle(),
+          ],
         ),
         Text(
           copy.peacefulDay,
@@ -800,38 +819,58 @@ class _SwipeableCardsState extends State<_SwipeableCards> {
             onPageChanged: (i) => setState(() => _page = i),
             children: [
               // 頁1：狀態卡片
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: LumiTheme.softCard,
-                child: Row(
-                  children: [
-                    Container(
-                      width: 56,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        color: widget.riskColor.withValues(alpha: 0.15),
-                        shape: BoxShape.circle,
+              Consumer(
+                builder: (context, ref, _) {
+                  final isDark = ref.watch(backgroundThemeProvider).mode == BgMode.dark;
+                  return Stack(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: LumiTheme.softCard,
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 56,
+                              height: 56,
+                              decoration: BoxDecoration(
+                                color: widget.riskColor.withValues(alpha: 0.15),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(widget.statusIcon, color: widget.riskColor, size: 30),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(widget.riskLabel,
+                                    style: widget.theme.textTheme.titleLarge?.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      color: LumiTheme.textPrimary,
+                                    )),
+                                  const SizedBox(height: 4),
+                                  Text(widget.todayStatus, style: widget.theme.textTheme.bodyMedium),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      child: Icon(widget.statusIcon, color: widget.riskColor, size: 30),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(widget.riskLabel,
-                            style: widget.theme.textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: LumiTheme.textPrimary,
-                            )),
-                          const SizedBox(height: 4),
-                          Text(widget.todayStatus, style: widget.theme.textTheme.bodyMedium),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                      if (isDark)
+                        Positioned.fill(
+                          child: IgnorePointer(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(20),
+                                color: Colors.black.withValues(alpha: 0.35),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
+                },
               ),
               // 頁2：寵物卡片
               Container(
@@ -932,6 +971,100 @@ class _SwipeableCardsState extends State<_SwipeableCards> {
           ],
         ),
       ],
+    );
+  }
+}
+
+class _SunMoonToggle extends ConsumerWidget {
+  const _SunMoonToggle();
+
+  void _showColorPicker(BuildContext context, WidgetRef ref, bool isDark) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) {
+        final options = isDark
+            ? [
+                (BgColorChoice.navyDark, '深藍', const Color(0xFF0D1B2A)),
+                (BgColorChoice.forestDark, '深墨綠', const Color(0xFF0D2818)),
+              ]
+            : [
+                (BgColorChoice.blueLight, '淺藍', const Color(0xFFE3F2FD)),
+                (BgColorChoice.greenLight, '淺綠', const Color(0xFFE8F5E9)),
+              ];
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('選擇底色', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: options.map((opt) {
+                    return GestureDetector(
+                      onTap: () {
+                        ref.read(backgroundThemeProvider.notifier).setColor(opt.$1);
+                        Navigator.pop(ctx);
+                      },
+                      child: Column(
+                        children: [
+                          Container(
+                            width: 56,
+                            height: 56,
+                            decoration: BoxDecoration(
+                              color: opt.$3,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.grey.shade300, width: 1.5),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(opt.$2, style: const TextStyle(fontSize: 12)),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeState = ref.watch(backgroundThemeProvider);
+    final isDark = themeState.mode == BgMode.dark;
+
+    return GestureDetector(
+      onTap: () => ref.read(backgroundThemeProvider.notifier).toggleMode(),
+      onLongPress: () => _showColorPicker(context, ref, isDark),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.white.withValues(alpha: 0.15),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedOpacity(
+              duration: const Duration(milliseconds: 250),
+              opacity: isDark ? 0.25 : 1.0,
+              child: const Icon(Icons.wb_sunny_rounded, size: 20, color: Color(0xFFF5A623)),
+            ),
+            const SizedBox(width: 4),
+            AnimatedOpacity(
+              duration: const Duration(milliseconds: 250),
+              opacity: isDark ? 1.0 : 0.25,
+              child: const Icon(Icons.nightlight_round, size: 18, color: Color(0xFFC8E8FF)),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

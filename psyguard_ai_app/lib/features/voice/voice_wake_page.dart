@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../l10n/app_language.dart';
 import '../../core/security/local_settings_service.dart';
 import 'voice_wake_service.dart';
+import 'dart:math';
 
 class VoiceWakePage extends ConsumerStatefulWidget {
   const VoiceWakePage({super.key});
@@ -107,52 +108,63 @@ class _VoiceWakePageState extends ConsumerState<VoiceWakePage>
           targetDate = now.add(const Duration(days: 2));
         } else if (lowerText.contains('下週') || lowerText.contains('下周') || lowerText.contains('next week')) {
           targetDate = now.add(const Duration(days: 7));
+        } else {
+          final dateRegex = RegExp(r'(\d{1,2})[/月](\d{1,2})');
+          final match = dateRegex.firstMatch(lowerText);
+          if (match != null) {
+            final month = int.tryParse(match.group(1) ?? '') ?? now.month;
+            final day = int.tryParse(match.group(2) ?? '') ?? now.day;
+            var candidate = DateTime(now.year, month, day);
+            if (candidate.isBefore(DateTime(now.year, now.month, now.day))) {
+              candidate = DateTime(now.year + 1, month, day);
+            }
+            targetDate = candidate;
+          }
         }
 
+        if (!mounted) return;
+        final priority = await _pickPriority(isZh);
+        if (priority == null) {
+          setState(() => _statusText = isZh ? '已取消整理' : 'Cancelled');
+          return;
+        }
+
+        final windowDays = priority == 'red' ? 10 : (priority == 'yellow' ? 7 : 5);
+        final groupId = '${DateTime.now().millisecondsSinceEpoch}_${Random().nextInt(99999)}';
         final prefs = await SharedPreferences.getInstance();
+        final firstBullet = bullets.isNotEmpty ? bullets.first.toString() : '';
+
         final targetKey = 'note_${targetDate.year}_${targetDate.month}_${targetDate.day}';
         final existing = prefs.getString(targetKey);
-        final List items =
-            existing != null ? (jsonDecode(existing) as List) : [];
-
-        items.add({
-          'text': isZh ? '🎤 語音筆記' : '🎤 Voice Note',
-          'type': 0,
-          'checked': false,
-          'priority': 12,
-        });
+        final List items = existing != null ? (jsonDecode(existing) as List) : [];
+        final priorityIndex = priority == 'red' ? 2 : (priority == 'yellow' ? 7 : 12);
+        items.add({'text': isZh ? '🎤 語音筆記' : '🎤 Voice Note', 'type': 0, 'checked': false, 'priority': 12});
         for (final bullet in bullets) {
-          items.add({
-            'text': '☐ \$bullet',
-            'type': 2,
-            'checked': false,
-            'priority': 4,
-          });
+          items.add({'text': '☐ $bullet', 'type': 2, 'checked': false, 'priority': priorityIndex, 'groupId': groupId});
         }
-
         await prefs.setString(targetKey, jsonEncode(items));
 
-        final daysUntil = targetDate.difference(DateTime(now.year, now.month, now.day)).inDays;
-        if (daysUntil > 0) {
-          final todayKey = 'note_\${now.year}_\${now.month}_\${now.day}';
-          final todayRaw = prefs.getString(todayKey);
-          final List todayItems = todayRaw != null ? (jsonDecode(todayRaw) as List) : [];
-          final countdown = isZh
-              ? (daysUntil == 1 ? '明天' : '還有 \$daysUntil 天')
-              : (daysUntil == 1 ? 'Tomorrow' : 'In \$daysUntil days');
-          final firstBullet = bullets.isNotEmpty ? bullets.first.toString() : '';
-          todayItems.add({
-            'text': '⏰ \$countdown：\$firstBullet',
+        for (int d = windowDays; d >= 1; d--) {
+          final reminderDate = targetDate.subtract(Duration(days: d));
+          if (reminderDate.isBefore(DateTime(now.year, now.month, now.day))) continue;
+          final reminderKey = 'note_${reminderDate.year}_${reminderDate.month}_${reminderDate.day}';
+          final rRaw = prefs.getString(reminderKey);
+          final List rItems = rRaw != null ? (jsonDecode(rRaw) as List) : [];
+          final countdownText = isZh ? '距離 $d 天' : 'In $d days';
+          rItems.add({
+            'text': '⏰ $countdownText：$firstBullet',
             'type': 2,
             'checked': false,
-            'priority': 6,
+            'priority': priorityIndex,
+            'groupId': groupId,
           });
-          await prefs.setString(todayKey, jsonEncode(todayItems));
+          await prefs.setString(reminderKey, jsonEncode(rItems));
         }
+
         setState(
           () => _statusText = isZh
-              ? '✅ 已整理 ${bullets.length} 條筆記到今日 Diary！'
-              : '✅ Organized ${bullets.length} notes into today\'s Diary!',
+              ? '✅ 已整理 ${bullets.length} 條筆記，並設定 $windowDays 天倒數提醒！'
+              : '✅ Organized ${bullets.length} notes with a $windowDays-day countdown!',
         );
       } else {
         setState(() => _statusText = isZh ? '整理失敗 (${response.statusCode})，請重試' : 'Failed (${response.statusCode}), please try again');
@@ -160,6 +172,63 @@ class _VoiceWakePageState extends ConsumerState<VoiceWakePage>
     } catch (e) {
       setState(() => _statusText = isZh ? '整理失敗，請重試' : 'Failed to organize, please try again');
     }
+  }
+
+
+  Future<String?> _pickPriority(bool isZh) async {
+    return showModalBottomSheet<String>(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                isZh ? '這件事的優先度是？' : "What's the priority for this?",
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                isZh ? '會決定提前幾天開始提醒你' : 'Determines how many days ahead to start reminding you',
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _priorityBtn(ctx, 'red', '🔴', isZh ? '緊急 (10天)' : 'Urgent (10d)'),
+                  _priorityBtn(ctx, 'yellow', '🟡', isZh ? '重要 (7天)' : 'Important (7d)'),
+                  _priorityBtn(ctx, 'green', '🟢', isZh ? '一般 (5天)' : 'Normal (5d)'),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _priorityBtn(BuildContext ctx, String value, String emoji, String label) {
+    return GestureDetector(
+      onTap: () => Navigator.pop(ctx, value),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade300),
+        ),
+        child: Column(
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 24)),
+            const SizedBox(height: 4),
+            Text(label, style: const TextStyle(fontSize: 12)),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _toggleListening() async {
