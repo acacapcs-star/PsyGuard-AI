@@ -183,7 +183,7 @@ class _FoxPocketState extends ConsumerState<FoxPocket>
                       ],
                     ),
                     child: const Text(
-                      'u find me!',
+                      'u found me!',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
@@ -391,7 +391,7 @@ class _SnowCapState extends ConsumerState<SnowCap>
                       ],
                     ),
                     child: const Text(
-                      'u find me!',
+                      'u found me!',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,

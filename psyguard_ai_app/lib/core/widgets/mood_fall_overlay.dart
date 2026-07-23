@@ -422,11 +422,11 @@ class _FallPainter extends CustomPainter {
   static const Color _petalDotColor = Color(0xFFF4A7C0); // 櫻花備援粉
 
   static const List<Color> _fwPalette = [
-    Color(0xFFFF5A5A), // 喜氣紅
-    Color(0xFFFFC44D), // 金
-    Color(0xFFFF8FB7), // 粉
-    Color(0xFFFFA94D), // 橘
-    Color(0xFF7FE3FF), // 冰藍
+    Color(0xFFD32F2F), // 正紅
+    Color(0xFFFFB300), // 濃金
+    Color(0xFFE91E63), // 桃紅
+    Color(0xFFF4511E), // 濃橘
+    Color(0xFF1E88E5), // 寶藍
   ];
 
   @override
@@ -544,7 +544,8 @@ class _FallPainter extends CustomPainter {
           double a = math.pow(1 - bt, 1.2).toDouble();
           a *= 0.7 + 0.3 * math.sin(bt * 28 + k * 1.7);
           if (a <= 0.02) continue;
-          final c = Color.lerp(Colors.white, color, (bt * 2).clamp(0.0, 1.0))!;
+          final c = Color.lerp(
+              Colors.white, color, (bt * 3).clamp(0.0, 1.0))!; // 更快轉主色
           dot.color = c.withValues(alpha: a.clamp(0.0, 1.0));
           canvas.drawCircle(pos, 2.2 * (1 - bt * 0.55), dot);
         }
