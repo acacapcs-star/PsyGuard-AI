@@ -21,6 +21,7 @@ import '../../../core/widgets/mood_fall_overlay.dart';
 import '../../../core/widgets/snow_cap.dart';
 import '../../../core/widgets/paw_tap.dart';
 import '../../../core/widgets/fish_pond.dart';
+import '../../../core/widgets/pet_reminder_bubble.dart';
 import '../../../core/widgets/penguin_nest.dart';
 import '../../../core/widgets/beach_corner.dart';
 import '../../../core/widgets/hongbao_layer.dart';
@@ -416,6 +417,8 @@ class _HomeContentState extends State<_HomeContent> {
             color: LumiTheme.textSecondary,
           ),
         ),
+        // 💬 寵物提醒泡泡（沒東西提醒時自己不顯示）
+        PetReminderBubble(isZh: copy.isZhTw),
         const SizedBox(height: 32),
         // ── Status Card + Sticky Note + Pet (PageView with arrows) ─────
         _SwipeableCards(

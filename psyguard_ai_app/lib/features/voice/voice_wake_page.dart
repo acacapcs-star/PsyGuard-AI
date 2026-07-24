@@ -72,6 +72,11 @@ class _VoiceWakePageState extends ConsumerState<VoiceWakePage>
           ? 'Write every bullet point in Traditional Chinese, regardless of what language the input is in.'
           : 'Write every bullet point in English, regardless of what language the input is in.';
 
+      // 範例也要跟著語言走，不然英文模式下 AI 會被中文範例帶偏
+      final exampleItems = isZh
+          ? '["買菜", "明天打電話給醫生", "週五前交報告"]'
+          : '["Buy groceries", "Call the doctor tomorrow", "Submit the report by Friday"]';
+
       final response = await http.post(
         Uri.parse('https://api.openai.com/v1/chat/completions'),
         headers: {
@@ -87,7 +92,7 @@ class _VoiceWakePageState extends ConsumerState<VoiceWakePage>
                   'Extract key action items and important points from the user speech. '
                   'Return ONLY a JSON array of strings, each being a concise bullet point. '
                   '$languageInstruction Max 5 items. '
-                  'Example: ["買菜", "明天打電話給醫生", "週五前交報告"]'
+                  'Example: $exampleItems'
             },
             {'role': 'user', 'content': text}
           ],
@@ -234,19 +239,28 @@ class _VoiceWakePageState extends ConsumerState<VoiceWakePage>
   }
 
   Future<void> _toggleListening() async {
+    // 提前取得語言，下面兩段狀態文字都要用
+    final isZh =
+        ref.read(appLanguageControllerProvider) == AppLanguage.zhTw;
+
     if (_isListening) {
       await _service.stopListening();
       setState(() {
         _isListening = false;
-        if (!_isNoteMode) _statusText = '點擊麥克風說「嘿，在嗎？」';
+        if (!_isNoteMode) {
+          _statusText = isZh
+              ? '點擊麥克風說「嘿，在嗎？」'
+              : 'Tap the mic and say "Hey Lumi"';
+        }
       });
     } else {
       setState(() {
         _isListening = true;
         _spokenText = '';
-        _statusText = _isNoteMode ? '我在聽，說完點停止...' : '我在聽...';
+        _statusText = _isNoteMode
+            ? (isZh ? '我在聽，說完點停止...' : "I'm listening, tap stop when done...")
+            : (isZh ? '我在聽...' : "I'm listening...");
       });
-      final isZh = ref.read(appLanguageControllerProvider) == AppLanguage.zhTw;
       _metrics.start(); // 🎤 開始收集語音特徵
       await _service.startListening(
         isZh: isZh,

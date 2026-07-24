@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart'
+    show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
@@ -17,6 +19,23 @@ class VoiceWakeService {
 
   Future<void> initialize() async {
     _isAvailable = await _speech.initialize();
+
+    // 🔊 iOS 預設的音訊類別在靜音開關打開時不會發聲，
+    //    設成 playback 才會響。Android 與 Web 不需要也不支援。
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+      try {
+        await _tts.setIosAudioCategory(
+          IosTextToSpeechAudioCategory.playback,
+          [
+            IosTextToSpeechAudioCategoryOptions.defaultToSpeaker,
+            IosTextToSpeechAudioCategoryOptions.mixWithOthers,
+          ],
+        );
+      } catch (_) {
+        // 某些 iOS 版本不支援就算了，不要因此讓整個初始化失敗
+      }
+    }
+
     await _tts.setLanguage('en-US');
     await _tts.setSpeechRate(0.45);
     await _tts.setPitch(1.1);
@@ -62,6 +81,13 @@ class VoiceWakeService {
   }
 
   Future<void> _respond({String locale = 'zh-TW'}) async {
+    // 🔇 iOS 不允許同時佔用麥克風又播放聲音，
+    //    不先停掉錄音的話 TTS 會完全沒聲音。
+    await _speech.stop();
+    _isListening = false;
+    // 給音訊通道一點時間切換，太快講會被吃掉開頭
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+
     if (locale.startsWith('en')) {
       await _tts.setLanguage('en-US');
       await _tts.speak("Hey! I'm Lumi. I'm here for you.");
