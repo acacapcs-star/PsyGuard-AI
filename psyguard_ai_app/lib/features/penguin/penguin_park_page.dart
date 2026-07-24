@@ -2,15 +2,18 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../l10n/app_language.dart';
+import '../../core/security/local_settings_service.dart';
 import 'joke_data.dart';
 
-class PenguinParkPage extends StatefulWidget {
+class PenguinParkPage extends ConsumerStatefulWidget {
   const PenguinParkPage({super.key});
   @override
-  State<PenguinParkPage> createState() => _PenguinParkPageState();
+  ConsumerState<PenguinParkPage> createState() => _PenguinParkPageState();
 }
 
-class _PenguinParkPageState extends State<PenguinParkPage>
+class _PenguinParkPageState extends ConsumerState<PenguinParkPage>
     with TickerProviderStateMixin {
   int _xp = 0;
   int _skin = 0;
@@ -28,7 +31,9 @@ class _PenguinParkPageState extends State<PenguinParkPage>
   Map<String, dynamic>? _currentJoke;
   bool _jokeAnswerShown = false;
 
-  static const _skinLabels = ['原味', '二號', '三號', '四號', '五號'];
+  static const _skinLabelsZh = ['原味', '二號', '三號', '四號', '五號'];
+  static const _skinLabelsEn = ['Classic', 'No.2', 'No.3', 'No.4', 'No.5'];
+  List<String> get _skinLabels => _isZh ? _skinLabelsZh : _skinLabelsEn;
 
   String _petEmoji() {
     switch (_petType) {
@@ -87,15 +92,11 @@ class _PenguinParkPageState extends State<PenguinParkPage>
 
   Future<void> _load() async {
     final prefs = await SharedPreferences.getInstance();
-    final lang = prefs.getString('app_language') ?? 'zh_TW';
-    debugPrint('[LangDebug] SharedPreferences 讀到的 app_language 值是：「$lang」');
     setState(() {
       _xp      = prefs.getInt('lumi_xp')    ?? 0;
       _skin    = prefs.getInt('lumi_skin')   ?? 0;
       _petType = prefs.getString('pet_type') ?? 'otter';
       _petName = prefs.getString('pet_name') ?? 'Lumi';
-      _isZh    = lang != 'en';
-      debugPrint('[LangDebug] 判斷結果 _isZh = $_isZh');
     });
   }
 
@@ -228,10 +229,13 @@ class _PenguinParkPageState extends State<PenguinParkPage>
   @override
   void dispose() {
     _bounceCtrl.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    // 🌐 語言跟 App 其他頁面共用同一個來源，切換時這頁會自動重建
+    _isZh = ref.watch(appLanguageControllerProvider) == AppLanguage.zhTw;
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
@@ -241,7 +245,7 @@ class _PenguinParkPageState extends State<PenguinParkPage>
           icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black87),
           onPressed: () => context.go('/home'),
         ),
-        title: Text('$_petName 的樂園 🏝',
+        title: Text(_isZh ? '$_petName 的樂園 🏝' : "$_petName's Park 🏝",
             style: const TextStyle(color: Colors.white)),
         actions: [
           Container(
@@ -386,7 +390,7 @@ class _PenguinParkPageState extends State<PenguinParkPage>
                     ] else
                       TextButton(
                         onPressed: _showAnswer,
-                        child: const Text('直接看答案 😅',
+                        child: Text(_isZh ? '直接看答案 😅' : 'Just show me 😅',
                             style: TextStyle(color: Color(0xFF0A7A6B))),
                       ),
                   ],

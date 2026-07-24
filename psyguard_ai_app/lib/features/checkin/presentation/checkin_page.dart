@@ -1,4 +1,5 @@
 import 'note_page.dart';
+import '../../../core/security/secret_swipe_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -231,7 +232,12 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const NotePage()),
+                      MaterialPageRoute(
+                        builder: (context) => const SecretSwipeShell(
+                          publicPage: NotePage(),
+                          secretPage: NotePage(secret: true),
+                        ),
+                      ),
                     );
                   },
                   child: Container(

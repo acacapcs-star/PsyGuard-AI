@@ -1,7 +1,9 @@
 import 'risk_models.dart';
 
 class RiskEngine {
+  // 注意：比對前 messages 會先 toLowerCase()，英文一律用小寫。
   static const _highRiskKeywords = [
+    // 中文
     '想死',
     '不想活',
     '自殺',
@@ -9,23 +11,69 @@ class RiskEngine {
     '活不下去',
     '結束生命',
     '傷害自己',
+    // English
+    'want to die',
+    'wanna die',
+    'kill myself',
+    'killing myself',
+    'end my life',
+    'take my own life',
+    'suicide',
+    'suicidal',
+    'self harm',
+    'self-harm',
+    'hurt myself',
+    'cut myself',
+    'cutting myself',
+    'better off dead',
+    'end it all',
+    'no reason to live',
+    "don't want to live",
+    'do not want to live',
   ];
 
   static const _distressKeywords = [
+    // 中文
     '不想上學',
     '撐不下去',
     '沒希望',
     '很絕望',
     '沒有人懂我',
     '不想面對',
+    // English
+    "don't want to go to school",
+    'do not want to go to school',
+    'skip school',
+    "can't keep going",
+    'cannot keep going',
+    "can't take it anymore",
+    'hopeless',
+    'no hope',
+    'so desperate',
+    'nobody understands me',
+    'no one understands me',
+    "don't want to face",
+    'giving up on everything',
   ];
 
   static const _helpSeekingKeywords = [
+    // 中文
     '想找老師',
     '想找輔導室',
     '我願意求助',
     '我想找人聊聊',
     '我需要幫助',
+    // English
+    'talk to a teacher',
+    'talk to my teacher',
+    'see the counselor',
+    'see a counselor',
+    'want to talk to someone',
+    'need to talk to someone',
+    'i need help',
+    'i want help',
+    'i need support',
+    'reach out for help',
   ];
 
   RiskSnapshotResult evaluateCheckin({

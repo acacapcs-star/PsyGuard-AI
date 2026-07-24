@@ -3,12 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/security/local_settings_service.dart';
+import '../../../l10n/app_language.dart';
 
 class WelcomePage extends ConsumerWidget {
   const WelcomePage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isZh =
+        ref.watch(appLanguageControllerProvider) == AppLanguage.zhTw;
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -34,7 +37,7 @@ class WelcomePage extends ConsumerWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                '嘿，我是LUNA OWO/?',
+                isZh ? '嘿，我是LUNA OWO/?' : "Hey, I'm LUNA OWO/?",
                 style: TextStyle(
                   fontSize: 16,
                   color: Colors.white.withValues(alpha: 0.7),
@@ -66,7 +69,7 @@ class WelcomePage extends ConsumerWidget {
                           elevation: 0,
                         ),
                         child: Text(
-                          '開始',
+                          isZh ? '開始' : 'Start',
                           style: GoogleFonts.playfairDisplay(
                             fontSize: 16,
                             fontStyle: FontStyle.italic,

@@ -42,7 +42,16 @@ class SilenceAlert {
   final int days;
   final SilenceLevel level;
   const SilenceAlert({required this.days, required this.level});
-  String get message => level == SilenceLevel.critical
-      ? 'LUNA 已經 $days 天沒有見到你了。你還好嗎？🤍'
-      : '已經 $days 天了，想跟 LUNA 說說話嗎？';
+  String get message => messageFor(true);
+
+  String messageFor(bool isZh) {
+    if (level == SilenceLevel.critical) {
+      return isZh
+          ? 'LUNA 已經 $days 天沒有見到你了。你還好嗎？🤍'
+          : 'LUNA has not seen you for $days days. Are you okay? 🤍';
+    }
+    return isZh
+        ? '已經 $days 天了，想跟 LUNA 說說話嗎？'
+        : 'It has been $days days. Want to talk with LUNA?';
+  }
 }

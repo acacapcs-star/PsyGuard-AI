@@ -84,7 +84,8 @@ class ERSEngine {
 
   // ── 加權融合計算 Raw ERS ──────────────────────────────
 
-  ERSResult calculate(ERSInput input, PersonalBaseline baseline) {
+  ERSResult calculate(ERSInput input, PersonalBaseline baseline,
+      {bool isZh = true}) {
     // 串流一：語言（40%）
     final stream1 = (
       normalizeSpeechRate(input.speechRate) * 0.4 +
@@ -124,9 +125,9 @@ class ERSEngine {
             : 'green';
 
     final riskLabel = switch (riskLevel) {
-      'red' => '⚠️ 需要關注',
-      'yellow' => '🔔 請多留意',
-      _ => '✅ 狀態良好',
+      'red' => isZh ? '⚠️ 需要關注' : '⚠️ Needs attention',
+      'yellow' => isZh ? '🔔 請多留意' : '🔔 Keep an eye on it',
+      _ => isZh ? '✅ 狀態良好' : '✅ Doing okay',
     };
 
     return ERSResult(

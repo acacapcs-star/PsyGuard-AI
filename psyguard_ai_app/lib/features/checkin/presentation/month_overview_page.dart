@@ -6,9 +6,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../l10n/app_language.dart';
 import '../../../core/security/local_settings_service.dart';
 import '../../../core/theme/background_theme_service.dart';
+import 'note_page.dart';
+import '../../../core/security/secret_diary_lock.dart';
+import '../../../core/security/secret_swipe_shell.dart';
 
 class MonthOverviewPage extends ConsumerStatefulWidget {
-  const MonthOverviewPage({super.key});
+  /// true = 🔒 只看秘密日記（要解鎖）
+  const MonthOverviewPage({super.key, this.secret = false});
+
+  final bool secret;
 
   @override
   ConsumerState<MonthOverviewPage> createState() => _MonthOverviewPageState();
@@ -21,18 +27,34 @@ class _WeekSummary {
 
 class _MonthOverviewPageState extends ConsumerState<MonthOverviewPage> {
   bool _loading = true;
+  bool _unlocked = false;
+  final SecretDiaryLock _lock = SecretDiaryLock.instance;
+  int _year = DateTime.now().year;
   Map<int, List<_WeekSummary>> _monthData = {};
 
   @override
   void initState() {
     super.initState();
-    _loadAllMonths();
+    if (widget.secret) {
+      _lock.cancelPendingLock();
+      if (_lock.isUnlocked) {
+        _unlocked = true;
+        _loadAllMonths();
+      }
+    } else {
+      _loadAllMonths();
+    }
+  }
+
+  @override
+  void dispose() {
+    if (widget.secret) _lock.scheduleLock();
+    super.dispose();
   }
 
   Future<void> _loadAllMonths() async {
     final prefs = await SharedPreferences.getInstance();
-    final now = DateTime.now();
-    final year = now.year;
+    final year = _year;
 
     final Map<int, List<_WeekSummary>> result = {};
 
@@ -42,16 +64,20 @@ class _MonthOverviewPageState extends ConsumerState<MonthOverviewPage> {
       _WeekSummary current = _WeekSummary();
 
       for (int day = 1; day <= daysInMonth; day++) {
-        final key = 'note_${year}_${month}_$day';
+        final prefix = widget.secret ? 'secret_note_' : 'note_';
+        final key = '$prefix${year}_${month}_$day';
         final raw = prefs.getString(key);
         if (raw != null) {
           try {
-            final List items = jsonDecode(raw);
+            final decoded = widget.secret ? _lock.decryptContent(raw) : raw;
+            final List items = jsonDecode(decoded);
             for (final item in items) {
               final priority = item['priority'] as int? ?? 12;
               final entry = {
                 'text': item['text']?.toString() ?? '',
                 'date': '$month/$day',
+                'month': month,
+                'day': day,
               };
               if (priority <= 4) {
                 current.redItems.add(entry);
@@ -101,7 +127,12 @@ class _MonthOverviewPageState extends ConsumerState<MonthOverviewPage> {
                   const SizedBox(height: 12),
                   if (week.redItems.isEmpty && week.yellowItems.isEmpty)
                     Text(isZh ? '這週沒有重要事項' : 'No important items this week', style: TextStyle(color: Colors.grey.shade500)),
-                  ...week.redItems.map((e) => Padding(
+                  ...week.redItems.map((e) => InkWell(
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          _openDay(e['month'] as int, e['day'] as int);
+                        },
+                        child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 4),
                         child: Row(
                           children: [
@@ -110,8 +141,14 @@ class _MonthOverviewPageState extends ConsumerState<MonthOverviewPage> {
                             Expanded(child: Text('${e['date']}：${e['text']}', style: const TextStyle(fontSize: 13))),
                           ],
                         ),
+                        ),
                       )),
-                  ...week.yellowItems.map((e) => Padding(
+                  ...week.yellowItems.map((e) => InkWell(
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          _openDay(e['month'] as int, e['day'] as int);
+                        },
+                        child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 4),
                         child: Row(
                           children: [
@@ -119,6 +156,7 @@ class _MonthOverviewPageState extends ConsumerState<MonthOverviewPage> {
                             const SizedBox(width: 8),
                             Expanded(child: Text('${e['date']}：${e['text']}', style: const TextStyle(fontSize: 13))),
                           ],
+                        ),
                         ),
                       )),
                 ],
@@ -145,6 +183,84 @@ class _MonthOverviewPageState extends ConsumerState<MonthOverviewPage> {
     );
   }
 
+  // 💜 秘密日曆走淺芋頭紫，公開日曆維持原色
+  Color get _bg => widget.secret ? kTaroBg : const Color(0xFFF8FFFE);
+  Color get _accent =>
+      widget.secret ? kTaroDeep : const Color(0xFF2C5282);
+  Color get _bar => widget.secret ? kTaroSoft : const Color(0xFF0ABFBC);
+
+  Future<void> _changeYear(int delta) async {
+    setState(() {
+      _year += delta;
+      _loading = true;
+    });
+    await _loadAllMonths();
+  }
+
+  Future<void> _pickYear(bool isZh) async {
+    final thisYear = DateTime.now().year;
+    final years = [
+      for (int y = 2020; y <= thisYear + 5; y++) y,
+    ];
+    final picked = await showModalBottomSheet<int>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                isZh ? '選擇年份' : 'Choose a year',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            Flexible(
+              child: ListView(
+                shrinkWrap: true,
+                children: years
+                    .map((y) => ListTile(
+                          title: Text('$y'),
+                          trailing: y == _year
+                              ? const Icon(Icons.check_rounded,
+                                  color: Color(0xFF0ABFBC))
+                              : null,
+                          onTap: () => Navigator.pop(ctx, y),
+                        ))
+                    .toList(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (picked != null && picked != _year) {
+      setState(() {
+        _year = picked;
+        _loading = true;
+      });
+      await _loadAllMonths();
+    }
+  }
+
+  void _openDay(int month, int day) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => NotePage(
+          secret: widget.secret,
+          initialDate: DateTime(_year, month, day),
+        ),
+      ),
+    );
+  }
+
   static const _monthNamesZh = ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'];
   static const _monthNamesEn = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
@@ -152,8 +268,20 @@ class _MonthOverviewPageState extends ConsumerState<MonthOverviewPage> {
   Widget build(BuildContext context) {
     final isZh = ref.watch(appLanguageControllerProvider) == AppLanguage.zhTw;
 
+    if (widget.secret && !_unlocked) {
+      return SecretUnlockScreen(
+        lock: _lock,
+        isZh: isZh,
+        showBackButton: false, // 滑回去就好
+        onUnlocked: () async {
+          await _loadAllMonths();
+          if (mounted) setState(() => _unlocked = true);
+        },
+      );
+    }
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FFFE),
+      backgroundColor: _bg,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -161,7 +289,40 @@ class _MonthOverviewPageState extends ConsumerState<MonthOverviewPage> {
           icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF2C5282)),
           onPressed: () => context.go('/home'),
         ),
-        title: Text(isZh ? '年度重點總覽' : 'Year Overview', style: const TextStyle(color: Color(0xFF2C5282))),
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.chevron_left_rounded,
+                  color: Color(0xFF2C5282)),
+              tooltip: isZh ? '前一年' : 'Previous year',
+              onPressed: _loading ? null : () => _changeYear(-1),
+            ),
+            GestureDetector(
+              onTap: _loading ? null : () => _pickYear(isZh),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('$_year',
+                      style: TextStyle(
+                        color: _accent,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      )),
+                  Text(isZh ? '年度重點總覽' : 'Year Overview',
+                      style: const TextStyle(
+                          color: Color(0xFF0ABFBC), fontSize: 10)),
+                ],
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.chevron_right_rounded,
+                  color: Color(0xFF2C5282)),
+              tooltip: isZh ? '後一年' : 'Next year',
+              onPressed: _loading ? null : () => _changeYear(1),
+            ),
+          ],
+        ),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -182,7 +343,7 @@ class _MonthOverviewPageState extends ConsumerState<MonthOverviewPage> {
                         width: double.infinity,
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF0ABFBC),
+                          color: _bar,
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(

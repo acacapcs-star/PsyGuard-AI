@@ -21,6 +21,7 @@ import '../../../core/widgets/mood_fall_overlay.dart';
 import '../../../core/widgets/snow_cap.dart';
 import '../../../core/widgets/paw_tap.dart';
 import '../../../core/widgets/fish_pond.dart';
+import '../../../core/widgets/penguin_nest.dart';
 import '../../../core/widgets/beach_corner.dart';
 import '../../../core/widgets/hongbao_layer.dart';
 import '../../../core/widgets/micro_shake.dart';
@@ -290,11 +291,12 @@ class _HomeContentState extends State<_HomeContent> {
                 children: [
                   const Text('🌙', style: TextStyle(fontSize: 40)),
                   const SizedBox(height: 12),
-                  Text(alert.message, textAlign: TextAlign.center),
+                  Text(alert.messageFor(widget.copy.isZhTw),
+                      textAlign: TextAlign.center),
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () => Navigator.pop(ctx),
-                    child: const Text('我在'),
+                    child: Text(widget.copy.isZhTw ? '我在' : "I'm here"),
                   ),
                 ],
               ),
@@ -446,7 +448,28 @@ class _HomeContentState extends State<_HomeContent> {
         ],
 
         // ── Explore Section ──────────────────────────
-        Text(copy.exploreSelf, style: theme.textTheme.titleMedium),
+        Row(
+          children: [
+            Flexible(
+              child: Text(
+                copy.exploreSelf,
+                style: theme.textTheme.titleMedium,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 8),
+            // ☀️🏖️ 夏天/暑假：四杯飲料選單（其他氛圍不顯示）
+            // FittedBox：空間不夠時整排等比縮小，不會擠爆版面
+            const Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerRight,
+                child: DrinkBarStrip(),
+              ),
+            ),
+          ],
+        ),
         const SizedBox(height: 16),
         GridView.count(
           shrinkWrap: true,
@@ -482,13 +505,16 @@ class _HomeContentState extends State<_HomeContent> {
         ),
         const SizedBox(height: 32),
 
+        // 🐧 蛋滿 5 顆才展開的巢窩
+        PenguinNestRow(isZh: copy.isZhTw),
+
         // ── More Functions ───────────────────────────
         Row(
           children: [
             Text(copy.moreFeatures, style: theme.textTheme.titleMedium),
             const Spacer(),
-            // 🏖️ 暑假：飲料吧就掛在標題右邊（其他氛圍不顯示）
-            const DrinkBarStrip(),
+            // 🥤 你選的那杯飲料（還沒選就不顯示）
+            const ChosenDrinkBadge(),
             // 🧧 過年：紅包固定在這裡（其他氛圍不顯示，和飲料吧不會同框）
             const HongbaoEnvelope(),
           ],
@@ -1122,11 +1148,14 @@ class _CornerPenguinState extends ConsumerState<_CornerPenguin>
     with TickerProviderStateMixin {
   late final AnimationController _sway; // 平常微微搖晃
   late final AnimationController _bounce; // 點擊蹦跳
-  final List<double> _eggs = []; // ❄️ 企鵝生的蛋（水平位置 -1..1）
+  // 🥚 蛋改由 penguinNest（core/widgets/penguin_nest.dart）統一管理，
+  //    這樣巢窩那邊看得到同一份資料，也能存檔。
 
   @override
   void initState() {
     super.initState();
+    penguinNest.addListener(_onNestChanged);
+    penguinNest.load();
     _sway = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 3),
@@ -1139,9 +1168,14 @@ class _CornerPenguinState extends ConsumerState<_CornerPenguin>
 
   @override
   void dispose() {
+    penguinNest.removeListener(_onNestChanged);
     _sway.dispose();
     _bounce.dispose();
     super.dispose();
+  }
+
+  void _onNestChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
@@ -1161,7 +1195,7 @@ class _CornerPenguinState extends ConsumerState<_CornerPenguin>
       return const _EasterBunnyCorner(); // 🐰 復活節兔兔
     }
     if (mood == MoodTheme.summer) {
-      return const TreatCorner(); // ☀️ 角落放冰淇淋（魚在整頁游！）
+      return const SummerBeachCorner(); // ☀️ 海灘上的墨鏡貓與兔兔
     }
     if (mood == MoodTheme.summerBreak) {
       return const DrinkBarCorner(); // 🏖️ 排球男孩＋飲料吧
@@ -1175,11 +1209,8 @@ class _CornerPenguinState extends ConsumerState<_CornerPenguin>
         HapticFeedback.lightImpact();
         _bounce.forward(from: 0);
         if (effect == FallEffectType.snow) {
-          // ❄️ 企鵝生蛋！最多留 5 顆
-          setState(() {
-            _eggs.add(-0.8 + math.Random().nextDouble() * 1.6);
-            if (_eggs.length > 5) _eggs.removeAt(0);
-          });
+          // ❄️ 企鵝生蛋！滿 5 顆會在「更多功能」上方展開巢窩開始孵化
+          penguinNest.layEgg(-0.8 + math.Random().nextDouble() * 1.6);
         }
       },
       child: ListenableBuilder(
@@ -1212,10 +1243,11 @@ class _CornerPenguinState extends ConsumerState<_CornerPenguin>
                     ),
                   ),
                   // 🥚 生下來的蛋排在腳邊
-                  for (int i = 0; i < _eggs.length; i++)
+                  if (penguinNest.stage == NestStage.filling)
+                    for (int i = 0; i < penguinNest.eggs.length; i++)
                     Positioned.fill(
                       child: Align(
-                        alignment: Alignment(_eggs[i], 1.0),
+                        alignment: Alignment(penguinNest.eggs[i], 1.0),
                         child: Container(
                           width: 13,
                           height: 17,
@@ -1332,9 +1364,9 @@ class _OrnamentCatCornerState extends State<_OrnamentCatCorner>
             flex: 8,
             child: Transform.translate(
               // 數字越大貓咪越往下；超過 30 左右會畫出卡片外
-              offset: const Offset(0, 20),
+              offset: const Offset(0, 28),
               child: Transform.scale(
-                scale: 1.35,
+                scale: 1.55,
                 alignment: Alignment.bottomCenter,
                 child: Image.asset(
                   'assets/images/mood_xmas_cat.png',

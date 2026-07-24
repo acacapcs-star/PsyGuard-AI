@@ -2,6 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'package:local_auth/local_auth.dart';
+import '../../../core/security/secret_diary_lock.dart';
+import '../../../core/security/secret_swipe_shell.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../l10n/app_language.dart';
+import '../../../core/security/local_settings_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 enum NoteItemType { text, bullet, checkbox }
@@ -35,23 +41,23 @@ Color priorityColor(NotePriority p) {
   }
 }
 
-String priorityLabel(NotePriority p) {
+String priorityLabel(NotePriority p, {bool isZh = true}) {
   switch (p) {
-    case NotePriority.red1:    return '🔴 緊急 1';
-    case NotePriority.red2:    return '🔴 緊急 2';
-    case NotePriority.red3:    return '🔴 緊急 3';
-    case NotePriority.red4:    return '🔴 緊急 4';
-    case NotePriority.red5:    return '🔴 緊急 5';
-    case NotePriority.yellow1: return '🟡 重要 1';
-    case NotePriority.yellow2: return '🟡 重要 2';
-    case NotePriority.yellow3: return '🟡 重要 3';
-    case NotePriority.yellow4: return '🟡 重要 4';
-    case NotePriority.yellow5: return '🟡 重要 5';
-    case NotePriority.green1:  return '🟢 一般 1';
-    case NotePriority.green2:  return '🟢 一般 2';
-    case NotePriority.green3:  return '🟢 一般 3';
-    case NotePriority.green4:  return '🟢 一般 4';
-    case NotePriority.green5:  return '🟢 一般 5';
+    case NotePriority.red1:    return isZh ? '🔴 緊急 1' : '🔴 Urgent 1';
+    case NotePriority.red2:    return isZh ? '🔴 緊急 2' : '🔴 Urgent 2';
+    case NotePriority.red3:    return isZh ? '🔴 緊急 3' : '🔴 Urgent 3';
+    case NotePriority.red4:    return isZh ? '🔴 緊急 4' : '🔴 Urgent 4';
+    case NotePriority.red5:    return isZh ? '🔴 緊急 5' : '🔴 Urgent 5';
+    case NotePriority.yellow1: return isZh ? '🟡 重要 1' : '🟡 Important 1';
+    case NotePriority.yellow2: return isZh ? '🟡 重要 2' : '🟡 Important 2';
+    case NotePriority.yellow3: return isZh ? '🟡 重要 3' : '🟡 Important 3';
+    case NotePriority.yellow4: return isZh ? '🟡 重要 4' : '🟡 Important 4';
+    case NotePriority.yellow5: return isZh ? '🟡 重要 5' : '🟡 Important 5';
+    case NotePriority.green1:  return isZh ? '🟢 一般 1' : '🟢 Normal 1';
+    case NotePriority.green2:  return isZh ? '🟢 一般 2' : '🟢 Normal 2';
+    case NotePriority.green3:  return isZh ? '🟢 一般 3' : '🟢 Normal 3';
+    case NotePriority.green4:  return isZh ? '🟢 一般 4' : '🟢 Normal 4';
+    case NotePriority.green5:  return isZh ? '🟢 一般 5' : '🟢 Normal 5';
   }
 }
 
@@ -83,45 +89,392 @@ class NoteItem {
   );
 }
 
-class NotePage extends StatefulWidget {
-  const NotePage({super.key});
+class NotePage extends ConsumerStatefulWidget {
+  /// true = 🔒 秘密日記（要解鎖、內容加密）
+  /// false = 📖 公開日記（現有行為）
+  const NotePage({super.key, this.secret = false, this.initialDate});
+
+  final bool secret;
+
+  /// 從年度總覽點進來時，直接開在指定那天
+  final DateTime? initialDate;
 
   @override
-  State<NotePage> createState() => _NotePageState();
+  ConsumerState<NotePage> createState() => _NotePageState();
 }
 
-class _NotePageState extends State<NotePage> {
+class _NotePageState extends ConsumerState<NotePage> {
   List<NoteItem> _items = [];
   bool _isZh = true;
-  DateTime _selectedDate = DateTime.now();
+  late DateTime _selectedDate = widget.initialDate ?? DateTime.now();
+
+  // 💜 秘密日記走淺芋頭紫，公開日記維持原色
+  Color get _bg => widget.secret ? kTaroBg : const Color(0xFFF8FFFE);
+  Color get _accent =>
+      widget.secret ? kTaroDeep : const Color(0xFF2C5282);
 
   String get _dateKey {
-    return 'note_${_selectedDate.year}_${_selectedDate.month}_${_selectedDate.day}';
+    final prefix = widget.secret ? 'secret_note_' : 'note_';
+    return '$prefix${_selectedDate.year}_${_selectedDate.month}_${_selectedDate.day}';
   }
 
   String get _dateLabel {
     //
-    return '${_selectedDate.year} 年 ${_selectedDate.month} 月 ${_selectedDate.day} 日';
+    if (_isZh) {
+      return '${_selectedDate.year} 年 ${_selectedDate.month} 月 ${_selectedDate.day} 日';
+    }
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    return '${months[_selectedDate.month - 1]} ${_selectedDate.day}, ${_selectedDate.year}';
   }
 
   @override
   void initState() {
     super.initState();
-    _loadNotes();
-    _loadLanguage();
+    if (widget.secret) {
+      // 之前解過而且還沒到上鎖時間，就不用再解一次
+      _lock.cancelPendingLock();
+      if (_lock.isUnlocked) {
+        _unlocked = true;
+        _loadNotes();
+      }
+    } else {
+      _loadNotes();
+    }
   }
 
-  Future<void> _loadLanguage() async {
+  @override
+  void dispose() {
+    if (widget.secret) _lock.scheduleLock(); // 🔒 依設定決定何時清掉金鑰
+    _pwCtrl.dispose();
+    super.dispose();
+  }
+
+  // 語言改由 appLanguageControllerProvider 提供（見 build()），
+  // 不再自己讀 SharedPreferences。
+
+  // ═══════════════════════════════════════════════════
+  // 🔒 秘密日記
+  // ═══════════════════════════════════════════════════
+
+  final SecretDiaryLock _lock = SecretDiaryLock.instance;
+  bool _unlocked = false;
+  bool _busy = false;
+  String? _lockError;
+  final TextEditingController _pwCtrl = TextEditingController();
+
+  Future<void> _tryBiometric() async {
+    setState(() {
+      _busy = true;
+      _lockError = null;
+    });
+    try {
+      final auth = LocalAuthentication();
+      final ok = await auth.authenticate(
+        localizedReason: _isZh ? '解鎖秘密日記' : 'Unlock your secret diary',
+        options: const AuthenticationOptions(stickyAuth: true),
+      );
+      if (!ok) {
+        setState(() => _busy = false);
+        return;
+      }
+      await _lock.unlockWithBiometricResult();
+      await _afterUnlock();
+    } catch (e) {
+      setState(() {
+        _busy = false;
+        _lockError = _isZh ? '生物辨識無法使用，請改用密碼' : 'Biometrics unavailable, use your password';
+      });
+    }
+  }
+
+  Future<void> _tryPassword() async {
+    final pw = _pwCtrl.text;
+    if (pw.isEmpty) return;
+    setState(() {
+      _busy = true;
+      _lockError = null;
+    });
+    try {
+      if (await _lock.isSetUp()) {
+        await _lock.unlockWithPassword(pw);
+      } else {
+        if (pw.length < 4) {
+          setState(() {
+            _busy = false;
+            _lockError = _isZh ? '密碼至少 4 個字' : 'Password needs at least 4 characters';
+          });
+          return;
+        }
+        final code = await _lock.setUp(password: pw);
+        if (mounted) await _showRecoveryCode(code);
+      }
+      await _afterUnlock();
+    } on LockException {
+      setState(() {
+        _busy = false;
+        _lockError = _isZh ? '密碼不對' : 'Wrong password';
+      });
+    }
+  }
+
+  Future<void> _tryRecoveryCode() async {
+    final ctrl = TextEditingController();
+    final code = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(_isZh ? '輸入復原碼' : 'Enter recovery code'),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          decoration: InputDecoration(
+            hintText: 'ABCD-EFGH-...',
+            hintStyle: TextStyle(color: Colors.grey.shade400),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(_isZh ? '取消' : 'Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, ctrl.text),
+            child: Text(_isZh ? '確定' : 'OK'),
+          ),
+        ],
+      ),
+    );
+    if (code == null || code.isEmpty) return;
+    setState(() {
+      _busy = true;
+      _lockError = null;
+    });
+    try {
+      await _lock.unlockWithRecoveryCode(code);
+      await _afterUnlock();
+    } on LockException {
+      setState(() {
+        _busy = false;
+        _lockError = _isZh ? '復原碼不對' : 'Wrong recovery code';
+      });
+    }
+  }
+
+  Future<void> _afterUnlock() async {
+    await _loadNotes();
+    if (mounted) {
+      setState(() {
+        _unlocked = true;
+        _busy = false;
+      });
+    }
+  }
+
+  Future<void> _showRecoveryCode(String code) async {
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(_isZh ? '請抄下復原碼' : 'Write down your recovery code'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              _isZh
+                  ? '密碼忘記時，這是唯一能救回秘密日記的方法。請抄在紙上收好，這個畫面只會出現一次。'
+                  : 'If you forget your password, this is the only way back into your secret diary. Write it on paper and keep it safe. This screen appears only once.',
+              style: const TextStyle(fontSize: 13),
+            ),
+            const SizedBox(height: 16),
+            SelectableText(
+              code,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.5,
+                color: Color(0xFF2C5282),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(_isZh ? '我抄好了' : 'I wrote it down'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 把今天的公開筆記匯進秘密日記
+  Future<void> _importFromPublic() async {
     final prefs = await SharedPreferences.getInstance();
-    final lang = prefs.getString('app_language') ?? 'zh_TW';
-    setState(() => _isZh = lang != 'en');
+    final publicKey =
+        'note_${_selectedDate.year}_${_selectedDate.month}_${_selectedDate.day}';
+    final raw = prefs.getString(publicKey);
+    if (raw == null || raw.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(_isZh ? '這天的公開日記沒有東西' : 'Nothing in the public diary for this day'),
+      ));
+      return;
+    }
+
+    final list = jsonDecode(raw) as List;
+    final incoming = list.map((e) => NoteItem.fromJson(e)).toList();
+
+    if (!mounted) return;
+    final alsoDelete = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(_isZh ? '匯入 ${incoming.length} 則筆記' : 'Import ${incoming.length} notes'),
+        content: Text(
+          _isZh ? '要順便從公開日記刪掉嗎？' : 'Also remove them from the public diary?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(_isZh ? '取消' : 'Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(_isZh ? '保留原本的' : 'Keep both'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(_isZh ? '搬過來（刪掉原本的）' : 'Move (delete original)'),
+          ),
+        ],
+      ),
+    );
+    if (alsoDelete == null) return;
+
+    setState(() => _items = [..._items, ...incoming]);
+    await _saveNotes();
+    if (alsoDelete) await prefs.remove(publicKey);
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(_isZh ? '匯入完成 🔒' : 'Imported 🔒'),
+    ));
+  }
+
+  Widget _buildLockScreen() {
+    return Scaffold(
+      backgroundColor: _bg,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_rounded, color: Color(0xFF2C5282)),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 40),
+          child: FutureBuilder<bool>(
+            future: _lock.isSetUp(),
+            builder: (context, snap) {
+              final setUp = snap.data ?? true;
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('🔒', style: TextStyle(fontSize: 56)),
+                  const SizedBox(height: 16),
+                  Text(
+                    setUp
+                        ? (_isZh ? '秘密日記' : 'Secret Diary')
+                        : (_isZh ? '建立秘密日記' : 'Create your secret diary'),
+                    style: GoogleFonts.playfairDisplay(
+                      fontSize: 24,
+                      fontStyle: FontStyle.italic,
+                      color: const Color(0xFF2C5282),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    setUp
+                        ? (_isZh ? '解鎖後就能自由讀寫，離開頁面會自動鎖上' : 'Unlock once, then read and write freely. Leaving locks it again.')
+                        : (_isZh ? '設一組密碼，只有你打得開' : 'Set a password. Only you can open it.'),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 12, color: Color(0xFF7A8FA6)),
+                  ),
+                  const SizedBox(height: 28),
+                  TextField(
+                    controller: _pwCtrl,
+                    obscureText: true,
+                    autofocus: !setUp,
+                    onSubmitted: (_) => _tryPassword(),
+                    decoration: InputDecoration(
+                      labelText: _isZh ? '密碼' : 'Password',
+                      errorText: _lockError,
+                      border: const OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _busy ? null : _tryPassword,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF2C5282),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: _busy
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Text(setUp
+                              ? (_isZh ? '解鎖' : 'Unlock')
+                              : (_isZh ? '建立' : 'Create')),
+                    ),
+                  ),
+                  if (setUp) ...[
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: _busy ? null : _tryBiometric,
+                      icon: const Icon(Icons.fingerprint_rounded),
+                      label: Text(_isZh ? '用 Touch ID' : 'Use Touch ID'),
+                    ),
+                    TextButton(
+                      onPressed: _busy ? null : _tryRecoveryCode,
+                      child: Text(
+                        _isZh ? '忘記密碼？用復原碼' : 'Forgot password? Use recovery code',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ],
+              );
+            },
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _loadNotes() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_dateKey);
     if (raw != null) {
-      final list = jsonDecode(raw) as List;
+      final decoded = widget.secret ? _lock.decryptContent(raw) : raw;
+      final list = jsonDecode(decoded) as List;
       setState(() => _items = list.map((e) => NoteItem.fromJson(e)).toList());
     } else {
       setState(() => _items = []);
@@ -130,7 +483,9 @@ class _NotePageState extends State<NotePage> {
 
   Future<void> _saveNotes() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_dateKey, jsonEncode(_items.map((e) => e.toJson()).toList()));
+    final json = jsonEncode(_items.map((e) => e.toJson()).toList());
+    await prefs.setString(
+        _dateKey, widget.secret ? _lock.encryptContent(json) : json);
   }
 
   void _changeDate(int days) {
@@ -282,7 +637,7 @@ class _NotePageState extends State<NotePage> {
                       ),
                     ),
                     child: Text(
-                      priorityLabel(p),
+                      priorityLabel(p, isZh: _isZh),
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: selected ? FontWeight.bold : FontWeight.normal,
@@ -302,8 +657,11 @@ class _NotePageState extends State<NotePage> {
 
   @override
   Widget build(BuildContext context) {
+    // 🌐 語言跟 App 其他頁面共用同一個來源，切換時這頁會自動重建
+    _isZh = ref.watch(appLanguageControllerProvider) == AppLanguage.zhTw;
+    if (widget.secret && !_unlocked) return _buildLockScreen();
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FFFE),
+      backgroundColor: _bg,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -314,14 +672,26 @@ class _NotePageState extends State<NotePage> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("Today's Diary \0_0/", style: GoogleFonts.playfairDisplay(
+            Text(
+                widget.secret
+                    ? (_isZh ? '🔒 秘密日記' : '🔒 Secret Diary')
+                    : "Today's Diary \0_0/",
+                style: GoogleFonts.playfairDisplay(
               fontSize: 20, fontStyle: FontStyle.italic,
-              color: const Color(0xFF2C5282),
+              color: _accent,
             )),
             Text(_isZh ? '支援即時連動 AI 對話' : 'Syncs with AI chat in real time', style: const TextStyle(fontSize: 10, color: Color(0xFF0ABFBC))),
           ],
         ),
         actions: [
+          // 🔒 公開日記 -> 進秘密日記；秘密日記 -> 匯入公開筆記
+          if (widget.secret)
+            IconButton(
+              icon: const Icon(Icons.download_rounded, color: Color(0xFF2C5282)),
+              tooltip: _isZh ? '匯入今天的公開筆記' : 'Import today from public diary',
+              onPressed: _importFromPublic,
+            ),
+          // 🔒 入口改成向左滑，見 SecretSwipeShell
           IconButton(
             icon: const Icon(Icons.lightbulb_outline_rounded, color: Color(0xFF0ABFBC)),
             onPressed: _showGuideDialog,
@@ -349,7 +719,7 @@ class _NotePageState extends State<NotePage> {
                   onTap: _pickDate,
                   child: Row(
                     children: [
-                      const Icon(Icons.calendar_month_rounded, size: 16, color: Color(0xFF2C5282)),
+                      Icon(Icons.calendar_month_rounded, size: 16, color: _accent),
                       const SizedBox(width: 6),
                       Text(_dateLabel, style: const TextStyle(
                         fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF2D3748)

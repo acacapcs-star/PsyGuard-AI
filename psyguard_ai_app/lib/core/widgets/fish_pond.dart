@@ -52,19 +52,19 @@ class FishPondController extends ChangeNotifier {
   double lastGoalAt = -99; // 進球時刻（秒）
   double _now = 0;
 
-  static const double swimTopF = 0.10;
-  static const double swimBotF = 0.90;
+  static const double swimTopF = 0.015; // 魚缸頂（狀態卡以上區域）
+  static const double swimBotF = 0.155; // 魚缸底（Doing ok 卡片上緣附近）
   static const double ballR = 15;
-  static const double aimMaxPull = 96; // 最大拉弓距離
-  static const double launchK = 7.2; // 拉距 → 初速倍率
+  static const double aimMaxPull = 120; // 最大拉弓距離
+  static const double launchK = 11.0; // 拉距 → 初速倍率（加大，飛得起來）
   static const double gravity = 950;
 
   Offset get restAnchor =>
-      Offset(pageSize.width * 0.20, pageSize.height - ballR - 8);
+      Offset(pageSize.width * 0.20, pageSize.height * 0.80); // 發射台上移，拉弓空間加倍
 
   // 籃框幾何（右上）
   double get rimCx => pageSize.width - 64;
-  double get rimCy => pageSize.height * 0.215;
+  double get rimCy => pageSize.height * 0.42; // 籃框在下半場
   static const double rimR = 27; // 框半徑（開口）
   double get boardX => pageSize.width - 26; // 籃板
 
@@ -88,7 +88,7 @@ class FishPondController extends ChangeNotifier {
           speed: 16 + _rng.nextDouble() * 26,
           dir: _rng.nextBool() ? 1 : -1,
           bobPhase: _rng.nextDouble() * math.pi * 2,
-          size: 34 + _rng.nextDouble() * 14,
+          size: 26 + _rng.nextDouble() * 10, // 魚缸魚小巧一點
         ));
       }
     }
@@ -151,9 +151,10 @@ class FishPondController extends ChangeNotifier {
         bx = pageSize.width - ballR;
         bvx = -bvx * 0.7;
       }
-      if (by < ballR) {
-        by = ballR;
-        bvy = -bvy * 0.7;
+      final tankGlass = pageSize.height * swimBotF + ballR + 4;
+      if (by < tankGlass) {
+        by = tankGlass;
+        bvy = -bvy * 0.7; // 撞到魚缸底部玻璃反彈，球進不了魚缸
       }
 
       // 籃板（右側垂直板）
@@ -236,7 +237,8 @@ class FishPondController extends ChangeNotifier {
     }
     aimPos = Offset(
       p.dx.clamp(ballR, pageSize.width - ballR),
-      p.dy.clamp(ballR, pageSize.height - ballR),
+      p.dy.clamp(
+          pageSize.height * swimBotF + ballR + 4, pageSize.height - ballR),
     );
     bx = aimPos.dx;
     by = aimPos.dy;
@@ -361,7 +363,7 @@ class _FishVisualLayerState extends ConsumerState<FishVisualLayer>
             if (pond.goalFlash)
               Positioned(
                 right: 24,
-                top: pond.pageSize.height * 0.30,
+                top: pond.pageSize.height * 0.50, // 靠近下半場籃框
                 child: Transform.scale(
                   scale: Curves.elasticOut
                       .transform((pond.goalT / 0.5).clamp(0.0, 1.0)),
@@ -410,6 +412,30 @@ class _HoopBallPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     if (pond.pageSize.isEmpty) return;
+
+    // ── 魚缸（頂部半透明水藍缸）──
+    final tankRect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(
+        8,
+        size.height * FishPondController.swimTopF - 6,
+        size.width - 16,
+        size.height *
+                (FishPondController.swimBotF -
+                    FishPondController.swimTopF) +
+            14,
+      ),
+      const Radius.circular(18),
+    );
+    canvas.drawRRect(
+        tankRect,
+        Paint()..color = const Color(0xFF6EC6E8).withValues(alpha: 0.12));
+    canvas.drawRRect(
+        tankRect,
+        Paint()
+          ..color = const Color(0xFF6EC6E8).withValues(alpha: 0.35)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.4);
+
     final rimCx = pond.rimCx, rimCy = pond.rimCy;
     const rimR = FishPondController.rimR;
 

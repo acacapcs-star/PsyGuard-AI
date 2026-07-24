@@ -11,6 +11,8 @@ import '../../../core/security/local_settings_service.dart';
 import '../../../core/storage/database_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../l10n/app_language.dart';
+import '../../../core/security/secret_diary_lock.dart';
+import '../../../core/security/secret_diary_lock.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
@@ -399,6 +401,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               ),
             ),
             const SizedBox(height: 18),
+            _sectionTitle(copy.isZhTw ? '🔒 秘密日記' : '🔒 Secret Diary'),
+            const SizedBox(height: 12),
+            _card(child: _autoLockSelector(copy.isZhTw)),
+            const SizedBox(height: 18),
             _sectionTitle(copy.resetSectionTitle),
             const SizedBox(height: 12),
             _card(
@@ -483,9 +489,181 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 ],
               ),
             ),
+            // 🧪 加密自我測試（確認沒問題後可以整段刪掉）
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: () => _runCryptoSelfTest(context),
+              icon: const Text('🧪'),
+              label: const Text('測試加密（開發用）'),
+            ),
+            const SizedBox(height: 24),
           ],
         ),
       ),
+    );
+  }
+
+  // ═══════════════════════════════════════════════════
+  // 🧪 加密自我測試（確認沒問題後可以整段刪掉）
+  // ═══════════════════════════════════════════════════
+  Future<void> _runCryptoSelfTest(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('🧪 測試加密'),
+        content: const Text(
+          '這會重設秘密日記的金鑰與密碼。\n\n'
+          '如果你已經寫過真的秘密日記，跑下去就再也打不開了。\n\n'
+          '確定要測嗎？',
+          style: TextStyle(fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('確定測試'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    if (!context.mounted) return;
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    Map<String, bool> results;
+    try {
+      results = await SecretDiaryLock.selfTest();
+    } catch (e) {
+      results = {'整個炸掉：$e': false};
+    }
+
+    if (!context.mounted) return;
+    Navigator.pop(context); // 關掉轉圈圈
+
+    final passed = results.values.where((v) => v).length;
+    final total = results.length;
+    final allPassed = passed == total && total > 0;
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(allPassed ? '✅ 全部通過 ($passed/$total)' : '❌ 有問題 ($passed/$total)'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ...results.entries.map((e) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 3),
+                      child: Text(
+                        '${e.value ? "✅" : "❌"}  ${e.key}',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: e.value
+                              ? const Color(0xFF2E7D32)
+                              : const Color(0xFFC62828),
+                        ),
+                      ),
+                    )),
+                const SizedBox(height: 12),
+                Text(
+                  allPassed
+                      ? '加密運作正常，可以開始寫秘密日記了。記得回來把這顆測試按鈕拿掉。'
+                      : '請把這個畫面截圖回報，先不要寫真的秘密日記。',
+                  style: const TextStyle(fontSize: 12, color: Color(0xFF7A8FA6)),
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('關閉'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ⏱️ 秘密日記什麼時候自動上鎖
+  Widget _autoLockSelector(bool isZh) {
+    return FutureBuilder<AutoLockPolicy>(
+      future: SecretDiaryLock.instance.loadPolicy(),
+      builder: (context, snap) {
+        if (!snap.hasData) {
+          return const SizedBox(
+            height: 60,
+            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          );
+        }
+        final current = snap.data!;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              isZh ? '自動上鎖時機' : 'Auto-lock',
+              style: GoogleFonts.nunitoSans(
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+                color: LumiTheme.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              isZh
+                  ? '解鎖後金鑰會留在記憶體裡，這裡決定什麼時候清掉'
+                  : 'The key stays in memory after unlocking. This decides when to clear it.',
+              style: GoogleFonts.nunitoSans(
+                fontSize: 12,
+                color: LumiTheme.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            ...AutoLockPolicy.values.map(
+              (p) => RadioListTile<AutoLockPolicy>(
+                value: p,
+                groupValue: current,
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                activeColor: const Color(0xFF8B6FBF),
+                title: Text(
+                  p.labelFor(isZh),
+                  style: GoogleFonts.nunitoSans(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: LumiTheme.textPrimary,
+                  ),
+                ),
+                subtitle: Text(
+                  p.hintFor(isZh),
+                  style: GoogleFonts.nunitoSans(
+                    fontSize: 11,
+                    color: LumiTheme.textSecondary,
+                  ),
+                ),
+                onChanged: (v) async {
+                  if (v == null) return;
+                  await SecretDiaryLock.instance.setPolicy(v);
+                  if (mounted) setState(() {});
+                },
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 

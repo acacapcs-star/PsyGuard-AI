@@ -358,6 +358,103 @@ class _TreatCornerState extends State<TreatCorner>
   }
 }
 
+/// ☀️ 夏天角落：海灘上的墨鏡貓與喝飲料的兔兔。
+/// 點一下會慵懶地晃一晃（跟秋天的燈下狐狸同一種做法）。
+class SummerBeachCorner extends StatefulWidget {
+  const SummerBeachCorner({super.key});
+
+  @override
+  State<SummerBeachCorner> createState() => _SummerBeachCornerState();
+}
+
+class _SummerBeachCornerState extends State<SummerBeachCorner>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _sway;
+
+  @override
+  void initState() {
+    super.initState();
+    _sway = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
+  }
+
+  @override
+  void dispose() {
+    _sway.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        _sway.forward(from: 0);
+      },
+      child: ListenableBuilder(
+        listenable: _sway,
+        builder: (context, child) {
+          final t = _sway.value;
+          final wob = math.sin(t * math.pi * 3) * (1 - t) * 0.035;
+          final pop = 1 + math.sin(t * math.pi) * 0.04;
+          return Transform.scale(
+            scale: pop,
+            child: Transform.rotate(angle: wob, child: child),
+          );
+        },
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Image.asset(
+            'assets/images/mood_summer_beach.png',
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
+            errorBuilder: (_, __, ___) => const Center(
+              child: Text('🏖️', style: TextStyle(fontSize: 44)),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 🥤 你選中的那杯飲料，掛在「更多功能」標題右邊。
+/// 還沒選就不顯示；換杯時會彈跳一下。
+class ChosenDrinkBadge extends ConsumerWidget {
+  const ChosenDrinkBadge({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final mood = ref.watch(moodThemeProvider);
+    if (mood != MoodTheme.summer && mood != MoodTheme.summerBreak) {
+      return const SizedBox.shrink();
+    }
+    final selected = ref.watch(selectedDrinkProvider);
+    if (selected == null) return const SizedBox.shrink();
+
+    return TweenAnimationBuilder<double>(
+      // key 綁選中的杯子 → 換杯就重播一次彈跳
+      key: ValueKey<int>(selected),
+      tween: Tween<double>(begin: 0.55, end: 1.0),
+      duration: const Duration(milliseconds: 450),
+      curve: Curves.elasticOut,
+      builder: (context, v, child) => Transform.scale(scale: v, child: child),
+      child: Padding(
+        padding: const EdgeInsets.only(left: 8),
+        child: Image.asset(
+          kDrinkAssets[selected],
+          height: 46,
+          errorBuilder: (_, __, ___) =>
+              const Text('🍹', style: TextStyle(fontSize: 30)),
+        ),
+      ),
+    );
+  }
+}
+
 /// 🏖️ 暑假：四杯飲料的素材。
 const List<String> kDrinkAssets = [
   'assets/images/mood_drink_1.png', // 粉紅氣泡
@@ -460,7 +557,8 @@ class DrinkBarStrip extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (ref.watch(moodThemeProvider) != MoodTheme.summerBreak) {
+    final mood = ref.watch(moodThemeProvider);
+    if (mood != MoodTheme.summer && mood != MoodTheme.summerBreak) {
       return const SizedBox.shrink();
     }
     final selected = ref.watch(selectedDrinkProvider);

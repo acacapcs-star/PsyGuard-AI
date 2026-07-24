@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../core/security/local_settings_service.dart';
+import '../../../l10n/app_language.dart';
 
-class PetSelectionPage extends StatefulWidget {
+class PetSelectionPage extends ConsumerStatefulWidget {
   const PetSelectionPage({super.key});
 
   @override
-  State<PetSelectionPage> createState() => _PetSelectionPageState();
+  ConsumerState<PetSelectionPage> createState() => _PetSelectionPageState();
 }
 
-class _PetSelectionPageState extends State<PetSelectionPage> {
+class _PetSelectionPageState extends ConsumerState<PetSelectionPage> {
+  bool _isZh = true;
   String _selectedPet = 'otter';
   final TextEditingController _nameController = TextEditingController();
 
@@ -39,7 +43,9 @@ class _PetSelectionPageState extends State<PetSelectionPage> {
 
   Future<void> _confirm() async {
     final name = _nameController.text.trim().isEmpty
-        ? (_selectedPet == 'otter' ? '小獺' : '小豚')
+        ? (_selectedPet == 'otter'
+            ? (_isZh ? '小獺' : 'Otty')
+            : (_isZh ? '小豚' : 'Cappy'))
         : _nameController.text.trim();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('pet_type', _selectedPet);
@@ -49,6 +55,7 @@ class _PetSelectionPageState extends State<PetSelectionPage> {
 
   @override
   Widget build(BuildContext context) {
+    _isZh = ref.watch(appLanguageControllerProvider) == AppLanguage.zhTw;
     final pet = _pets[_selectedPet]!;
     return Scaffold(
       body: Stack(
@@ -74,14 +81,14 @@ class _PetSelectionPageState extends State<PetSelectionPage> {
               child: Column(
               children: [
                 const SizedBox(height: 24),
-                Text('選一個夥伴陪你',
+                Text(_isZh ? '選一個夥伴陪你' : 'Choose a companion',
                   style: GoogleFonts.playfairDisplay(
                     fontSize: 24, fontStyle: FontStyle.italic,
                     color: Colors.white, letterSpacing: 4,
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text('牠會一直在', style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 13)),
+                Text(_isZh ? '牠會一直在' : 'They will always be here', style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 13)),
                 const SizedBox(height: 24),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -137,7 +144,7 @@ class _PetSelectionPageState extends State<PetSelectionPage> {
                   padding: const EdgeInsets.symmetric(horizontal: 40),
                   child: Column(
                     children: [
-                      Text('幫牠取個名字',
+                      Text(_isZh ? '幫牠取個名字' : 'Give them a name',
                         style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 13)),
                       const SizedBox(height: 8),
                       TextField(
@@ -145,7 +152,9 @@ class _PetSelectionPageState extends State<PetSelectionPage> {
                         textAlign: TextAlign.center,
                         style: const TextStyle(color: Colors.white, fontSize: 18),
                         decoration: InputDecoration(
-                          hintText: _selectedPet == 'otter' ? '小獺' : '小豚',
+                          hintText: _selectedPet == 'otter'
+                              ? (_isZh ? '小獺' : 'Otty')
+                              : (_isZh ? '小豚' : 'Cappy'),
                           hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
                           enabledBorder: UnderlineInputBorder(
                             borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.4)),
@@ -166,7 +175,7 @@ class _PetSelectionPageState extends State<PetSelectionPage> {
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                           ),
-                          child: Text('開始吧', style: GoogleFonts.playfairDisplay(
+                          child: Text(_isZh ? '開始吧' : "Let's go", style: GoogleFonts.playfairDisplay(
                             fontSize: 16, fontStyle: FontStyle.italic, letterSpacing: 4)),
                         ),
                       ),

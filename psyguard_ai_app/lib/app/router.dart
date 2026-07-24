@@ -24,6 +24,7 @@ import '../features/welcome/presentation/pet_selection_page.dart';
 import '../features/voice/voice_wake_page.dart';
 import '../features/penguin/penguin_park_page.dart';
 import '../features/checkin/presentation/month_overview_page.dart';
+import '../core/security/secret_swipe_shell.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -149,8 +150,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/calendar-overview',
         name: 'calendar_overview',
-        pageBuilder: (context, state) =>
-            _buildPageWithSlide(context, state, const MonthOverviewPage()),
+        pageBuilder: (context, state) => _buildPageWithSlide(
+          context,
+          state,
+          const SecretSwipeShell(
+            publicPage: MonthOverviewPage(),
+            secretPage: MonthOverviewPage(secret: true),
+          ),
+        ),
       ),
       GoRoute(
         path: '/settings',

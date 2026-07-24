@@ -5,8 +5,17 @@ class IncongruenceDetector {
   // 代名詞密度偵測（「我」出現頻率異常升高）
   double getPronounDensity(String text) {
     final words = text.split('');
-    final iCount = RegExp(r'我').allMatches(text).length;
-    return words.isEmpty ? 0 : iCount / words.length * 100;
+    final zhCount = RegExp(r'我').allMatches(text).length;
+    // 英文以單字為單位算，再換算成跟中文相近的密度
+    final enWords = text.toLowerCase().split(RegExp(r'[^a-z]+'))
+        .where((w) => w.isNotEmpty).toList();
+    final enCount =
+        enWords.where((w) => w == 'i' || w == 'me' || w == 'my' ||
+            w == 'myself' || w == "i'm").length;
+    if (enWords.length >= 5) {
+      return enCount / enWords.length * 100;
+    }
+    return words.isEmpty ? 0 : zhCount / words.length * 100;
   }
 
   // 認知僵化標記
@@ -15,8 +24,16 @@ class IncongruenceDetector {
     '沒有人', '沒有用', '不行', '不可以', '只有',
   ];
 
+  static const List<String> rigidityMarkersEn = [
+    'always', 'never', 'must', 'have to', 'impossible',
+    'everyone', 'no one', 'nobody', 'nothing', 'useless',
+    'completely', 'totally', 'absolutely',
+  ];
+
   int getRigidityScore(String text) {
-    return rigidityMarkers.where((m) => text.contains(m)).length;
+    final lowered = text.toLowerCase();
+    return rigidityMarkers.where((m) => text.contains(m)).length +
+        rigidityMarkersEn.where((m) => lowered.contains(m)).length;
   }
 
   // 事件嚴重程度評估
@@ -26,8 +43,17 @@ class IncongruenceDetector {
     '沒朋友', '沒人在乎', '家人', '吵架', '打',
   ];
 
+  static const List<String> severeEventKeywordsEn = [
+    'yelled at', 'shouted at', 'failed', 'rejected', 'broke up',
+    'disappear', 'meaningless', 'pointless', 'give up',
+    'exhausted', 'so tired', 'no friends', 'nobody cares',
+    'no one cares', 'argument', 'fight', 'hit me', 'left me',
+  ];
+
   int getSeverityScore(String text) {
-    return severeEventKeywords.where((k) => text.contains(k)).length;
+    final lowered = text.toLowerCase();
+    return severeEventKeywords.where((k) => text.contains(k)).length +
+        severeEventKeywordsEn.where((k) => lowered.contains(k)).length;
   }
 
   // 情緒強度評估（低強度詞彙）
@@ -36,8 +62,17 @@ class IncongruenceDetector {
     '都可以', '沒事', '不重要', '習慣了',
   ];
 
+  static const List<String> lowEmotionMarkersEn = [
+    "it's fine", 'its fine', "i'm fine", 'im fine', "it's okay",
+    'whatever', 'never mind', 'nevermind', 'no big deal',
+    "doesn't matter", 'does not matter', 'used to it',
+    "i'm used to it", 'no worries',
+  ];
+
   int getLowEmotionScore(String text) {
-    return lowEmotionMarkers.where((m) => text.contains(m)).length;
+    final lowered = text.toLowerCase();
+    return lowEmotionMarkers.where((m) => text.contains(m)).length +
+        lowEmotionMarkersEn.where((m) => lowered.contains(m)).length;
   }
 
   // 主要偵測函式
@@ -87,13 +122,21 @@ class IncongruenceResult {
 
   bool get needsAttention => riskScore >= 5;
 
-  String get alertMessage {
+  String get alertMessage => alertMessageFor(true);
+
+  String alertMessageFor(bool isZh) {
     if (isIncongruent) {
-      return 'LUNA 注意到你描述的事情很重要，但你說「沒關係」——你真的還好嗎>///< ？';
+      return isZh
+          ? 'LUNA 注意到你描述的事情很重要，但你說「沒關係」——你真的還好嗎>///< ？'
+          : 'LUNA noticed that what you described sounds heavy, but you said it is fine — are you really okay >///< ?';
     }
     if (isRigid) {
-      return '你說了很多「一定」和「不可能」——有時候事情沒有那麼絕對，我們可以一起看看？';
+      return isZh
+          ? '你說了很多「一定」和「不可能」——有時候事情沒有那麼絕對，我們可以一起看看？'
+          : 'You used a lot of "always" and "impossible" — things are not always that absolute. Shall we look at it together?';
     }
-    return 'LUNA 在聽，你可以多說一點嗎O_O/ ？';
+    return isZh
+        ? 'LUNA 在聽，你可以多說一點嗎O_O/ ？'
+        : 'LUNA is listening. Would you like to say a bit more O_O/ ?';
   }
 }
