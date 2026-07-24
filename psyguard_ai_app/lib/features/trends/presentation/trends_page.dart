@@ -11,6 +11,7 @@ import '../../../core/storage/database_provider.dart';
 import '../../../core/widgets/geometric_stress_indicator.dart';
 import '../../../core/widgets/brand_loading_indicator.dart';
 import '../../../l10n/app_strings.dart';
+import '../../../core/ers/group_norms.dart';
 
 class TrendBundle {
   TrendBundle({
@@ -24,7 +25,40 @@ class TrendBundle {
   final List<RiskSnapshot> risks;
 }
 
+// 拉桿：3、6、9…30，每 3 天一格
 final trendRangeProvider = StateProvider<int>((ref) => 30);
+
+/// 對比模式：個人（跟自己比）或團體（跟同齡人比）
+enum TrendCompareMode { personal, group }
+
+final trendCompareModeProvider =
+    StateProvider<TrendCompareMode>((ref) => TrendCompareMode.personal);
+
+/// 團體基準線（跟著年齡層走）。個人模式用不到，回傳 null。
+final trendGroupNormProvider = FutureProvider<GroupNorm?>((ref) async {
+  if (ref.watch(trendCompareModeProvider) != TrendCompareMode.group) {
+    return null;
+  }
+  final band = await AgeBandStore.get() ?? AgeBand.age16to18;
+  return GroupNorms.fetch(band);
+});
+
+/// 三張趨勢卡各自要不要顯示：mood / sleep / risk
+class TrendVisible {
+  final bool mood;
+  final bool sleep;
+  final bool risk;
+  const TrendVisible({this.mood = true, this.sleep = true, this.risk = true});
+
+  TrendVisible copyWith({bool? mood, bool? sleep, bool? risk}) => TrendVisible(
+        mood: mood ?? this.mood,
+        sleep: sleep ?? this.sleep,
+        risk: risk ?? this.risk,
+      );
+}
+
+final trendVisibleProvider =
+    StateProvider<TrendVisible>((ref) => const TrendVisible());
 
 final trendBundleProvider = FutureProvider<TrendBundle>((ref) async {
   final range = ref.watch(trendRangeProvider);
@@ -46,6 +80,9 @@ class TrendsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final range = ref.watch(trendRangeProvider);
+    final visible = ref.watch(trendVisibleProvider);
+    final compareMode = ref.watch(trendCompareModeProvider);
+    final groupNorm = ref.watch(trendGroupNormProvider).valueOrNull;
     final data = ref.watch(trendBundleProvider);
     final theme = Theme.of(context);
     final copy = AppStrings.of(ref.watch(appLanguageControllerProvider));
@@ -78,7 +115,9 @@ class TrendsPage extends ConsumerWidget {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Range selector
+          // 天數拉桿 + 個人/團體切換
+          _rangeAndCompareControls(context, ref, copy),
+          if (false) // 舊的範圍按鈕停用（保留避免大改版面）
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
             child: SingleChildScrollView(
@@ -234,6 +273,9 @@ class TrendsPage extends ConsumerWidget {
                         physics: const BouncingScrollPhysics(),
                         padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
                         children: [
+                          _seriesToggles(context, ref, copy),
+                          const SizedBox(height: 4),
+                          if (visible.mood)
                           _chartCard(
                             context,
                             title: copy.moodPercentage,
@@ -244,11 +286,19 @@ class TrendsPage extends ConsumerWidget {
                                   .map((e) => e.moodScore.toDouble())
                                   .toList(),
                             ),
+                            baseline: compareMode == TrendCompareMode.group
+                                ? groupNorm?.mood
+                                : _avg(bundle.checkins
+                                    .map((e) => e.moodScore.toDouble())),
+                            baselineIsGroup:
+                                compareMode == TrendCompareMode.group,
+                            copy: copy,
                             minY: 0,
                             maxY: 100,
                             formatYLabel: _formatPercentAxis,
                           ),
-                          const SizedBox(height: 16),
+                          if (visible.mood) const SizedBox(height: 16),
+                          if (visible.sleep)
                           _chartCard(
                             context,
                             title: copy.sleepHoursLabel,
@@ -259,11 +309,19 @@ class TrendsPage extends ConsumerWidget {
                                   .map((e) => e.sleepHours)
                                   .toList(),
                             ),
+                            baseline: compareMode == TrendCompareMode.group
+                                ? groupNorm?.sleepHours
+                                : _avg(bundle.sleepLogs
+                                    .map((e) => e.sleepHours)),
+                            baselineIsGroup:
+                                compareMode == TrendCompareMode.group,
+                            copy: copy,
                             minY: 0,
                             maxY: 12,
                           ),
-                          const SizedBox(height: 16),
+                          if (visible.sleep) const SizedBox(height: 16),
                           // 風險分數卡 + 幾何壓力指示器
+                          if (visible.risk)
                           _chartCard(
                             context,
                             title: copy.riskScore,
@@ -274,6 +332,13 @@ class TrendsPage extends ConsumerWidget {
                                   .map((e) => e.riskScore.toDouble())
                                   .toList(),
                             ),
+                            baseline: compareMode == TrendCompareMode.group
+                                ? groupNorm?.riskScore
+                                : _avg(bundle.risks
+                                    .map((e) => e.riskScore.toDouble())),
+                            baselineIsGroup:
+                                compareMode == TrendCompareMode.group,
+                            copy: copy,
                             minY: 0,
                             maxY: 100,
                             trailing: GeometricStressIndicator(
@@ -318,6 +383,9 @@ class TrendsPage extends ConsumerWidget {
     required List<FlSpot> spots,
     required double minY,
     required double maxY,
+    double? baseline,
+    bool baselineIsGroup = false,
+    AppStrings? copy,
     String Function(double value)? formatYLabel,
     Widget? trailing,
   }) {
@@ -352,7 +420,16 @@ class TrendsPage extends ConsumerWidget {
           const SizedBox(height: 20),
           SizedBox(
             height: 180,
-            child: LineChart(
+            child: Builder(builder: (context) {
+              // 資料點多的時候給每個點固定寬度，超出畫面就能左右滑
+              final count = spots.length;
+              final needScroll = count > 14;
+              final chartWidth = needScroll
+                  ? count * 26.0
+                  : MediaQuery.of(context).size.width - 72;
+              final chart = SizedBox(
+                width: chartWidth,
+                child: LineChart(
               LineChartData(
                 minY: minY,
                 maxY: maxY,
@@ -390,6 +467,18 @@ class TrendsPage extends ConsumerWidget {
                   ),
                 ),
                 borderData: FlBorderData(show: false),
+                extraLinesData: baseline == null
+                    ? const ExtraLinesData()
+                    : ExtraLinesData(horizontalLines: [
+                        HorizontalLine(
+                          y: baseline,
+                          color: baselineIsGroup
+                              ? const Color(0xFFFF9800)
+                              : color.withValues(alpha: 0.55),
+                          strokeWidth: 2,
+                          dashArray: [6, 4],
+                        ),
+                      ]),
                 lineBarsData: [
                   LineChartBarData(
                     spots: spots.isEmpty ? const [FlSpot(0, 0)] : spots,
@@ -415,11 +504,224 @@ class TrendsPage extends ConsumerWidget {
                   ),
                 ],
               ),
+                ),
+              );
+              return needScroll
+                  ? SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      child: chart,
+                    )
+                  : chart;
+            }),
+          ),
+          if (baseline != null && copy != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Row(
+                children: [
+                  Container(
+                    width: 18,
+                    height: 2,
+                    color: baselineIsGroup
+                        ? const Color(0xFFFF9800)
+                        : color.withValues(alpha: 0.55),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      baselineIsGroup
+                          ? (copy.isZhTw
+                              ? '同齡人參考線（基於研究常模）'
+                              : 'Peer reference (based on research norms)')
+                          : (copy.isZhTw ? '你的期間平均' : 'Your period average'),
+                      style: const TextStyle(
+                          fontSize: 11, color: Color(0xFF9AA5B1)),
+                    ),
+                  ),
+                ],
+              ),
             ),
+        ],
+      ),
+    );
+  }
+
+  /// ☑️ 選要看哪些線
+  Widget _seriesToggles(BuildContext context, WidgetRef ref, AppStrings copy) {
+    final v = ref.watch(trendVisibleProvider);
+    final isZh = copy.isZhTw;
+
+    Widget chip(String label, Color color, bool on, VoidCallback onTap) {
+      return GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          margin: const EdgeInsets.only(right: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: on ? color.withValues(alpha: 0.14) : Colors.grey.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: on ? color : Colors.grey.withValues(alpha: 0.3),
+              width: 1.4,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                on ? Icons.check_circle_rounded : Icons.circle_outlined,
+                size: 15,
+                color: on ? color : Colors.grey,
+              ),
+              const SizedBox(width: 5),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: on ? color : Colors.grey,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final notifier = ref.read(trendVisibleProvider.notifier);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          chip(isZh ? '心情' : 'Mood', const Color(0xFF667EEA), v.mood,
+              () => notifier.state = v.copyWith(mood: !v.mood)),
+          chip(isZh ? '睡眠' : 'Sleep', const Color(0xFFA18CD1), v.sleep,
+              () => notifier.state = v.copyWith(sleep: !v.sleep)),
+          chip(isZh ? '風險' : 'Risk', const Color(0xFFEF5350), v.risk,
+              () => notifier.state = v.copyWith(risk: !v.risk)),
+        ],
+      ),
+    );
+  }
+
+  /// 天數拉桿 + 個人/團體切換
+  Widget _rangeAndCompareControls(
+      BuildContext context, WidgetRef ref, AppStrings copy) {
+    final range = ref.watch(trendRangeProvider);
+    final mode = ref.watch(trendCompareModeProvider);
+    final isZh = copy.isZhTw;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 個人 / 團體
+          Container(
+            decoration: BoxDecoration(
+              color: LumiTheme.surface,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            padding: const EdgeInsets.all(4),
+            child: Row(
+              children: [
+                _modeTab(
+                  label: isZh ? '個人' : 'Personal',
+                  sub: isZh ? '跟自己比' : 'vs yourself',
+                  on: mode == TrendCompareMode.personal,
+                  onTap: () => ref.read(trendCompareModeProvider.notifier).state =
+                      TrendCompareMode.personal,
+                ),
+                _modeTab(
+                  label: isZh ? '團體' : 'Group',
+                  sub: isZh ? '跟同齡人比' : 'vs peers',
+                  on: mode == TrendCompareMode.group,
+                  onTap: () => ref.read(trendCompareModeProvider.notifier).state =
+                      TrendCompareMode.group,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          // 天數拉桿
+          Row(
+            children: [
+              Text(
+                isZh ? '近 $range 天' : 'Last $range days',
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF2D3748),
+                ),
+              ),
+              Expanded(
+                child: Slider(
+                  value: range.toDouble(),
+                  min: 3,
+                  max: 30,
+                  divisions: 9, // 3,6,9,...,30
+                  label: '$range',
+                  activeColor: LumiTheme.primary,
+                  onChanged: (v) => ref.read(trendRangeProvider.notifier).state =
+                      (v / 3).round() * 3,
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
+  }
+
+  Widget _modeTab({
+    required String label,
+    required String sub,
+    required bool on,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: on ? LumiTheme.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(9),
+          ),
+          child: Column(
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: on ? Colors.white : LumiTheme.textSecondary,
+                ),
+              ),
+              Text(
+                sub,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: on
+                      ? Colors.white.withValues(alpha: 0.85)
+                      : LumiTheme.textLight,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 平均值，空的話回 null（個人基準線用）
+  double? _avg(Iterable<double> values) {
+    final list = values.toList();
+    if (list.isEmpty) return null;
+    return list.reduce((a, b) => a + b) / list.length;
   }
 
   List<FlSpot> _toSpots(List<double> values) {
