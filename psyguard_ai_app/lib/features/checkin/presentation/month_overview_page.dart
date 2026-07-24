@@ -323,6 +323,28 @@ class _MonthOverviewPageState extends ConsumerState<MonthOverviewPage> {
             ),
           ],
         ),
+        actions: [
+          // 🔒 按鈕入口，跟左滑手勢並存
+          if (widget.secret)
+            IconButton(
+              icon: const Icon(Icons.lock_open_rounded, color: kTaroDeep),
+              tooltip: isZh ? '回到公開日曆' : 'Back to public calendar',
+              onPressed: () => Navigator.pop(context),
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.lock_outline_rounded,
+                  color: Color(0xFF8B6FBF)),
+              tooltip: isZh ? '秘密日曆' : 'Secret calendar',
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const MonthOverviewPage(secret: true),
+                ),
+              ),
+            ),
+          const SizedBox(width: 4),
+        ],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())

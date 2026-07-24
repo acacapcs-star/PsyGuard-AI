@@ -1,5 +1,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- 🎤 Hey Lumi 語音喚醒 -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- 🔒 秘密日記的指紋解鎖 -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <!-- 📳 觸覺回饋 -->
+    <uses-permission android:name="android.permission.VIBRATE" />
 
     <application
         android:label="PsyGuard AI"
@@ -42,6 +48,14 @@
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
+        </intent>
+        <!-- 🎤 Android 11+ 要宣告才找得到語音辨識服務 -->
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
+        <!-- 🔊 文字轉語音（Lumi 的回話） -->
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
         </intent>
     </queries>
 </manifest>

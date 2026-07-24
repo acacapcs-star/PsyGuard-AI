@@ -67,8 +67,10 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>需要使用麥克風來啟用 Hey Lumi 語音喚醒功能</string>
+	<string>需要使用麥克風來啟用 Hey Lumi 語音喚醒功能 / The microphone is used for the Hey Lumi voice wake feature</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>需要使用 Face ID 來解鎖你的秘密日記 / Face ID is used to unlock your secret diary</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>需要使用語音辨識來聽懂你對 Hey Lumi 說的話</string>
+	<string>需要使用語音辨識來聽懂你對 Hey Lumi 說的話 / Speech recognition is used to understand what you say to Hey Lumi</string>
 </dict>
 </plist>

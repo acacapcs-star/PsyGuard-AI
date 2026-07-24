@@ -691,7 +691,26 @@ class _NotePageState extends ConsumerState<NotePage> {
               tooltip: _isZh ? '匯入今天的公開筆記' : 'Import today from public diary',
               onPressed: _importFromPublic,
             ),
-          // 🔒 入口改成向左滑，見 SecretSwipeShell
+          // 🔒 按鈕入口（手機上 ReorderableListView 會吃掉左滑手勢，
+          //    所以保留按鈕當作穩定入口）
+          if (widget.secret)
+            IconButton(
+              icon: const Icon(Icons.lock_open_rounded, color: kTaroDeep),
+              tooltip: _isZh ? '回到公開日記' : 'Back to public diary',
+              onPressed: () => Navigator.pop(context),
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.lock_outline_rounded,
+                  color: Color(0xFF8B6FBF)),
+              tooltip: _isZh ? '秘密日記' : 'Secret diary',
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const NotePage(secret: true),
+                ),
+              ),
+            ),
           IconButton(
             icon: const Icon(Icons.lightbulb_outline_rounded, color: Color(0xFF0ABFBC)),
             onPressed: _showGuideDialog,

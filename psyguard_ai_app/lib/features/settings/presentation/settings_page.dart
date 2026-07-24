@@ -401,9 +401,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               ),
             ),
             const SizedBox(height: 18),
-            _sectionTitle(copy.isZhTw ? '🔒 秘密日記' : '🔒 Secret Diary'),
+            _sectionTitle(language == AppLanguage.zhTw
+                ? '🔒 秘密日記'
+                : '🔒 Secret Diary'),
             const SizedBox(height: 12),
-            _card(child: _autoLockSelector(copy.isZhTw)),
+            _card(child: _autoLockSelector(language == AppLanguage.zhTw)),
             const SizedBox(height: 18),
             _sectionTitle(copy.resetSectionTitle),
             const SizedBox(height: 12),

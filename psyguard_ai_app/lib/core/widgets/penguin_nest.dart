@@ -10,7 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// 孵完再點企鵝 -> 重新開始下一窩
 ///
 /// 想調大小改這幾個常數就好，不用重做圖。
-const int kNestSize = 5;
+const int kNestSize = 4;
 const double kEggWidth = 40;
 const double kEggHeight = 50;
 const Duration kHatchGap = Duration(milliseconds: 430);

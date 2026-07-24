@@ -15,6 +15,7 @@
 // 想關掉加密只改 kEncryptContent = false（不建議，那樣硬碟裡是明文）
 // ═══════════════════════════════════════════════════════════
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
@@ -326,13 +327,13 @@ class SecretDiaryLock {
       r['復原碼容錯（大小寫空白）'] = lock.isUnlocked;
 
       // 上鎖政策
-      await lock.setPolicy(AutoLockPolicy.session);
-      lock.onLeaveSecretArea();
-      r['session 模式離開不鎖'] = lock.isStillUnlocked;
+      await lock.setPolicy(AutoLockPolicy.onAppClose);
+      lock.scheduleLock();
+      r['關 App 才鎖：離開後仍解鎖'] = lock.isUnlocked;
 
-      await lock.setPolicy(AutoLockPolicy.immediate);
-      lock.onLeaveSecretArea();
-      r['immediate 模式離開就鎖'] = !lock.isStillUnlocked;
+      await lock.setPolicy(AutoLockPolicy.onLeave);
+      lock.scheduleLock();
+      r['離開就鎖：離開後已上鎖'] = !lock.isUnlocked;
     } catch (e) {
       r['發生例外：$e'] = false;
     }
