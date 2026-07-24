@@ -1,0 +1,307 @@
+import 'dart:math' as math;
+
+import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../theme/mood_theme_service.dart';
+
+/// ☀️ 全頁魚池：夏天氛圍時，魚在「整個首頁」游泳（游在卡片後面，
+/// 從卡片縫隙與空白處游過）；排球躺在頁面底部，點了整頁彈跳。
+///
+/// 架構：
+/// - [FishVisualLayer] 墊在首頁內容「下面」→ 魚被卡片半遮半掩
+/// - [FishTouchLayer] 浮在最上層 → 只有魚和球的位置會攔截手指，
+///   其他地方完全不擋滑動與卡片點擊
+/// - 兩層共用 [FishPondController]（Riverpod）同步狀態
+
+class PondFish {
+  PondFish({
+    required this.asset,
+    required this.x,
+    required this.y,
+    required this.speed,
+    required this.dir,
+    required this.bobPhase,
+    required this.size,
+  });
+
+  final String asset;
+  double x;
+  double y;
+  double speed;
+  int dir; // 1 = 往右
+  final double bobPhase;
+  final double size;
+  bool picked = false;
+}
+
+class FishPondController extends ChangeNotifier {
+  final math.Random _rng = math.Random();
+  Size pageSize = Size.zero;
+  final List<PondFish> fish = [];
+
+  // 排球
+  double bx = 0, by = 0, bvx = 0, bvy = 0, bRot = 0, bSpin = 0;
+  bool _ballInit = false;
+  bool ballResting = true;
+
+  static const double swimTopF = 0.10; // 可游泳區域（頁面比例）
+  static const double swimBotF = 0.90;
+  static const double ballR = 15;
+
+  void ensureInit(Size size) {
+    if (size.isEmpty) return;
+    pageSize = size;
+    if (fish.isEmpty) {
+      const assets = [
+        'assets/images/mood_fish_1.png',
+        'assets/images/mood_fish_2.png',
+        'assets/images/mood_fish_3.png',
+        'assets/images/mood_fish_4.png',
+      ];
+      final top = size.height * swimTopF;
+      final bot = size.height * swimBotF;
+      for (final a in assets) {
+        fish.add(PondFish(
+          asset: a,
+          x: _rng.nextDouble() * size.width,
+          y: top + _rng.nextDouble() * (bot - top),
+          speed: 16 + _rng.nextDouble() * 26,
+          dir: _rng.nextBool() ? 1 : -1,
+          bobPhase: _rng.nextDouble() * math.pi * 2,
+          size: 34 + _rng.nextDouble() * 14,
+        ));
+      }
+    }
+    if (!_ballInit) {
+      _ballInit = true;
+      bx = size.width * 0.72;
+      by = size.height - ballR - 6;
+    }
+  }
+
+  void step(double dt, double t) {
+    if (pageSize.isEmpty) return;
+    final top = pageSize.height * swimTopF;
+    final bot = pageSize.height * swimBotF;
+
+    for (final f in fish) {
+      if (f.picked) continue;
+      f.x += f.speed * f.dir * dt;
+      f.y = (f.y + math.sin(t * 1.4 + f.bobPhase) * 10 * dt).clamp(top, bot);
+      // 游出邊界 → 從另一側游回來（像游過整片海）
+      if (f.dir > 0 && f.x > pageSize.width + f.size) {
+        f.x = -f.size;
+      } else if (f.dir < 0 && f.x < -f.size) {
+        f.x = pageSize.width + f.size;
+      }
+    }
+
+    if (!ballResting) {
+      bvy += 900 * dt;
+      bx += bvx * dt;
+      by += bvy * dt;
+      bRot += bSpin * dt;
+      final rest = pageSize.height - ballR - 6;
+      if (bx < ballR) {
+        bx = ballR;
+        bvx = -bvx * 0.72;
+      } else if (bx > pageSize.width - ballR) {
+        bx = pageSize.width - ballR;
+        bvx = -bvx * 0.72;
+      }
+      if (by < ballR) {
+        by = ballR;
+        bvy = -bvy * 0.72;
+      }
+      if (by >= rest) {
+        by = rest;
+        bvy = -bvy * 0.58;
+        bvx *= 0.85;
+        if (bvy.abs() < 60) {
+          ballResting = true;
+          bvx = 0;
+          bvy = 0;
+        }
+      }
+    }
+    notifyListeners();
+  }
+
+  void pick(PondFish f) {
+    f.picked = true;
+    notifyListeners();
+  }
+
+  void dragBy(PondFish f, Offset delta) {
+    f.x = (f.x + delta.dx).clamp(0.0, pageSize.width);
+    f.y = (f.y + delta.dy).clamp(0.0, pageSize.height);
+    notifyListeners();
+  }
+
+  void release(PondFish f) {
+    f.picked = false;
+    // 放回旁邊的水流：夾回可游泳區，從落點繼續游
+    f.y = f.y.clamp(pageSize.height * swimTopF, pageSize.height * swimBotF);
+    f.dir = _rng.nextBool() ? 1 : -1;
+    notifyListeners();
+  }
+
+  void kickBall() {
+    ballResting = false;
+    bvy = -(560 + _rng.nextDouble() * 260); // 整頁高度的大彈跳
+    bvx = (_rng.nextDouble() - 0.5) * 360;
+    bSpin = (_rng.nextDouble() - 0.5) * 14;
+  }
+}
+
+final fishPondProvider = ChangeNotifierProvider<FishPondController>(
+  (ref) => FishPondController(),
+);
+
+/// 視覺層：墊在首頁內容下面。IgnorePointer，純顯示。
+class FishVisualLayer extends ConsumerStatefulWidget {
+  const FishVisualLayer({super.key});
+
+  @override
+  ConsumerState<FishVisualLayer> createState() => _FishVisualLayerState();
+}
+
+class _FishVisualLayerState extends ConsumerState<FishVisualLayer>
+    with SingleTickerProviderStateMixin {
+  late final Ticker _ticker;
+  Duration _last = Duration.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    _ticker = createTicker(_onTick);
+  }
+
+  @override
+  void dispose() {
+    _ticker.dispose();
+    super.dispose();
+  }
+
+  void _onTick(Duration elapsed) {
+    final dt = ((elapsed - _last).inMicroseconds / 1e6).clamp(0.0, 0.05);
+    _last = elapsed;
+    ref
+        .read(fishPondProvider)
+        .step(dt, elapsed.inMicroseconds / 1e6);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final summer =
+        ref.watch(moodThemeProvider) == MoodTheme.summer;
+    if (!summer) {
+      if (_ticker.isActive) _ticker.stop();
+      return const SizedBox.shrink();
+    }
+    if (!_ticker.isActive) {
+      _last = Duration.zero;
+      _ticker.start();
+    }
+    final pond = ref.watch(fishPondProvider);
+    return LayoutBuilder(builder: (context, constraints) {
+      pond.ensureInit(Size(constraints.maxWidth, constraints.maxHeight));
+      return IgnorePointer(
+        child: Stack(
+          children: [
+            for (final f in pond.fish)
+              Positioned(
+                left: f.x - f.size / 2,
+                top: f.y - f.size / 2,
+                child: Transform.scale(
+                  scaleX: f.dir > 0 ? -1 : 1,
+                  child: Transform.scale(
+                    scale: f.picked ? 1.3 : 1.0,
+                    child: Image.asset(
+                      f.asset,
+                      width: f.size,
+                      errorBuilder: (_, __, ___) => Text('🐟',
+                          style: TextStyle(fontSize: f.size * 0.8)),
+                    ),
+                  ),
+                ),
+              ),
+            Positioned(
+              left: pond.bx - FishPondController.ballR,
+              top: pond.by - FishPondController.ballR,
+              child: Transform.rotate(
+                angle: pond.bRot,
+                child: Image.asset(
+                  'assets/images/mood_volleyball.png',
+                  width: FishPondController.ballR * 2,
+                  errorBuilder: (_, __, ___) =>
+                      const Text('🏐', style: TextStyle(fontSize: 24)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    });
+  }
+}
+
+/// 觸控層：浮在最上層，只在魚/球的位置放小小的手勢感應區，
+/// 其他區域完全穿透（不影響滑動與卡片點擊）。
+class FishTouchLayer extends ConsumerWidget {
+  const FishTouchLayer({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final summer =
+        ref.watch(moodThemeProvider) == MoodTheme.summer;
+    if (!summer) return const SizedBox.shrink();
+    final pond = ref.watch(fishPondProvider);
+
+    return Stack(
+      children: [
+        for (final f in pond.fish)
+          Positioned(
+            left: f.x - f.size / 2 - 6,
+            top: f.y - f.size / 2 - 6,
+            width: f.size + 12,
+            height: f.size + 12,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onPanStart: (_) {
+                HapticFeedback.selectionClick();
+                ref.read(fishPondProvider).pick(f);
+              },
+              onPanUpdate: (d) =>
+                  ref.read(fishPondProvider).dragBy(f, d.delta),
+              onPanEnd: (_) {
+                HapticFeedback.lightImpact();
+                ref.read(fishPondProvider).release(f);
+              },
+              onPanCancel: () => ref.read(fishPondProvider).release(f),
+              onTap: () {
+                // 輕點也算摸摸魚
+                HapticFeedback.selectionClick();
+              },
+            ),
+          ),
+        Positioned(
+          left: pond.bx - FishPondController.ballR - 5,
+          top: pond.by - FishPondController.ballR - 5,
+          width: FishPondController.ballR * 2 + 10,
+          height: FishPondController.ballR * 2 + 10,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () {
+              HapticFeedback.lightImpact();
+              ref.read(fishPondProvider).kickBall();
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}

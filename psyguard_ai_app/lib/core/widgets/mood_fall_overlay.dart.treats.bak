@@ -126,9 +126,11 @@ class _MoodFallOverlayState extends State<MoodFallOverlay>
     'assets/images/mood_petal_2.png', // 整朵櫻花（偶爾）
   ];
 
-  /// 暑假：不用素材了。改成「水珠雨 + 彩虹」，全部程式繪製。
-  /// （冰淇淋和壽司從天上掉下來實在太超現實了。）
-  static const List<String> _treatAssets = [];
+  /// 暑假：清涼冰品。
+  static const List<String> _treatAssets = [
+    'assets/images/mood_icecream.png',
+    'assets/images/mood_sushi.png',
+  ];
 
   late final Ticker _ticker;
   final math.Random _rng = math.Random();
@@ -364,12 +366,13 @@ class _MoodFallOverlayState extends State<MoodFallOverlay>
     }
   }
 
-  /// 水花飛濺；[mixTreats] = true 時是暑假模式，雨下得更密，
-  /// 並在 _FallPainter 裡額外畫一道彩虹。
+  /// 水花飛濺；mixTreats = true 時混入冰品/壽司翻滾飄落（暑假）。
   void _spawnSplash({required bool mixTreats}) {
-    // 暑假：夏日午後陣雨 → 雨量加倍
-    final dropCount =
-        (widget.particleCount * (mixTreats ? 3.0 : 2.0)).round();
+    final images = _imageCache[FallEffectType.treats] ?? const <ui.Image>[];
+    final hasImages = mixTreats && images.isNotEmpty;
+
+    // 水珠：數量多、掉得快，有打水仗的清涼感
+    final dropCount = widget.particleCount * 2;
     for (int i = 0; i < dropCount; i++) {
       _particles.add(_FallParticle(
         x: _rng.nextDouble(),
@@ -385,6 +388,26 @@ class _MoodFallOverlayState extends State<MoodFallOverlay>
         isFlake: false,
         opacity: 0.5 + _rng.nextDouble() * 0.35,
       ));
+    }
+    if (hasImages) {
+      // 冰品與壽司翻滾飄落
+      final treatCount = (widget.particleCount * 0.6).round();
+      for (int i = 0; i < treatCount; i++) {
+        _particles.add(_FallParticle(
+          x: _rng.nextDouble(),
+          delay: _rng.nextDouble() * 4.0,
+          duration: 5.0 + _rng.nextDouble() * 4.0,
+          size: 34 + _rng.nextDouble() * 26,
+          swayAmp: 14 + _rng.nextDouble() * 22,
+          swaySpeed: 0.6 + _rng.nextDouble() * 1.0,
+          swayPhase: _rng.nextDouble() * math.pi * 2,
+          spinSpeed: (_rng.nextDouble() - 0.5) * 2.6,
+          spinPhase: _rng.nextDouble() * math.pi * 2,
+          imageIndex: _rng.nextInt(images.length),
+          isFlake: false,
+          opacity: 0.85 + _rng.nextDouble() * 0.15,
+        ));
+      }
     }
   }
 
@@ -462,87 +485,18 @@ class _FallPainter extends CustomPainter {
   static const Color _splashDotColor = Color(0xFF4FC3F7); // 水珠藍
 
   static const List<Color> _fwPalette = [
-    Color(0xFFC62828), // 深紅
-    Color(0xFFFF8F00), // 赤金
-    Color(0xFFD81B60), // 豔桃
-    Color(0xFFE64A19), // 焰橘
-    Color(0xFF1565C0), // 深寶藍
+    Color(0xFFFF5A5A), // 喜氣紅
+    Color(0xFFFFC44D), // 金
+    Color(0xFFFF8FB7), // 粉
+    Color(0xFFFFA94D), // 橘
+    Color(0xFF7FE3FF), // 冰藍
   ];
-
-  /// 🌈 暑假限定：一道橫跨畫面上半部的彩虹。
-  /// 七道同心圓弧，圓心放在畫面下方外側，看起來就像遠方天邊的雨後彩虹。
-  /// 淡入 1.2 秒 → 停留 → 最後 1.5 秒淡出。
-  void _paintRainbow(Canvas canvas, Size size) {
-    const fadeIn = 1.2;
-    const fadeOut = 1.5;
-    const total = 9.0; // 彩虹整體生命週期（秒）
-    if (elapsed > total) return;
-
-    double alpha;
-    if (elapsed < fadeIn) {
-      alpha = elapsed / fadeIn;
-    } else if (elapsed > total - fadeOut) {
-      alpha = (total - elapsed) / fadeOut;
-    } else {
-      alpha = 1.0;
-    }
-    alpha = alpha.clamp(0.0, 1.0) * 0.42; // 半透明，不要蓋住內容
-
-    const bands = [
-      Color(0xFFFF6B6B), // 紅
-      Color(0xFFFFA24D), // 橙
-      Color(0xFFFFE066), // 黃
-      Color(0xFF7BD88F), // 綠
-      Color(0xFF6EC6E8), // 藍
-      Color(0xFF7B8FE0), // 靛
-      Color(0xFFB58BE0), // 紫
-    ];
-
-    final center = Offset(size.width * 0.5, size.height * 0.82);
-    final outer = size.shortestSide * 1.05;
-    final bandWidth = size.shortestSide * 0.030;
-
-    final paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = bandWidth
-      ..strokeCap = StrokeCap.round
-      ..maskFilter = MaskFilter.blur(BlurStyle.normal, bandWidth * 0.55);
-
-    for (int i = 0; i < bands.length; i++) {
-      final r = outer - i * bandWidth * 0.92;
-      paint.color = bands[i].withValues(alpha: alpha);
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: r),
-        math.pi, // 從左邊開始
-        math.pi, // 畫半圈
-        false,
-        paint,
-      );
-    }
-
-    // 最外圈再加一層極淡的白霧，讓邊緣柔一點
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: outer + bandWidth * 0.6),
-      math.pi,
-      math.pi,
-      false,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = bandWidth * 1.4
-        ..color = Colors.white.withValues(alpha: alpha * 0.30)
-        ..maskFilter = MaskFilter.blur(BlurStyle.normal, bandWidth),
-    );
-  }
 
   @override
   void paint(Canvas canvas, Size size) {
     if (effect == FallEffectType.fireworks) {
       _paintFireworks(canvas, size);
       return;
-    }
-    // 🏖️ 暑假：彩虹畫在雨的後面
-    if (effect == FallEffectType.treats) {
-      _paintRainbow(canvas, size);
     }
     final fill = Paint()..style = PaintingStyle.fill;
     final imagePaint = Paint()..filterQuality = FilterQuality.medium;
@@ -660,10 +614,9 @@ class _FallPainter extends CustomPainter {
           double a = math.pow(1 - bt, 1.2).toDouble();
           a *= 0.7 + 0.3 * math.sin(bt * 28 + k * 1.7);
           if (a <= 0.02) continue;
-          final c = Color.lerp(
-              Colors.white, color, (bt * 4).clamp(0.0, 1.0))!; // 幾乎立即上色
+          final c = Color.lerp(Colors.white, color, (bt * 2).clamp(0.0, 1.0))!;
           dot.color = c.withValues(alpha: a.clamp(0.0, 1.0));
-          canvas.drawCircle(pos, 3.0 * (1 - bt * 0.5), dot); // 火花更大更重
+          canvas.drawCircle(pos, 2.2 * (1 - bt * 0.55), dot);
         }
       }
     }

@@ -1,0 +1,762 @@
+import 'dart:math' as math;
+
+import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../theme/mood_theme_service.dart';
+
+/// ☀️ 夏天：全頁魚池 + 全頁投籃。
+///
+/// - 4 隻魚在「整個首頁」游泳，游在卡片後面，從縫隙與空白處游過
+/// - 籃球躺在左下角，籃框掛在右上角
+///   按住球往反方向拉 →（橘色拋物線預測）→ 放開發射，飛越整頁
+///   撞牆／地面／籃板／籃框都會反彈；從框上方穿過就 GOAL！🎉
+///
+/// 架構：
+/// - [FishVisualLayer] 墊在首頁內容「下面」→ 魚被卡片半遮半掩
+/// - [FishTouchLayer] 浮在最上層 → 籃框與籃球畫在這層（看得清楚），
+///   整層 IgnorePointer，只有魚身與球身那幾小塊會攔截手指，
+///   其他地方完全不擋滑動與卡片點擊
+/// - 兩層共用 [FishPondController]（Riverpod）同步狀態
+
+class PondFish {
+  PondFish({
+    required this.asset,
+    required this.x,
+    required this.y,
+    required this.speed,
+    required this.dir,
+    required this.bobPhase,
+    required this.size,
+  });
+
+  final String asset;
+  double x;
+  double y;
+  double speed;
+  int dir; // 1 = 往右
+  final double bobPhase;
+  final double size;
+  bool picked = false;
+}
+
+/// 進球時炸開的小星星。
+class Spark {
+  Spark(this.x, this.y, this.vx, this.vy, this.hue);
+  double x, y, vx, vy;
+  final int hue;
+  double life = 1;
+}
+
+class FishPondController extends ChangeNotifier {
+  final math.Random _rng = math.Random();
+  Size pageSize = Size.zero;
+  final List<PondFish> fish = [];
+  final List<Spark> sparks = [];
+
+  // ── 籃球狀態 ──
+  double bx = 0, by = 0, bvx = 0, bvy = 0, bRot = 0, bSpin = 0;
+  bool flying = false; // 正在飛
+  bool aiming = false; // 正在拉弓
+  bool scored = false; // 這一球算過分了嗎
+  bool hasShot = false; // 投過第一球了嗎（決定要不要顯示提示）
+  Offset anchor = Offset.zero; // 這一球從哪裡發射
+  Offset aim = Offset.zero; // 往後拉的位移
+  double restTimer = 0; // 停下來後多久自動回原位
+  double prevY = 0;
+  double time = 0;
+  double goalFlash = 0; // GOAL 橫幅殘留秒數
+  int score = 0;
+  bool _ballInit = false;
+
+  static const double swimTopF = 0.10; // 可游泳區域（頁面比例）
+  static const double swimBotF = 0.90;
+  static const double ballR = 16; // 籃球半徑
+  static const double rimHalf = 36; // 籃框半徑
+  static const double launchK = 7.0; // 拉的距離 → 初速倍率
+
+  /// 籃框中心（掛在頁面右上）。
+  Offset get hoop => Offset(
+        math.max(pageSize.width * 0.60, pageSize.width - 82),
+        pageSize.height * 0.28,
+      );
+  double get boardX => hoop.dx + rimHalf + 3;
+  double get boardTop => hoop.dy - pageSize.height * 0.13;
+  double get boardBot => hoop.dy + 12;
+  Offset get homePos => Offset(58, pageSize.height - ballR - 30);
+  double get gravity => pageSize.height * 2.0;
+  double get maxPull => pageSize.width * 0.45;
+
+  /// 球目前要畫在哪（拉弓中會被拉離原位）。
+  Offset get ballPos => aiming ? anchor + aim : Offset(bx, by);
+
+  void ensureInit(Size size) {
+    if (size.isEmpty) return;
+    pageSize = size;
+    if (fish.isEmpty) {
+      const assets = [
+        'assets/images/mood_fish_1.png',
+        'assets/images/mood_fish_2.png',
+        'assets/images/mood_fish_3.png',
+        'assets/images/mood_fish_4.png',
+      ];
+      final top = size.height * swimTopF;
+      final bot = size.height * swimBotF;
+      for (final a in assets) {
+        fish.add(PondFish(
+          asset: a,
+          x: _rng.nextDouble() * size.width,
+          y: top + _rng.nextDouble() * (bot - top),
+          speed: 16 + _rng.nextDouble() * 26,
+          dir: _rng.nextBool() ? 1 : -1,
+          bobPhase: _rng.nextDouble() * math.pi * 2,
+          size: 34 + _rng.nextDouble() * 14,
+        ));
+      }
+    }
+    if (!_ballInit) {
+      _ballInit = true;
+      resetBall();
+    }
+  }
+
+  void step(double dt, double t) {
+    if (pageSize.isEmpty) return;
+    time = t;
+    _stepFish(dt, t);
+    _stepBall(dt);
+    _stepSparks(dt);
+    if (goalFlash > 0) goalFlash = math.max(0, goalFlash - dt);
+    notifyListeners();
+  }
+
+  void _stepFish(double dt, double t) {
+    final top = pageSize.height * swimTopF;
+    final bot = pageSize.height * swimBotF;
+    for (final f in fish) {
+      if (f.picked) continue;
+      f.x += f.speed * f.dir * dt;
+      f.y = (f.y + math.sin(t * 1.4 + f.bobPhase) * 10 * dt).clamp(top, bot);
+      // 游出邊界 → 從另一側游回來（像游過整片海）
+      if (f.dir > 0 && f.x > pageSize.width + f.size) {
+        f.x = -f.size;
+      } else if (f.dir < 0 && f.x < -f.size) {
+        f.x = pageSize.width + f.size;
+      }
+    }
+  }
+
+  void _stepBall(double dt) {
+    if (!flying) {
+      if (!aiming && restTimer > 0) {
+        restTimer -= dt;
+        if (restTimer <= 0) resetBall();
+      }
+      return;
+    }
+
+    final floor = homePos.dy;
+    final g = gravity;
+    final hp = hoop;
+
+    prevY = by;
+    final prevX = bx;
+
+    bvy += g * dt;
+    bx += bvx * dt;
+    by += bvy * dt;
+    bRot += bSpin * dt;
+
+    // ── 左右牆 ──
+    if (bx < ballR) {
+      bx = ballR;
+      bvx = -bvx * 0.55;
+      bSpin = -bSpin * 0.6;
+    } else if (bx > pageSize.width - ballR) {
+      bx = pageSize.width - ballR;
+      bvx = -bvx * 0.55;
+      bSpin = -bSpin * 0.6;
+    }
+
+    // ── 籃板（從左邊撞上去才擋）──
+    if (bvx > 0 &&
+        prevX + ballR <= boardX &&
+        bx + ballR >= boardX &&
+        by > boardTop &&
+        by < boardBot) {
+      bx = boardX - ballR;
+      bvx = -bvx * 0.5;
+      HapticFeedback.selectionClick();
+    }
+
+    // ── 籃框兩端當成圓形碰撞點（框噹！）──
+    for (final p in [
+      Offset(hp.dx - rimHalf, hp.dy),
+      Offset(hp.dx + rimHalf, hp.dy),
+    ]) {
+      final d = Offset(bx, by) - p;
+      final dist = d.distance;
+      if (dist < ballR && dist > 0.001) {
+        final n = d / dist;
+        bx = p.dx + n.dx * ballR;
+        by = p.dy + n.dy * ballR;
+        final dot = bvx * n.dx + bvy * n.dy;
+        bvx = (bvx - 2 * dot * n.dx) * 0.6;
+        bvy = (bvy - 2 * dot * n.dy) * 0.6;
+        bSpin += (_rng.nextDouble() - 0.5) * 8;
+      }
+    }
+
+    // ── 得分：從上方往下穿過籃框 ──
+    if (!scored &&
+        bvy > 0 &&
+        prevY < hp.dy &&
+        by >= hp.dy &&
+        (bx - hp.dx).abs() < rimHalf) {
+      scored = true;
+      _goal();
+    }
+
+    // ── 地面 ──
+    if (by >= floor) {
+      by = floor;
+      bvy = -bvy * 0.45;
+      bvx *= 0.78;
+      bSpin *= 0.7;
+      if (bvy.abs() < pageSize.height * 0.10 &&
+          bvx.abs() < pageSize.width * 0.10) {
+        flying = false;
+        bvx = 0;
+        bvy = 0;
+        bSpin = 0;
+        restTimer = 0.7;
+      }
+    }
+
+    // 飛出天際就收回來
+    if (by < -pageSize.height) {
+      flying = false;
+      restTimer = 0.25;
+    }
+  }
+
+  void _goal() {
+    HapticFeedback.heavyImpact();
+    score++;
+    goalFlash = 1.4;
+    final hp = hoop;
+    for (int i = 0; i < 26; i++) {
+      final a = _rng.nextDouble() * math.pi * 2;
+      final sp = 90 + _rng.nextDouble() * 230;
+      sparks.add(Spark(
+        hp.dx,
+        hp.dy + 6,
+        math.cos(a) * sp,
+        math.sin(a) * sp - 90,
+        _rng.nextInt(3),
+      ));
+    }
+  }
+
+  void _stepSparks(double dt) {
+    final g = gravity * 0.5;
+    for (final s in sparks) {
+      s.vy += g * dt;
+      s.x += s.vx * dt;
+      s.y += s.vy * dt;
+      s.life -= dt * 1.15;
+    }
+    sparks.removeWhere((s) => s.life <= 0);
+  }
+
+  void resetBall() {
+    final hp = homePos;
+    bx = hp.dx;
+    by = hp.dy;
+    bvx = 0;
+    bvy = 0;
+    bSpin = 0;
+    bRot = 0;
+    anchor = hp;
+    aim = Offset.zero;
+    flying = false;
+    aiming = false;
+    scored = false;
+    restTimer = 0;
+  }
+
+  // ── 魚 ──
+  void pick(PondFish f) {
+    f.picked = true;
+    notifyListeners();
+  }
+
+  void dragBy(PondFish f, Offset delta) {
+    f.x = (f.x + delta.dx).clamp(0.0, pageSize.width);
+    f.y = (f.y + delta.dy).clamp(0.0, pageSize.height);
+    notifyListeners();
+  }
+
+  void release(PondFish f) {
+    f.picked = false;
+    // 放回旁邊的水流：夾回可游泳區，從落點繼續游
+    f.y = f.y.clamp(pageSize.height * swimTopF, pageSize.height * swimBotF);
+    f.dir = _rng.nextBool() ? 1 : -1;
+    notifyListeners();
+  }
+
+  // ── 投籃手勢 ──
+  void startAim() {
+    if (flying) return;
+    anchor = Offset(bx, by);
+    aim = Offset.zero;
+    aiming = true;
+    scored = false;
+    restTimer = 0;
+    notifyListeners();
+  }
+
+  void dragAim(Offset delta) {
+    if (!aiming) return;
+    var a = aim + delta;
+    if (a.distance > maxPull) a = a / a.distance * maxPull;
+    aim = a;
+    notifyListeners();
+  }
+
+  /// 放開手指；有真的發射出去就回傳 true。
+  bool endAim() {
+    if (!aiming) return false;
+    aiming = false;
+    if (aim.distance < 8) {
+      aim = Offset.zero;
+      notifyListeners();
+      return false; // 只是輕輕碰到，不發射
+    }
+    bx = anchor.dx + aim.dx;
+    by = anchor.dy + aim.dy;
+    bvx = -aim.dx * launchK;
+    bvy = -aim.dy * launchK;
+    bSpin = -bvx * 0.012;
+    aim = Offset.zero;
+    flying = true;
+    scored = false;
+    hasShot = true;
+    notifyListeners();
+    return true;
+  }
+}
+
+final fishPondProvider = ChangeNotifierProvider<FishPondController>(
+  (ref) => FishPondController(),
+);
+
+/// 視覺層：墊在首頁內容下面，只畫魚（被卡片半遮半掩才好看）。
+/// 同時負責推動整個池子的 Ticker。
+class FishVisualLayer extends ConsumerStatefulWidget {
+  const FishVisualLayer({super.key});
+
+  @override
+  ConsumerState<FishVisualLayer> createState() => _FishVisualLayerState();
+}
+
+class _FishVisualLayerState extends ConsumerState<FishVisualLayer>
+    with SingleTickerProviderStateMixin {
+  late final Ticker _ticker;
+  Duration _last = Duration.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    _ticker = createTicker(_onTick);
+  }
+
+  @override
+  void dispose() {
+    _ticker.dispose();
+    super.dispose();
+  }
+
+  void _onTick(Duration elapsed) {
+    final dt = ((elapsed - _last).inMicroseconds / 1e6).clamp(0.0, 0.05);
+    _last = elapsed;
+    ref.read(fishPondProvider).step(dt, elapsed.inMicroseconds / 1e6);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final summer = ref.watch(moodThemeProvider) == MoodTheme.summer;
+    if (!summer) {
+      if (_ticker.isActive) _ticker.stop();
+      return const SizedBox.shrink();
+    }
+    if (!_ticker.isActive) {
+      _last = Duration.zero;
+      _ticker.start();
+    }
+    final pond = ref.watch(fishPondProvider);
+    return LayoutBuilder(builder: (context, constraints) {
+      pond.ensureInit(Size(constraints.maxWidth, constraints.maxHeight));
+      return IgnorePointer(
+        child: Stack(
+          children: [
+            for (final f in pond.fish)
+              Positioned(
+                left: f.x - f.size / 2,
+                top: f.y - f.size / 2,
+                child: Transform.scale(
+                  scaleX: f.dir > 0 ? -1 : 1,
+                  child: Transform.scale(
+                    scale: f.picked ? 1.3 : 1.0,
+                    child: Image.asset(
+                      f.asset,
+                      width: f.size,
+                      errorBuilder: (_, __, ___) => Text('🐟',
+                          style: TextStyle(fontSize: f.size * 0.8)),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      );
+    });
+  }
+}
+
+/// 觸控層：浮在最上層。
+/// 籃框與籃球畫在這裡（蓋在卡片之上，看得清楚），但整片 IgnorePointer；
+/// 只有魚身與球身那幾小塊放手勢感應區，其他區域完全穿透。
+class FishTouchLayer extends ConsumerWidget {
+  const FishTouchLayer({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final summer = ref.watch(moodThemeProvider) == MoodTheme.summer;
+    if (!summer) return const SizedBox.shrink();
+    final pond = ref.watch(fishPondProvider);
+    final bp = pond.ballPos;
+    const r = FishPondController.ballR;
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        // 籃框 / 籃球 / 瞄準線 / 星星 / 計分（純顯示，不擋手勢）
+        Positioned.fill(
+          child: IgnorePointer(
+            child: CustomPaint(
+              size: Size.infinite,
+              painter: _HoopPainter(pond),
+            ),
+          ),
+        ),
+        // 魚：可以撈起來拖著走
+        for (final f in pond.fish)
+          Positioned(
+            left: f.x - f.size / 2 - 6,
+            top: f.y - f.size / 2 - 6,
+            width: f.size + 12,
+            height: f.size + 12,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onPanStart: (_) {
+                HapticFeedback.selectionClick();
+                ref.read(fishPondProvider).pick(f);
+              },
+              onPanUpdate: (d) => ref.read(fishPondProvider).dragBy(f, d.delta),
+              onPanEnd: (_) {
+                HapticFeedback.lightImpact();
+                ref.read(fishPondProvider).release(f);
+              },
+              onPanCancel: () => ref.read(fishPondProvider).release(f),
+              onTap: () {
+                // 輕點也算摸摸魚
+                HapticFeedback.selectionClick();
+              },
+            ),
+          ),
+        // 籃球：拉弓瞄準（飛行中不吃手勢，才不會誤觸）
+        if (!pond.flying)
+          Positioned(
+            left: bp.dx - r * 2.2,
+            top: bp.dy - r * 2.2,
+            width: r * 4.4,
+            height: r * 4.4,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onPanStart: (_) {
+                HapticFeedback.selectionClick();
+                ref.read(fishPondProvider).startAim();
+              },
+              onPanUpdate: (d) => ref.read(fishPondProvider).dragAim(d.delta),
+              onPanEnd: (_) {
+                if (ref.read(fishPondProvider).endAim()) {
+                  HapticFeedback.mediumImpact();
+                }
+              },
+              onPanCancel: () => ref.read(fishPondProvider).endAim(),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// 畫籃框、籃球、瞄準線、拋物線預測、星星、計分與 GOAL。
+class _HoopPainter extends CustomPainter {
+  _HoopPainter(this.pond);
+
+  final FishPondController pond;
+
+  static const Color _orange = Color(0xFFE85D1F);
+  static const List<Color> _sparkColors = [
+    Color(0xFFFFC107),
+    Color(0xFFFF7043),
+    Color(0xFFFFFFFF),
+  ];
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (pond.pageSize.isEmpty) return;
+    _drawHoop(canvas, size);
+    _drawAim(canvas, size);
+    _drawBall(canvas);
+    _drawSparks(canvas);
+    _drawHud(canvas, size);
+  }
+
+  void _drawHoop(Canvas canvas, Size size) {
+    final hp = pond.hoop;
+    const rim = FishPondController.rimHalf;
+    final bx = pond.boardX;
+    final top = pond.boardTop;
+    final bot = pond.boardBot;
+
+    // 從右邊牆伸出來的支架
+    canvas.drawRect(
+      Rect.fromLTRB(bx + 5, top + (bot - top) * 0.28, size.width, top + (bot - top) * 0.28 + 5),
+      Paint()..color = const Color(0xFF90A4AE),
+    );
+    // 籃板
+    final board = RRect.fromRectAndRadius(
+      Rect.fromLTRB(bx, top, bx + 6, bot),
+      const Radius.circular(3),
+    );
+    canvas.drawRRect(
+      board,
+      Paint()..color = Colors.white.withValues(alpha: 0.95),
+    );
+    canvas.drawRRect(
+      board,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.6
+        ..color = _orange,
+    );
+
+    // 網子
+    final net = Paint()
+      ..color = const Color(0xFF546E7A).withValues(alpha: 0.55)
+      ..strokeWidth = 1.2
+      ..style = PaintingStyle.stroke;
+    const netH = 34.0;
+    for (int i = 0; i <= 5; i++) {
+      final t = i / 5;
+      final topX = hp.dx - rim + rim * 2 * t;
+      final botX = hp.dx - rim * 0.45 + rim * 0.9 * t;
+      canvas.drawLine(Offset(topX, hp.dy), Offset(botX, hp.dy + netH), net);
+    }
+    for (int j = 1; j <= 2; j++) {
+      final f = j / 3;
+      final y = hp.dy + netH * f;
+      final half = rim * (1 - 0.55 * f);
+      canvas.drawLine(Offset(hp.dx - half, y), Offset(hp.dx + half, y), net);
+    }
+
+    // 籃框
+    canvas.drawLine(
+      Offset(hp.dx - rim, hp.dy),
+      Offset(hp.dx + rim, hp.dy),
+      Paint()
+        ..color = _orange
+        ..strokeWidth = 4.5
+        ..strokeCap = StrokeCap.round,
+    );
+  }
+
+  void _drawAim(Canvas canvas, Size size) {
+    if (!pond.aiming || pond.aim.distance <= 8) return;
+    final a = pond.anchor;
+    final tip = a + pond.aim;
+
+    canvas.drawLine(
+      a,
+      tip,
+      Paint()
+        ..color = _orange.withValues(alpha: 0.8)
+        ..strokeWidth = 3
+        ..strokeCap = StrokeCap.round,
+    );
+    canvas.drawCircle(a, 4, Paint()..color = _orange.withValues(alpha: 0.45));
+
+    // 拋物線預測點
+    double x = tip.dx, y = tip.dy;
+    double vx = -pond.aim.dx * FishPondController.launchK;
+    double vy = -pond.aim.dy * FishPondController.launchK;
+    final g = pond.gravity;
+    const dt = 0.035;
+    final dot = Paint();
+    final ring = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    for (int i = 0; i < 30; i++) {
+      vy += g * dt;
+      x += vx * dt;
+      y += vy * dt;
+      if (y > size.height + 20 || x < -20 || x > size.width + 20) break;
+      final alpha = (1 - i / 30) * 0.85;
+      dot.color = _orange.withValues(alpha: alpha);
+      ring.color = Colors.white.withValues(alpha: alpha * 0.9);
+      canvas.drawCircle(Offset(x, y), 2.6, dot);
+      canvas.drawCircle(Offset(x, y), 2.6, ring);
+    }
+  }
+
+  void _drawBall(Canvas canvas) {
+    final p = pond.ballPos;
+    const r = FishPondController.ballR;
+
+    // 第一次玩的提示
+    if (!pond.hasShot && !pond.aiming && !pond.flying) {
+      final pulse = 0.5 + 0.5 * math.sin(pond.time * 3.2);
+      canvas.drawCircle(
+        p,
+        r * (1.5 + pulse * 0.55),
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2
+          ..color = _orange.withValues(alpha: 0.3 + pulse * 0.35),
+      );
+      _pill(canvas, '拉我 → 投籃', Offset(p.dx + 4, p.dy - r * 2.6));
+    }
+
+    canvas.save();
+    canvas.translate(p.dx, p.dy);
+    canvas.rotate(pond.bRot);
+
+    canvas.drawCircle(
+      const Offset(0, 2),
+      r,
+      Paint()..color = Colors.black.withValues(alpha: 0.16),
+    );
+    canvas.drawCircle(Offset.zero, r, Paint()..color = const Color(0xFFE8722C));
+    canvas.drawCircle(
+      Offset(-r * 0.3, -r * 0.32),
+      r * 0.55,
+      Paint()..color = const Color(0xFFFFA95C).withValues(alpha: 0.6),
+    );
+
+    final line = Paint()
+      ..color = const Color(0xFF5D2E0C)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = math.max(1.2, r * 0.12)
+      ..strokeCap = StrokeCap.round;
+    canvas.drawCircle(Offset.zero, r, line);
+    canvas.drawLine(Offset(-r, 0), Offset(r, 0), line);
+    canvas.drawLine(Offset(0, -r), Offset(0, r), line);
+    canvas.drawArc(
+      Rect.fromCircle(center: Offset(-r * 1.5, 0), radius: r * 1.6),
+      -0.653,
+      1.306,
+      false,
+      line,
+    );
+    canvas.drawArc(
+      Rect.fromCircle(center: Offset(r * 1.5, 0), radius: r * 1.6),
+      math.pi - 0.653,
+      1.306,
+      false,
+      line,
+    );
+    canvas.restore();
+  }
+
+  void _drawSparks(Canvas canvas) {
+    final sp = Paint();
+    for (final s in pond.sparks) {
+      final a = s.life.clamp(0.0, 1.0);
+      sp.color = _sparkColors[s.hue % _sparkColors.length]
+          .withValues(alpha: a);
+      canvas.drawCircle(Offset(s.x, s.y), 3.2 * a + 0.8, sp);
+    }
+  }
+
+  void _drawHud(Canvas canvas, Size size) {
+    // 計分（掛在籃板上方）
+    _pill(canvas, '🏀 ${pond.score}', Offset(pond.hoop.dx, pond.boardTop - 16));
+
+    // GOAL 橫幅
+    if (pond.goalFlash > 0) {
+      final age = 1.4 - pond.goalFlash;
+      final pop = math.min(1.0, age / 0.18);
+      final scale = 0.6 + 0.4 * pop + math.sin(pop * math.pi) * 0.25;
+      final alpha = pond.goalFlash < 0.4 ? pond.goalFlash / 0.4 : 1.0;
+      canvas.save();
+      canvas.translate(size.width / 2, size.height * 0.44);
+      canvas.scale(scale);
+      _pill(
+        canvas,
+        'GOAL!',
+        Offset.zero,
+        fontSize: 28,
+        textColor: const Color(0xFFFFC107).withValues(alpha: alpha),
+        bgAlpha: 0.82 * alpha,
+        padH: 20,
+        padV: 10,
+      );
+      canvas.restore();
+    }
+  }
+
+  /// 深色圓角底 + 文字，淺色頁面上也看得清楚。
+  void _pill(
+    Canvas canvas,
+    String text,
+    Offset center, {
+    double fontSize = 13,
+    Color textColor = Colors.white,
+    double bgAlpha = 0.72,
+    double padH = 10,
+    double padV = 5,
+  }) {
+    final tp = TextPainter(
+      text: TextSpan(
+        text: text,
+        style: TextStyle(
+          fontSize: fontSize,
+          color: textColor,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    final rect = RRect.fromRectAndRadius(
+      Rect.fromCenter(
+        center: center,
+        width: tp.width + padH * 2,
+        height: tp.height + padV * 2,
+      ),
+      Radius.circular(fontSize),
+    );
+    canvas.drawRRect(
+      rect,
+      Paint()..color = const Color(0xFF263238).withValues(alpha: bgAlpha),
+    );
+    tp.paint(canvas, center - Offset(tp.width / 2, tp.height / 2));
+  }
+
+  @override
+  bool shouldRepaint(covariant _HoopPainter old) => true;
+}

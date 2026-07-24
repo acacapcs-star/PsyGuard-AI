@@ -69,10 +69,9 @@ class SafetyPage extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Text(
-                        copy.liiIsHere,
-                        style: const TextStyle(
-                            fontSize: 14, fontWeight: FontWeight.bold),
+                      const Text(
+                        'lii 在這裡陪你',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 12),
@@ -83,7 +82,7 @@ class SafetyPage extends ConsumerWidget {
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                         onPressed: () => context.go('/chat'),
-                        child: Text(copy.safetyOptionChat),
+                        child: const Text('A. 繼續跟 LUNA 說話'),
                       ),
                       const SizedBox(height: 8),
                       OutlinedButton(
@@ -95,23 +94,23 @@ class SafetyPage extends ConsumerWidget {
                           showDialog(
                             context: context,
                             builder: (ctx) => AlertDialog(
-                              title: Text(copy.safetyOptionCounselor),
-                              content: Text(copy.safetyCounselorBody),
+                              title: const Text('B. 聯繫輔導老師'),
+                              content: const Text('請前往校內輔導室，或請導師協助聯繫輔導老師。'),
                               actions: [
                                 TextButton(
                                   onPressed: () => Navigator.pop(ctx),
-                                  child: Text(copy.gotIt),
+                                  child: const Text('了解'),
                                 ),
                               ],
                             ),
                           );
                         },
-                        child: Text(copy.safetyOptionCounselor),
+                        child: const Text('B. 聯繫輔導老師'),
                       ),
                       const SizedBox(height: 8),
                       TextButton(
                         onPressed: () {},
-                        child: Text(copy.safetyOptionResources),
+                        child: const Text('C. 查看求助資源 (1925) ↓'),
                       ),
                     ],
                   ),
@@ -145,11 +144,7 @@ class SafetyPage extends ConsumerWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        effectiveHigh
-                            ? copy.guardianHigh
-                            : riskLevel == RiskLevel.medium
-                                ? copy.guardianMedium
-                                : copy.guardianLow,
+                        effectiveHigh ? '守護精靈注意到你最近狀態需要支持，不管你選哪條路，我都在 🤍' : riskLevel == RiskLevel.medium ? '最近感覺如何？守護精靈想和你說說話 💙' : '今天狀態不錯！繼續保持 ✨',
                         style: const TextStyle(fontSize: 14, height: 1.5),
                       ),
                     ),

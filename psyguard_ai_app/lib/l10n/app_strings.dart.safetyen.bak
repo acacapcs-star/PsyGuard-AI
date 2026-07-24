@@ -177,27 +177,6 @@ class AppStrings {
   String get copyHelpMessage => isZhTw ? '一鍵複製求助訊息' : 'Copy Support Message';
   String get helpMessageCopied => isZhTw ? '已複製求助訊息' : 'Support message copied';
 
-  // ── Safety Flow 的三個選項與守護精靈訊息 ──
-  String get safetyOptionChat =>
-      isZhTw ? 'A. 繼續跟 LUNA 說話' : 'A. Keep talking with LUNA';
-  String get safetyOptionCounselor =>
-      isZhTw ? 'B. 聯繫輔導老師' : 'B. Contact a school counselor';
-  String get safetyCounselorBody => isZhTw
-      ? '請前往校內輔導室，或請導師協助聯繫輔導老師。'
-      : 'Go to your school counseling office, or ask your homeroom teacher to help you reach a counselor.';
-  String get gotIt => isZhTw ? '了解' : 'Got it';
-  String get safetyOptionResources =>
-      isZhTw ? 'C. 查看求助資源 (1925) ↓' : 'C. See support resources ↓';
-  String get guardianHigh => isZhTw
-      ? '守護精靈注意到你最近狀態需要支持，不管你選哪條路，我都在 🤍'
-      : 'Your guardian noticed you could use some support lately. Whichever path you choose, I am here 🤍';
-  String get guardianMedium => isZhTw
-      ? '最近感覺如何？守護精靈想和你說說話 💙'
-      : 'How have you been feeling? Your guardian would love to talk 💙';
-  String get guardianLow =>
-      isZhTw ? '今天狀態不錯！繼續保持 ✨' : 'You are doing well today. Keep it up ✨';
-  String get liiIsHere => isZhTw ? 'lii 在這裡陪你' : 'lii is here with you';
-
   String get trendsTitle => isZhTw ? '身心趨勢' : 'Wellbeing Trends';
   String get analysisHistory => isZhTw ? '分析歷史' : 'Analysis History';
   String get aiTrendAnalysis => isZhTw ? 'AI 趨勢分析' : 'AI Trend Analysis';

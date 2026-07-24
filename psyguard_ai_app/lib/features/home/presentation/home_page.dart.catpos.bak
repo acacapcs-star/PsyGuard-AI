@@ -390,7 +390,6 @@ class _HomeContentState extends State<_HomeContent> {
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       physics: const BouncingScrollPhysics(),
-      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       children: [
         const SizedBox(height: 12),
         // ── Greeting ──────────────────────────────────
@@ -483,16 +482,7 @@ class _HomeContentState extends State<_HomeContent> {
         const SizedBox(height: 32),
 
         // ── More Functions ───────────────────────────
-        Row(
-          children: [
-            Text(copy.moreFeatures, style: theme.textTheme.titleMedium),
-            const Spacer(),
-            // 🏖️ 暑假：飲料吧就掛在標題右邊（其他氛圍不顯示）
-            const DrinkBarStrip(),
-            // 🧧 過年：紅包固定在這裡（其他氛圍不顯示，和飲料吧不會同框）
-            const HongbaoEnvelope(),
-          ],
-        ),
+        Text(copy.moreFeatures, style: theme.textTheme.titleMedium),
         const SizedBox(height: 16),
         GridView.count(
           shrinkWrap: true,
@@ -1122,7 +1112,6 @@ class _CornerPenguinState extends ConsumerState<_CornerPenguin>
     with TickerProviderStateMixin {
   late final AnimationController _sway; // 平常微微搖晃
   late final AnimationController _bounce; // 點擊蹦跳
-  final List<double> _eggs = []; // ❄️ 企鵝生的蛋（水平位置 -1..1）
 
   @override
   void initState() {
@@ -1174,13 +1163,6 @@ class _CornerPenguinState extends ConsumerState<_CornerPenguin>
       onTap: () {
         HapticFeedback.lightImpact();
         _bounce.forward(from: 0);
-        if (effect == FallEffectType.snow) {
-          // ❄️ 企鵝生蛋！最多留 5 顆
-          setState(() {
-            _eggs.add(-0.8 + math.Random().nextDouble() * 1.6);
-            if (_eggs.length > 5) _eggs.removeAt(0);
-          });
-        }
       },
       child: ListenableBuilder(
         listenable: Listenable.merge([_sway, _bounce]),
@@ -1197,40 +1179,16 @@ class _CornerPenguinState extends ConsumerState<_CornerPenguin>
           );
         },
         child: effect == FallEffectType.snow
-            // ❄️ 冬系：工程師企鵝（點他會生蛋）
-            ? Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(6),
-                    child: Image.asset(
-                      'assets/images/mood_penguin.png',
-                      fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => const Center(
-                        child: Text('🐧', style: TextStyle(fontSize: 48)),
-                      ),
-                    ),
+            // ❄️ 冬系：工程師企鵝
+            ? Padding(
+                padding: const EdgeInsets.all(6),
+                child: Image.asset(
+                  'assets/images/mood_penguin.png',
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => const Center(
+                    child: Text('🐧', style: TextStyle(fontSize: 48)),
                   ),
-                  // 🥚 生下來的蛋排在腳邊
-                  for (int i = 0; i < _eggs.length; i++)
-                    Positioned.fill(
-                      child: Align(
-                        alignment: Alignment(_eggs[i], 1.0),
-                        child: Container(
-                          width: 13,
-                          height: 17,
-                          margin: const EdgeInsets.only(bottom: 2),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFFDF6),
-                            borderRadius: const BorderRadius.all(
-                                Radius.elliptical(7, 9)),
-                            border: Border.all(
-                                color: const Color(0xFFD8CDB8), width: 1),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
+                ),
               )
             // 🍁 秋：燈下讀書狐狸
             : ClipRRect(
@@ -1285,11 +1243,6 @@ class _OrnamentCatCornerState extends State<_OrnamentCatCorner>
 
   @override
   Widget build(BuildContext context) {
-    // 包一層 PawFreeZone：戳貓咪與貓貓球時不會出現貓掌
-    return PawFreeZone(child: _buildOrnament());
-  }
-
-  Widget _buildOrnament() {
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
@@ -1326,13 +1279,11 @@ class _OrnamentCatCornerState extends State<_OrnamentCatCorner>
               ),
             ),
           ),
-          const SizedBox(height: 8), // 貓和毛球分開一點
           // 下面坐著橘貓，抬頭盯著貓貓球（放大並往下坐一點）
           Expanded(
             flex: 8,
             child: Transform.translate(
-              // 數字越大貓咪越往下；超過 30 左右會畫出卡片外
-              offset: const Offset(0, 20),
+              offset: const Offset(0, 8),
               child: Transform.scale(
                 scale: 1.35,
                 alignment: Alignment.bottomCenter,

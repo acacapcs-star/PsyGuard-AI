@@ -44,53 +44,38 @@ class ERSPercentileWidget extends ConsumerWidget {
         children: [
           Row(
             children: [
-              // 膠囊要用 Flexible 包住：英文的「Doing Well」比中文長很多，
-              // 沒限制的話它會撐開整條 Row，把右邊的 ERS 分數擠出卡片外
-              Flexible(
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: _riskColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    isZh
-                        ? switch (ersResult.riskLevel) {
-                            'red' => '⚠️ 需要關注',
-                            'yellow' => '🔔 請多留意',
-                            _ => '✅ 狀態良好',
-                          }
-                        : switch (ersResult.riskLevel) {
-                            'red' => '⚠️ Needs Attention',
-                            'yellow' => '🔔 Keep an Eye On',
-                            _ => '✅ Doing Well',
-                          },
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: _riskColor,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: _riskColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  isZh
+                      ? switch (ersResult.riskLevel) {
+                          'red' => '⚠️ 需要關注',
+                          'yellow' => '🔔 請多留意',
+                          _ => '✅ 狀態良好',
+                        }
+                      : switch (ersResult.riskLevel) {
+                          'red' => '⚠️ Needs Attention',
+                          'yellow' => '🔔 Keep an Eye On This',
+                          _ => '✅ Doing Well',
+                        },
+                  style: TextStyle(
+                    color: _riskColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
-              // FittedBox：空間不夠時整塊等比縮小，不會被切掉
-              Flexible(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerRight,
-                  child: Text(
-                    'ERS ${score.toStringAsFixed(0)}',
-                    maxLines: 1,
-                    style: TextStyle(
-                      color: _riskColor,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 24,
-                    ),
-                  ),
+              const Spacer(),
+              Text(
+                'ERS ${score.toStringAsFixed(0)}',
+                style: TextStyle(
+                  color: _riskColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 24,
                 ),
               ),
             ],
@@ -115,14 +100,11 @@ class ERSPercentileWidget extends ConsumerWidget {
           const SizedBox(height: 16),
           Row(
             children: [
-              _StreamBadge(isZh ? '語言' : 'Language',
-                  ersResult.streamScores['language'] ?? 0),
-              const SizedBox(width: 6),
-              _StreamBadge(isZh ? '生理' : 'Physical',
-                  ersResult.streamScores['physical'] ?? 0),
-              const SizedBox(width: 6),
-              _StreamBadge(isZh ? '行為' : 'Behavior',
-                  ersResult.streamScores['behavior'] ?? 0),
+              _StreamBadge(isZh ? '語言' : 'Language', ersResult.streamScores['language'] ?? 0),
+              const SizedBox(width: 8),
+              _StreamBadge(isZh ? '生理' : 'Physical', ersResult.streamScores['physical'] ?? 0),
+              const SizedBox(width: 8),
+              _StreamBadge(isZh ? '行為' : 'Behavior', ersResult.streamScores['behavior'] ?? 0),
             ],
           ),
         ],
@@ -162,22 +144,9 @@ class _StreamBadge extends StatelessWidget {
         ),
         child: Column(
           children: [
-            // 每格只有卡片寬的 1/3（約 100px），英文「Language」放不下會斷成
-            // 兩行。用 FittedBox 讓它在放不下時自動縮字，維持一行。
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  style: TextStyle(color: _color, fontSize: 12),
-                ),
-              ),
-            ),
+            Text(label, style: TextStyle(color: _color, fontSize: 12)),
             Text(
               score.toStringAsFixed(0),
-              maxLines: 1,
               style: TextStyle(
                 color: _color,
                 fontWeight: FontWeight.bold,

@@ -1,10 +1,6 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import '../../l10n/app_language.dart';
-import '../security/local_settings_service.dart';
 
 import '../theme/app_theme.dart';
 
@@ -13,7 +9,7 @@ import '../theme/app_theme.dart';
 /// - 低風險 (0-30): 圓形中空 — 圓潤、無害、輕盈放鬆
 /// - 中風險 (31-60): 正方形半填充 — 框架、壓力堆積
 /// - 高風險 (61-100): 三角形全實心 — 尖銳警示、需立即介入
-class GeometricStressIndicator extends ConsumerWidget {
+class GeometricStressIndicator extends StatelessWidget {
   const GeometricStressIndicator({
     super.key,
     required this.riskScore,
@@ -26,8 +22,7 @@ class GeometricStressIndicator extends ConsumerWidget {
   final bool showLabel;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final isZh = ref.watch(appLanguageControllerProvider) == AppLanguage.zhTw;
+  Widget build(BuildContext context) {
     final level = _riskLevel;
     final color = LumiTheme.riskColor(riskScore);
 
@@ -44,7 +39,7 @@ class GeometricStressIndicator extends ConsumerWidget {
         if (showLabel) ...[
           const SizedBox(height: 6),
           Text(
-            _labelOf(isZh),
+            _label,
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
@@ -62,10 +57,10 @@ class GeometricStressIndicator extends ConsumerWidget {
     return 2; // high
   }
 
-  String _labelOf(bool isZh) {
-    if (riskScore <= 30) return isZh ? '穩定' : 'Stable';
-    if (riskScore <= 60) return isZh ? '留意' : 'Watch';
-    return isZh ? '警戒' : 'Alert';
+  String get _label {
+    if (riskScore <= 30) return '穩定';
+    if (riskScore <= 60) return '留意';
+    return '警戒';
   }
 }
 

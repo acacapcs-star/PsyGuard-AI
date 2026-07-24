@@ -314,7 +314,8 @@ class _SnowCapState extends ConsumerState<SnowCap>
     final seeking = effect == FallEffectType.leaves ||
         effect == FallEffectType.petals; // 秋找狐狸、春找彩蛋
     final count = ref.watch(snowAccumulationProvider);
-    final level = snowy ? (count - _meltedAtCount).clamp(0, 3) : 0;
+    // 第 2 次下雪才開始積（第一場雪只是飄過）
+    final level = snowy ? ((count - _meltedAtCount) - 1).clamp(0, 3) : 0;
     final foxState = ref.watch(foxHideoutProvider);
     final hiding = seeking && foxState.chosenSpot == _seed;
     final isEgg = effect == FallEffectType.petals;

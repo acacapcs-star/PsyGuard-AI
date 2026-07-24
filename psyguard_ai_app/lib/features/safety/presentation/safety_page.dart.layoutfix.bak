@@ -69,10 +69,9 @@ class SafetyPage extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Text(
-                        copy.liiIsHere,
-                        style: const TextStyle(
-                            fontSize: 14, fontWeight: FontWeight.bold),
+                      const Text(
+                        'lii 在這裡陪你',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 12),
@@ -83,7 +82,7 @@ class SafetyPage extends ConsumerWidget {
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                         onPressed: () => context.go('/chat'),
-                        child: Text(copy.safetyOptionChat),
+                        child: const Text('A. 繼續跟 LUNA 說話'),
                       ),
                       const SizedBox(height: 8),
                       OutlinedButton(
@@ -95,23 +94,23 @@ class SafetyPage extends ConsumerWidget {
                           showDialog(
                             context: context,
                             builder: (ctx) => AlertDialog(
-                              title: Text(copy.safetyOptionCounselor),
-                              content: Text(copy.safetyCounselorBody),
+                              title: const Text('B. 聯繫輔導老師'),
+                              content: const Text('請前往校內輔導室，或請導師協助聯繫輔導老師。'),
                               actions: [
                                 TextButton(
                                   onPressed: () => Navigator.pop(ctx),
-                                  child: Text(copy.gotIt),
+                                  child: const Text('了解'),
                                 ),
                               ],
                             ),
                           );
                         },
-                        child: Text(copy.safetyOptionCounselor),
+                        child: const Text('B. 聯繫輔導老師'),
                       ),
                       const SizedBox(height: 8),
                       TextButton(
                         onPressed: () {},
-                        child: Text(copy.safetyOptionResources),
+                        child: const Text('C. 查看求助資源 (1925) ↓'),
                       ),
                     ],
                   ),
@@ -145,11 +144,7 @@ class SafetyPage extends ConsumerWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        effectiveHigh
-                            ? copy.guardianHigh
-                            : riskLevel == RiskLevel.medium
-                                ? copy.guardianMedium
-                                : copy.guardianLow,
+                        effectiveHigh ? '守護精靈注意到你最近狀態需要支持，不管你選哪條路，我都在 🤍' : riskLevel == RiskLevel.medium ? '最近感覺如何？守護精靈想和你說說話 💙' : '今天狀態不錯！繼續保持 ✨',
                         style: const TextStyle(fontSize: 14, height: 1.5),
                       ),
                     ),
@@ -360,75 +355,62 @@ class SafetyPage extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.all(18),
         decoration: LumiTheme.softCard,
-        // 改成上下排：名稱與說明佔滿整行，聯絡方式自成一行。
-        // 舊版把三者塞進同一條 Row，contact 一長就把名稱擠成兩三個字元寬，
-        // 英文長字（counseling）只好一個音節一行，看起來像直書。
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: LumiTheme.primary.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(14),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: LumiTheme.primary.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const Icon(
+                Icons.support_agent_rounded,
+                color: LumiTheme.primary,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: LumiTheme.textPrimary,
+                    ),
                   ),
-                  child: const Icon(
-                    Icons.support_agent_rounded,
-                    color: LumiTheme.primary,
-                    size: 24,
+                  const SizedBox(height: 4),
+                  Text(
+                    description,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: LumiTheme.textSecondary,
+                      height: 1.4,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        name,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
-                          color: LumiTheme.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        description,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: LumiTheme.textSecondary,
-                          height: 1.4,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
             if (contact.trim().isNotEmpty) ...[
-              const SizedBox(height: 12),
-              // 自成一行，寬度不再跟名稱搶
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 7,
-                  ),
-                  decoration: BoxDecoration(
-                    color: LumiTheme.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    contact,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                      color: LumiTheme.primary,
-                    ),
+              const SizedBox(width: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: LumiTheme.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  contact,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: LumiTheme.primary,
                   ),
                 ),
               ),

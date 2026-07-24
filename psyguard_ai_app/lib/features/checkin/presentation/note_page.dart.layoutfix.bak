@@ -551,7 +551,7 @@ class _NoteItemWidgetState extends State<_NoteItemWidget> {
               controller: _ctrl,
               decoration: InputDecoration(
                 border: InputBorder.none,
-                hintText: 'Type here...',
+                hintText: '輸入內容...',
                 isDense: true,
                 contentPadding: EdgeInsets.zero,
               ),

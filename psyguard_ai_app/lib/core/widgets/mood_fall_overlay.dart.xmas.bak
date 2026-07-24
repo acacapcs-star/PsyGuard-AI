@@ -95,7 +95,7 @@ class MoodFallOverlay extends StatefulWidget {
     required this.controller,
     required this.effect,
     this.particleCount = 18,
-    this.snowColor = const Color(0xFFCDE9F7), // 淺鑽石藍：細雪與光暈用色
+    this.snowColor = const Color(0xFF5EC1E0), // Frozen 冰藍：小雪點與光暈用色
   });
 
   final MoodFallController controller;
@@ -109,10 +109,12 @@ class MoodFallOverlay extends StatefulWidget {
 
 class _MoodFallOverlayState extends State<MoodFallOverlay>
     with SingleTickerProviderStateMixin {
-  /// 雪：改成程式繪製的「半透明淺色鑽石／冰晶」。
-  /// 不再吃圖片素材 —— 素材自帶的粉紫等色調改不掉，
-  /// 程式畫的顏色完全可控，保證淺色、半透明、無彩色調。
-  static const List<String> _snowAssets = [];
+  /// 雪：只用水晶系雪花，半透明 crystalization 質感。
+  static const List<String> _snowAssets = [
+    'assets/images/mood_snow_2.png', // 粉紫水晶
+    'assets/images/mood_snow_5.png', // 發光水晶
+    'assets/images/mood_snow_6.png', // 冰晶星芒（Frozen 風）
+  ];
 
   /// 秋：楓葉。
   static const List<String> _leafAssets = [
@@ -126,9 +128,11 @@ class _MoodFallOverlayState extends State<MoodFallOverlay>
     'assets/images/mood_petal_2.png', // 整朵櫻花（偶爾）
   ];
 
-  /// 暑假：不用素材了。改成「水珠雨 + 彩虹」，全部程式繪製。
-  /// （冰淇淋和壽司從天上掉下來實在太超現實了。）
-  static const List<String> _treatAssets = [];
+  /// 暑假：清涼冰品。
+  static const List<String> _treatAssets = [
+    'assets/images/mood_icecream.png',
+    'assets/images/mood_sushi.png',
+  ];
 
   late final Ticker _ticker;
   final math.Random _rng = math.Random();
@@ -280,16 +284,15 @@ class _MoodFallOverlayState extends State<MoodFallOverlay>
 
     for (int i = 0; i < widget.particleCount; i++) {
       final useImage = hasImages && _rng.nextDouble() < 0.65;
-      // 大顆的是鑽石／冰晶，小顆的是點綴用的細雪
-      final paintedFlake = !useImage && _rng.nextDouble() < 0.78;
+      final paintedFlake = !useImage && !hasImages && _rng.nextDouble() < 0.4;
 
       final double size;
       if (useImage) {
         size = 26 + _rng.nextDouble() * 30;
       } else if (paintedFlake) {
-        size = 13 + _rng.nextDouble() * 16; // 13~29px 的水晶
+        size = 7 + _rng.nextDouble() * 9;
       } else {
-        size = 2.0 + _rng.nextDouble() * 3.0;
+        size = 2.5 + _rng.nextDouble() * 3.5;
       }
 
       _particles.add(_FallParticle(
@@ -364,12 +367,13 @@ class _MoodFallOverlayState extends State<MoodFallOverlay>
     }
   }
 
-  /// 水花飛濺；[mixTreats] = true 時是暑假模式，雨下得更密，
-  /// 並在 _FallPainter 裡額外畫一道彩虹。
+  /// 水花飛濺；mixTreats = true 時混入冰品/壽司翻滾飄落（暑假）。
   void _spawnSplash({required bool mixTreats}) {
-    // 暑假：夏日午後陣雨 → 雨量加倍
-    final dropCount =
-        (widget.particleCount * (mixTreats ? 3.0 : 2.0)).round();
+    final images = _imageCache[FallEffectType.treats] ?? const <ui.Image>[];
+    final hasImages = mixTreats && images.isNotEmpty;
+
+    // 水珠：數量多、掉得快，有打水仗的清涼感
+    final dropCount = widget.particleCount * 2;
     for (int i = 0; i < dropCount; i++) {
       _particles.add(_FallParticle(
         x: _rng.nextDouble(),
@@ -385,6 +389,26 @@ class _MoodFallOverlayState extends State<MoodFallOverlay>
         isFlake: false,
         opacity: 0.5 + _rng.nextDouble() * 0.35,
       ));
+    }
+    if (hasImages) {
+      // 冰品與壽司翻滾飄落
+      final treatCount = (widget.particleCount * 0.6).round();
+      for (int i = 0; i < treatCount; i++) {
+        _particles.add(_FallParticle(
+          x: _rng.nextDouble(),
+          delay: _rng.nextDouble() * 4.0,
+          duration: 5.0 + _rng.nextDouble() * 4.0,
+          size: 34 + _rng.nextDouble() * 26,
+          swayAmp: 14 + _rng.nextDouble() * 22,
+          swaySpeed: 0.6 + _rng.nextDouble() * 1.0,
+          swayPhase: _rng.nextDouble() * math.pi * 2,
+          spinSpeed: (_rng.nextDouble() - 0.5) * 2.6,
+          spinPhase: _rng.nextDouble() * math.pi * 2,
+          imageIndex: _rng.nextInt(images.length),
+          isFlake: false,
+          opacity: 0.85 + _rng.nextDouble() * 0.15,
+        ));
+      }
     }
   }
 
@@ -462,77 +486,12 @@ class _FallPainter extends CustomPainter {
   static const Color _splashDotColor = Color(0xFF4FC3F7); // 水珠藍
 
   static const List<Color> _fwPalette = [
-    Color(0xFFC62828), // 深紅
-    Color(0xFFFF8F00), // 赤金
-    Color(0xFFD81B60), // 豔桃
-    Color(0xFFE64A19), // 焰橘
-    Color(0xFF1565C0), // 深寶藍
+    Color(0xFFFF5A5A), // 喜氣紅
+    Color(0xFFFFC44D), // 金
+    Color(0xFFFF8FB7), // 粉
+    Color(0xFFFFA94D), // 橘
+    Color(0xFF7FE3FF), // 冰藍
   ];
-
-  /// 🌈 暑假限定：一道橫跨畫面上半部的彩虹。
-  /// 七道同心圓弧，圓心放在畫面下方外側，看起來就像遠方天邊的雨後彩虹。
-  /// 淡入 1.2 秒 → 停留 → 最後 1.5 秒淡出。
-  void _paintRainbow(Canvas canvas, Size size) {
-    const fadeIn = 1.2;
-    const fadeOut = 1.5;
-    const total = 9.0; // 彩虹整體生命週期（秒）
-    if (elapsed > total) return;
-
-    double alpha;
-    if (elapsed < fadeIn) {
-      alpha = elapsed / fadeIn;
-    } else if (elapsed > total - fadeOut) {
-      alpha = (total - elapsed) / fadeOut;
-    } else {
-      alpha = 1.0;
-    }
-    alpha = alpha.clamp(0.0, 1.0) * 0.42; // 半透明，不要蓋住內容
-
-    const bands = [
-      Color(0xFFFF6B6B), // 紅
-      Color(0xFFFFA24D), // 橙
-      Color(0xFFFFE066), // 黃
-      Color(0xFF7BD88F), // 綠
-      Color(0xFF6EC6E8), // 藍
-      Color(0xFF7B8FE0), // 靛
-      Color(0xFFB58BE0), // 紫
-    ];
-
-    final center = Offset(size.width * 0.5, size.height * 0.82);
-    final outer = size.shortestSide * 1.05;
-    final bandWidth = size.shortestSide * 0.030;
-
-    final paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = bandWidth
-      ..strokeCap = StrokeCap.round
-      ..maskFilter = MaskFilter.blur(BlurStyle.normal, bandWidth * 0.55);
-
-    for (int i = 0; i < bands.length; i++) {
-      final r = outer - i * bandWidth * 0.92;
-      paint.color = bands[i].withValues(alpha: alpha);
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: r),
-        math.pi, // 從左邊開始
-        math.pi, // 畫半圈
-        false,
-        paint,
-      );
-    }
-
-    // 最外圈再加一層極淡的白霧，讓邊緣柔一點
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: outer + bandWidth * 0.6),
-      math.pi,
-      math.pi,
-      false,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = bandWidth * 1.4
-        ..color = Colors.white.withValues(alpha: alpha * 0.30)
-        ..maskFilter = MaskFilter.blur(BlurStyle.normal, bandWidth),
-    );
-  }
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -540,11 +499,10 @@ class _FallPainter extends CustomPainter {
       _paintFireworks(canvas, size);
       return;
     }
-    // 🏖️ 暑假：彩虹畫在雨的後面
-    if (effect == FallEffectType.treats) {
-      _paintRainbow(canvas, size);
-    }
     final fill = Paint()..style = PaintingStyle.fill;
+    final stroke = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
     final imagePaint = Paint()..filterQuality = FilterQuality.medium;
     final haloPaint = Paint()
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
@@ -593,18 +551,11 @@ class _FallPainter extends CustomPainter {
         );
         canvas.restore();
       } else if (p.isFlake) {
-        // 很淡的光暈墊底，淺色背景上也看得見
-        haloPaint.color =
-            const Color(0xFF9FD4EC).withValues(alpha: alpha * 0.16);
-        canvas.drawCircle(Offset(x, y), p.size * 0.55, haloPaint);
-        _drawCrystal(
-          canvas,
-          Offset(x, y),
-          p.size,
-          p.spinPhase + local * p.spinSpeed,
-          alpha,
-          p.swayPhase > math.pi, // 一半畫鑽石、一半畫六角冰晶
-        );
+        stroke
+          ..color = baseColor.withValues(alpha: alpha)
+          ..strokeWidth = p.size * 0.14;
+        _drawFlake(canvas, Offset(x, y), p.size,
+            p.spinPhase + local * p.spinSpeed, stroke);
       } else {
         fill.color = baseColor.withValues(alpha: alpha);
         canvas.drawCircle(Offset(x, y), p.size, fill);
@@ -660,101 +611,34 @@ class _FallPainter extends CustomPainter {
           double a = math.pow(1 - bt, 1.2).toDouble();
           a *= 0.7 + 0.3 * math.sin(bt * 28 + k * 1.7);
           if (a <= 0.02) continue;
-          final c = Color.lerp(
-              Colors.white, color, (bt * 4).clamp(0.0, 1.0))!; // 幾乎立即上色
+          final c = Color.lerp(Colors.white, color, (bt * 2).clamp(0.0, 1.0))!;
           dot.color = c.withValues(alpha: a.clamp(0.0, 1.0));
-          canvas.drawCircle(pos, 3.0 * (1 - bt * 0.5), dot); // 火花更大更重
+          canvas.drawCircle(pos, 2.2 * (1 - bt * 0.55), dot);
         }
       }
     }
   }
 
-  /// 半透明的淺色水晶：[gem] 為 true 畫鑽石，false 畫六角冰晶。
-  /// 只用極淺冰藍與白，不帶任何彩色調。
-  void _drawCrystal(
-    Canvas canvas,
-    Offset center,
-    double size,
-    double rotation,
-    double alpha,
-    bool gem,
-  ) {
-    final r = size * 0.5;
+  /// 備援用：程式畫的六角雪花。
+  void _drawFlake(
+      Canvas canvas, Offset center, double r, double rotation, Paint paint) {
     canvas.save();
     canvas.translate(center.dx, center.dy);
     canvas.rotate(rotation);
-
-    const pale = Color(0xFFEAF7FF); // 近白的冰色（填色）
-    const edge = Color(0xFF8FC6E2); // 稍深一點的邊，淺背景才有輪廓
-
-    final fill = Paint()
-      ..style = PaintingStyle.fill
-      ..color = pale.withValues(alpha: alpha * 0.30);
-    final line = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round
-      ..strokeWidth = math.max(0.8, r * 0.10)
-      ..color = edge.withValues(alpha: alpha * 0.55);
-    final shine = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round
-      ..strokeWidth = math.max(0.6, r * 0.07)
-      ..color = Colors.white.withValues(alpha: alpha * 0.75);
-
-    if (gem) {
-      // ── 鑽石：桌面 → 腰稜 → 底尖 ──
-      final tl = Offset(-0.34 * r, -0.72 * r);
-      final tr = Offset(0.34 * r, -0.72 * r);
-      final gl = Offset(-0.82 * r, -0.24 * r);
-      final gr = Offset(0.82 * r, -0.24 * r);
-      final tip = Offset(0, r);
-      final body = Path()
-        ..moveTo(tl.dx, tl.dy)
-        ..lineTo(tr.dx, tr.dy)
-        ..lineTo(gr.dx, gr.dy)
-        ..lineTo(tip.dx, tip.dy)
-        ..lineTo(gl.dx, gl.dy)
-        ..close();
-      canvas.drawPath(body, fill);
-      canvas.drawPath(body, line);
-      canvas.drawLine(gl, gr, line); // 腰線
-      canvas.drawLine(tl, tip, line); // 亭部刻面
-      canvas.drawLine(tr, tip, line);
-      canvas.drawLine(tl, gl, shine); // 一道高光
-    } else {
-      // ── 六角冰晶：中心六邊形 + 六根主枝 + 兩層分枝 ──
-      final hex = Path();
-      for (int i = 0; i < 6; i++) {
-        final a = i * math.pi / 3 - math.pi / 2;
-        final pt = Offset(math.cos(a), math.sin(a)) * (r * 0.40);
-        if (i == 0) {
-          hex.moveTo(pt.dx, pt.dy);
-        } else {
-          hex.lineTo(pt.dx, pt.dy);
+    for (int i = 0; i < 6; i++) {
+      final angle = i * math.pi / 3;
+      final dir = Offset(math.cos(angle), math.sin(angle));
+      canvas.drawLine(Offset.zero, dir * r, paint);
+      for (final frac in const [0.55, 0.8]) {
+        final base = dir * (r * frac);
+        final branchLen = r * (frac == 0.55 ? 0.30 : 0.22);
+        for (final side in const [1.0, -1.0]) {
+          final branchAngle = angle + side * math.pi / 5;
+          final end = base +
+              Offset(math.cos(branchAngle), math.sin(branchAngle)) * branchLen;
+          canvas.drawLine(base, end, paint);
         }
       }
-      hex.close();
-      canvas.drawPath(hex, fill);
-      canvas.drawPath(hex, line);
-      for (int i = 0; i < 6; i++) {
-        final a = i * math.pi / 3;
-        final dir = Offset(math.cos(a), math.sin(a));
-        canvas.drawLine(dir * (r * 0.34), dir * r, line);
-        for (final frac in const [0.60, 0.83]) {
-          final base = dir * (r * frac);
-          final len = r * (frac == 0.60 ? 0.26 : 0.18);
-          for (final side in const [1.0, -1.0]) {
-            final ba = a + side * math.pi / 5;
-            canvas.drawLine(
-              base,
-              base + Offset(math.cos(ba), math.sin(ba)) * len,
-              line,
-            );
-          }
-        }
-      }
-      canvas.drawCircle(Offset.zero, r * 0.13, shine);
     }
     canvas.restore();
   }
