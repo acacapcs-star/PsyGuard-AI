@@ -29,12 +29,16 @@ class VoiceWakeService {
     required Function(String) onWakeWordDetected,
     required Function(String) onResult,
     bool isZh = true,
+    /// 🎤 每次辨識更新都會呼叫（含中途的部分結果），
+    ///    用來算語速與停頓，不影響原本的流程
+    Function(String)? onSpeechEvent,
   }) async {
     if (!_isAvailable) return;
     _isListening = true;
     _wakeWordTriggered = false;
     await _speech.listen(
       onResult: (result) {
+        onSpeechEvent?.call(result.recognizedWords);
         final text = result.recognizedWords.toLowerCase();
         final hasWakeWord = wakeWords.any((w) => text.contains(w.toLowerCase()));
         if (hasWakeWord && !_wakeWordTriggered) {

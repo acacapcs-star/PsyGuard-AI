@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../l10n/app_language.dart';
 import '../../core/security/local_settings_service.dart';
 import 'voice_wake_service.dart';
+import '../../core/ers/speech_metrics.dart';
 import 'dart:math';
 
 class VoiceWakePage extends ConsumerStatefulWidget {
@@ -20,6 +21,7 @@ class VoiceWakePage extends ConsumerStatefulWidget {
 class _VoiceWakePageState extends ConsumerState<VoiceWakePage>
     with SingleTickerProviderStateMixin {
   final VoiceWakeService _service = VoiceWakeService();
+  final SpeechMetricsCollector _metrics = SpeechMetricsCollector();
   bool _isListening = false;
   bool _isNoteMode = false;
   String _statusText = '';
@@ -245,8 +247,10 @@ class _VoiceWakePageState extends ConsumerState<VoiceWakePage>
         _statusText = _isNoteMode ? '我在聽，說完點停止...' : '我在聽...';
       });
       final isZh = ref.read(appLanguageControllerProvider) == AppLanguage.zhTw;
+      _metrics.start(); // 🎤 開始收集語音特徵
       await _service.startListening(
         isZh: isZh,
+        onSpeechEvent: _metrics.onEvent,
         onWakeWordDetected: (text) {
           if (!_isNoteMode) {
             setState(() {
@@ -258,6 +262,8 @@ class _VoiceWakePageState extends ConsumerState<VoiceWakePage>
           }
         },
         onResult: (text) {
+          // 🎤 算出語速／負面詞密度／停頓頻率，供 ERS 使用
+          _metrics.finish(text, isZh: isZh);
           setState(() {
             _spokenText = text;
             _statusText = _isNoteMode

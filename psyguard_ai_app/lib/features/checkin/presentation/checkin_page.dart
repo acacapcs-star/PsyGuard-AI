@@ -1,4 +1,5 @@
 import 'note_page.dart';
+import '../../../core/ers/speech_metrics.dart';
 import '../../../core/security/secret_swipe_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -92,10 +93,15 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
           ? sleepLogs.last.sleepHours
           : 3.0;
 
-      // 語言串流根據心理負荷感推算
-      final inferredSpeechRate = stress > 70 ? 130.0 : stress > 50 ? 200.0 : 300.0;
-      final inferredNegRatio = stress / 100.0 * 0.8;
-      final inferredPauseFreq = stress > 70 ? 8.0 : stress > 50 ? 5.0 : 2.0;
+      // 🎤 語言串流：優先用真實語音特徵（7 天內錄過音才算數），
+      //    沒有的話才退回用壓力推算，這樣沒用過語音的人也不會壞掉。
+      final voice = await SpeechMetricsStore.latest();
+      final inferredSpeechRate = voice?.speechRate ??
+          (stress > 70 ? 130.0 : stress > 50 ? 200.0 : 300.0);
+      final inferredNegRatio =
+          voice?.negativeWordRatio ?? (stress / 100.0 * 0.8);
+      final inferredPauseFreq = voice?.pauseFrequency ??
+          (stress > 70 ? 8.0 : stress > 50 ? 5.0 : 2.0);
       final ersResult = ersEngine.calculate(
         ERSInput(
           speechRate: inferredSpeechRate,
