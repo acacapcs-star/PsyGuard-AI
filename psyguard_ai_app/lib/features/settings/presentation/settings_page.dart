@@ -11,6 +11,7 @@ import '../../../core/security/local_settings_service.dart';
 import '../../../core/storage/database_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../l10n/app_language.dart';
+import '../../../core/ers/group_norms.dart';
 import '../../../core/security/secret_diary_lock.dart';
 import '../../../core/security/secret_diary_lock.dart';
 
@@ -92,6 +93,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
           children: [
+            _sectionTitle(language == AppLanguage.zhTw ? '🎂 年齡' : '🎂 Age'),
+            const SizedBox(height: 12),
+            _card(child: _ageBandSelector(language == AppLanguage.zhTw)),
+            const SizedBox(height: 18),
             _sectionTitle(copy.languageSectionTitle),
             const SizedBox(height: 12),
             _card(
@@ -663,6 +668,90 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 },
               ),
             ),
+          ],
+        );
+      },
+    );
+  }
+
+  // 🎂 年齡層（趨勢圖團體對比要用來對到同齡人常模）
+  Widget _ageBandSelector(bool isZh) {
+    return FutureBuilder<AgeBand?>(
+      future: AgeBandStore.get(),
+      builder: (context, snap) {
+        final current = snap.data;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              isZh ? '你的年齡層' : 'Your age group',
+              style: GoogleFonts.nunitoSans(
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+                color: LumiTheme.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              isZh
+                  ? '用來在趨勢圖裡跟同齡人的研究常模做對比'
+                  : 'Used to compare your trends with peer research norms',
+              style: GoogleFonts.nunitoSans(
+                fontSize: 12,
+                color: LumiTheme.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: AgeBand.values.map((b) {
+                final on = b == current;
+                return GestureDetector(
+                  onTap: () async {
+                    await AgeBandStore.set(b);
+                    if (mounted) setState(() {});
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 160),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: on
+                          ? LumiTheme.primary
+                          : LumiTheme.primary.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: on
+                            ? LumiTheme.primary
+                            : Colors.grey.withValues(alpha: 0.25),
+                        width: 1.4,
+                      ),
+                    ),
+                    child: Text(
+                      b.labelFor(isZh),
+                      style: GoogleFonts.nunitoSans(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w700,
+                        color: on ? Colors.white : LumiTheme.textSecondary,
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+            if (current == null) ...[
+              const SizedBox(height: 10),
+              Text(
+                isZh
+                    ? '⚠️ 尚未選擇，團體對比會用預設族群'
+                    : '⚠️ Not set yet — group comparison uses a default',
+                style: GoogleFonts.nunitoSans(
+                  fontSize: 11,
+                  color: const Color(0xFFE0863A),
+                ),
+              ),
+            ],
           ],
         );
       },
