@@ -47,3 +47,4 @@ app.*.map.json
 
 # 補丁腳本的備份檔
 *.bak
+assets/images/_pinterest_backup/
