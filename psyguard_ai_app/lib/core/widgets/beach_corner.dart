@@ -370,6 +370,12 @@ class SummerBeachCorner extends StatefulWidget {
 class _SummerBeachCornerState extends State<SummerBeachCorner>
     with SingleTickerProviderStateMixin {
   late final AnimationController _sway;
+  int _summerCatIndex = 0;
+  static const _summerCats = [
+    'assets/images/summer_cat_1.png',
+    'assets/images/summer_cat_2.png',
+    'assets/images/summer_cat_3.png',
+  ];
 
   @override
   void initState() {
@@ -391,6 +397,8 @@ class _SummerBeachCornerState extends State<SummerBeachCorner>
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
+        setState(() => _summerCatIndex =
+            (_summerCatIndex + 1) % _summerCats.length);
         _sway.forward(from: 0);
       },
       child: ListenableBuilder(
@@ -407,12 +415,12 @@ class _SummerBeachCornerState extends State<SummerBeachCorner>
         child: ClipRRect(
           borderRadius: BorderRadius.circular(20),
           child: Image.asset(
-            'assets/images/mood_summer_beach.png',
+            _summerCats[_summerCatIndex],
             fit: BoxFit.contain,
             width: double.infinity,
             height: double.infinity,
             errorBuilder: (_, __, ___) => const Center(
-              child: Text('🏖️', style: TextStyle(fontSize: 44)),
+              child: Text('🐱', style: TextStyle(fontSize: 44)),
             ),
           ),
         ),
@@ -512,14 +520,13 @@ class _DrinkBarCornerState extends ConsumerState<DrinkBarCorner>
           border: Border.all(color: const Color(0xFFF2E3B3)),
           borderRadius: BorderRadius.circular(20),
         ),
-        padding: const EdgeInsets.fromLTRB(6, 4, 6, 4),
+        padding: EdgeInsets.zero,
         child: Stack(
           children: [
-            Align(
-              alignment: Alignment.centerLeft,
+            Positioned.fill(
               child: Image.asset(
                 'assets/images/mood_hq_boy.png',
-                fit: BoxFit.contain,
+                fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => const Center(
                   child: Text('🏐', style: TextStyle(fontSize: 34)),
                 ),

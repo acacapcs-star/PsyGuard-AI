@@ -119,7 +119,7 @@ class _TooltipOverlay extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              '點擊任意處關閉',
+              (RegExp(r'[\u4e00-\u9fff]').hasMatch(description) ? '點擊任意處關閉' : 'Tap anywhere to close'),
               style: TextStyle(
                 fontSize: 12,
                 color: const Color(0xFFA0AEC0),

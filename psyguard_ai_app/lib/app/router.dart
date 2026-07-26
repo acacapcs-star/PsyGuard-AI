@@ -9,6 +9,7 @@ import '../features/checkin/presentation/checkin_history_page.dart';
 import '../features/checkin/presentation/checkin_page.dart';
 import '../features/export/presentation/export_page.dart';
 import '../features/home/presentation/home_page.dart';
+import '../features/hopebox/presentation/hope_box_page.dart';
 import '../features/settings/presentation/settings_page.dart';
 import '../features/safety/presentation/safety_page.dart';
 import '../features/sleep/presentation/sleep_history_page.dart';
@@ -73,6 +74,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'weekly-persona',
         pageBuilder: (context, state) =>
             _buildPageWithSlide(context, state, const WeeklyPersonaPage()),
+      ),
+      GoRoute(
+        path: '/hope-box',
+        name: 'hope-box',
+        pageBuilder: (context, state) =>
+            _buildPageWithSlide(context, state, const HopeBoxPage()),
       ),
       GoRoute(
         path: '/checkin',

@@ -338,14 +338,12 @@ class _PenguinParkPageState extends ConsumerState<PenguinParkPage>
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Image.asset(_shyImage(), width: 60, height: 60, fit: BoxFit.contain),
-                    const SizedBox(width: 10),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(_shyTextZh(), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)),
-                        Text(_shyTextEn(), style: const TextStyle(fontSize: 11, color: Colors.black54)),
-                      ],
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        _isZh ? _shyTextZh() : _shyTextEn(),
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87),
+                      ),
                     ),
                   ],
                 ),

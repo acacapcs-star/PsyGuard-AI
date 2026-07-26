@@ -508,8 +508,43 @@ class _HomeContentState extends State<_HomeContent> {
         ),
         const SizedBox(height: 32),
 
-        // 🐧 蛋滿 5 顆才展開的巢窩
-        PenguinNestRow(isZh: copy.isZhTw),
+        // 🐧 冬天顯示企鵝巢；非冬天企鵝回 igloo
+        Consumer(builder: (context, ref, _) {
+          final m = ref.watch(moodThemeProvider);
+          final isWinter =
+              m == MoodTheme.christmas || m == MoodTheme.winterBreak;
+          if (isWinter) {
+            return PenguinNestRow(isZh: copy.isZhTw);
+          }
+          return AnimatedBuilder(
+            animation: penguinNest,
+            builder: (context, _) {
+              if (!penguinNest.showRow) return const SizedBox.shrink();
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 26),
+                child: Center(
+                  child: Column(
+                    children: [
+                      Text(
+                        copy.isZhTw ? '🏠 企鵝回冰屋了' : '🏠 The penguins went home',
+                        style: const TextStyle(
+                            fontSize: 13, fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 12),
+                      Image.asset(
+                        'assets/images/igloo.png',
+                        height: 130,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) =>
+                            const Text('🛖', style: TextStyle(fontSize: 60)),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
+        }),
 
         // ── More Functions ───────────────────────────
         Row(
@@ -589,6 +624,17 @@ class _HomeContentState extends State<_HomeContent> {
               tooltipDescription: copy.isZhTw
                   ? '根據這週的心情，給你一張專屬的動物人設卡。'
                   : 'Get an animal persona card based on your week\'s mood.',
+            ),
+            _InteractiveCard(
+              title: copy.isZhTw ? '🌙 希望盒' : '🌙 Hope Box',
+              subtitle: copy.isZhTw ? '收藏溫柔的話陪你' : 'Cards that carry you',
+              icon: Icons.auto_awesome_rounded,
+              color: const Color(0xFF7E8FE8),
+              route: '/hope-box',
+              tooltipTitle: copy.isZhTw ? '希望盒' : 'Hope Box',
+              tooltipDescription: copy.isZhTw
+                  ? '平靜時收藏能讓你站起來的話，難過時打開來看。'
+                  : 'Collect words that lift you up.',
             ),
             _InteractiveCard(
               title: copy.isZhTw ? '🐧 Luna 樂園' : '🐧 Luna Park',
@@ -737,12 +783,14 @@ class _InteractiveCardState extends State<_InteractiveCard>
                     child: Text(
                       widget.title,
                       style: GoogleFonts.nunitoSans(
-                        fontSize: 15,
+                        fontSize: 13.5,
                         fontWeight: widget.isBold
                             ? FontWeight.w900
                             : FontWeight.w700,
                         color: LumiTheme.textPrimary,
+                        height: 1.15,
                       ),
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -989,6 +1037,7 @@ class _SwipeableCardsState extends State<_SwipeableCards> {
                       'assets/images/${_petType}_happy.png',
                       width: 80,
                       height: 80,
+                      fit: BoxFit.contain,
                       errorBuilder: (_, __, ___) => Text(
                         _petType == 'otter' ? '🦦' : '🐹',
                         style: const TextStyle(fontSize: 60),
@@ -1427,45 +1476,16 @@ class _SnowmanCorner extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final stage = ref.watch(snowAccumulationProvider).clamp(0, 3);
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 500),
-      switchInCurve: Curves.elasticOut,
-      transitionBuilder: (child, anim) =>
-          ScaleTransition(scale: anim, child: child),
-      child: stage >= 3
-          ? Padding(
-              key: const ValueKey('snowman_done'),
-              padding: const EdgeInsets.all(4),
-              child: Image.asset(
-                'assets/images/mood_snowman_cat.png',
-                fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) => const Center(
-                  child: Text('⛄', style: TextStyle(fontSize: 44)),
-                ),
-              ),
-            )
-          : stage == 0
-              ? const Center(
-                  key: ValueKey('snowman_hint'),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text('⛄', style: TextStyle(fontSize: 28)),
-                      SizedBox(height: 4),
-                      Text(
-                        '點球球下雪\n一起堆雪人',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 11, color: Colors.grey),
-                      ),
-                    ],
-                  ),
-                )
-              : CustomPaint(
-                  key: ValueKey('snowman_$stage'),
-                  size: Size.infinite,
-                  painter: _SnowmanPainter(stage: stage),
-                ),
+    // 寒假角落：直接顯示聖誕水獺（不再堆雪人）
+    return Padding(
+      padding: const EdgeInsets.all(6),
+      child: Image.asset(
+        'assets/images/mood_snowman_cat.png',
+        fit: BoxFit.contain,
+        errorBuilder: (_, __, ___) => const Center(
+          child: Text('🦦', style: TextStyle(fontSize: 44)),
+        ),
+      ),
     );
   }
 }
@@ -1559,7 +1579,7 @@ class _NyDragonsCornerState extends State<_NyDragonsCorner>
           borderRadius: BorderRadius.circular(20),
           child: Image.asset(
             'assets/images/mood_ny_dragons.jpg',
-            fit: BoxFit.cover,
+            fit: BoxFit.contain,
             width: double.infinity,
             height: double.infinity,
             errorBuilder: (_, __, ___) => const Center(
@@ -1621,7 +1641,7 @@ class _EasterBunnyCornerState extends State<_EasterBunnyCorner>
           borderRadius: BorderRadius.circular(20),
           child: Image.asset(
             'assets/images/mood_easter_bunny.jpg',
-            fit: BoxFit.cover,
+            fit: BoxFit.contain,
             width: double.infinity,
             height: double.infinity,
             errorBuilder: (_, __, ___) => const Center(

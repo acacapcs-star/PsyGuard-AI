@@ -150,7 +150,7 @@ class _HongbaoEnvelopeState extends ConsumerState<HongbaoEnvelope>
             ),
             Image.asset(
               'assets/images/mood_hongbao.png',
-              width: 34,
+              width: 52,
               errorBuilder: (_, __, ___) =>
                   const Text('🧧', style: TextStyle(fontSize: 28)),
             ),
