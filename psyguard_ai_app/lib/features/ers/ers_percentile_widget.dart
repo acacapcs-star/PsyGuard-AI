@@ -54,7 +54,9 @@ class ERSPercentileWidget extends ConsumerWidget {
                     color: _riskColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: Text(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
                     isZh
                         ? switch (ersResult.riskLevel) {
                             'red' => '⚠️ 需要關注',
@@ -62,17 +64,17 @@ class ERSPercentileWidget extends ConsumerWidget {
                             _ => '✅ 狀態良好',
                           }
                         : switch (ersResult.riskLevel) {
-                            'red' => '⚠️ Needs Attention',
-                            'yellow' => '🔔 Keep an Eye On',
-                            _ => '✅ Doing Well',
+                            'red' => '⚠️ Attention',
+                            'yellow' => '🔔 Take Care',
+                            _ => '✅ Good',
                           },
                     maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: _riskColor,
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
                     ),
+                  ),
                   ),
                 ),
               ),

@@ -50,9 +50,11 @@ class _FloatingAppBrandIconState extends ConsumerState<FloatingAppBrandIcon>
 
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (ctx) {
         return SafeArea(
+          child: SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.all(20),
             child: Column(
@@ -98,6 +100,7 @@ class _FloatingAppBrandIconState extends ConsumerState<FloatingAppBrandIcon>
                 ),
               ],
             ),
+          ),
           ),
         );
       },

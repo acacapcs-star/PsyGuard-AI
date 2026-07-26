@@ -140,7 +140,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
                     context.go('/home');
                   }
                 },
-                child: Text(ersResult.riskLevel == 'red' ? '⚠️ 前往求助資源' : '了解了'),
+                child: Text(ersResult.riskLevel == 'red' ? (copy.isZhTw ? '⚠️ 前往求助資源' : '⚠️ Get help resources') : (copy.isZhTw ? '了解了' : 'Got it')),
               ),
             ],
           ),

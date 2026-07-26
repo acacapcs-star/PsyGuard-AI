@@ -516,8 +516,8 @@ class _HomeContentState extends State<_HomeContent> {
           if (isWinter) {
             return PenguinNestRow(isZh: copy.isZhTw);
           }
-          return AnimatedBuilder(
-            animation: penguinNest,
+          return ListenableBuilder(
+            listenable: penguinNest,
             builder: (context, _) {
               if (!penguinNest.showRow) return const SizedBox.shrink();
               return Padding(

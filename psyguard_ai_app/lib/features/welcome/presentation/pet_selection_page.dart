@@ -20,14 +20,16 @@ class _PetSelectionPageState extends ConsumerState<PetSelectionPage> {
 
   final Map<String, Map<String, String>> _pets = {
     'otter': {
-      'name': '水獺 Otter',
+      'name_zh': '水獺',
+      'name_en': 'Otter',
       'desc_zh': '個性｜看起來在放空，其實什麼都知道\n興趣｜抱愛心漂流、叼魚、對天花板發呆三小時\n面向｜「算了沒關係」的鼻祖，但其實超在意',
       'desc_en': 'Personality | "I\'m fine" energy but processing 47 emotions simultaneously\nInterests | Floating, holding hearts, eating fish at 3am\nVibe | EMOTIONAL DAMAGE but make it soft',
       'image': 'assets/images/pet_otter.jpeg',
       'bg': 'assets/images/pet_otter_bg.jpeg',
     },
     'capybara': {
-      'name': '水豚 Capybara',
+      'name_zh': '水豚',
+      'name_en': 'Capybara',
       'desc_zh': '個性｜萬年淡定，天塌下來也是這個臉\n興趣｜坐著、繼續坐著、決定不動\n面向｜失敗十次臉不紅心不跳那種',
       'desc_en': 'Personality | Literally unbothered. Scientifically proven.\nInterests | Sitting, sitting with purpose, watching others panic\nVibe | "Is this the real strat?" — does nothing, wins anyway',
       'image': 'assets/images/pet_capybara.jpeg',
@@ -115,7 +117,7 @@ class _PetSelectionPageState extends ConsumerState<PetSelectionPage> {
                             Image.asset(_pets[key]!['image']!, width: 80, height: 80, fit: BoxFit.contain,
                               errorBuilder: (_, __, ___) => const Icon(Icons.pets, size: 60, color: Colors.white)),
                             const SizedBox(height: 8),
-                            Text(_pets[key]!['name']!,
+                            Text(_isZh ? _pets[key]!['name_zh']! : _pets[key]!['name_en']!,
                               style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
                           ],
                         ),
@@ -129,12 +131,8 @@ class _PetSelectionPageState extends ConsumerState<PetSelectionPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(pet['desc_zh']!,
+                      Text(_isZh ? pet['desc_zh']! : pet['desc_en']!,
                         style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 18, height: 1.8),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(pet['desc_en']!,
-                        style: TextStyle(color: Colors.white.withValues(alpha: 0.55), fontSize: 17, height: 1.7, fontStyle: FontStyle.italic),
                       ),
                     ],
                   ),
