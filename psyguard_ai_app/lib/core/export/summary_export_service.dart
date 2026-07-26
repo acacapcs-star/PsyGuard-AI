@@ -26,8 +26,9 @@ class SummaryExportService {
   Future<File> exportSummary({
     required int days,
     required ExportFormat format,
+    bool isZh = true,
   }) async {
-    final summary = await _db.buildSummaryData(days: days);
+    final summary = await _db.buildSummaryData(days: days, isZh: isZh);
     final dir = await _directoryProvider();
     final timestamp = DateTime.now().millisecondsSinceEpoch;
 
@@ -45,8 +46,8 @@ class SummaryExportService {
     return file;
   }
 
-  Future<File> exportLast7Days({required ExportFormat format}) async {
-    return exportSummary(days: 7, format: format);
+  Future<File> exportLast7Days({required ExportFormat format, bool isZh = true}) async {
+    return exportSummary(days: 7, format: format, isZh: isZh);
   }
 
   static final _kSummaryPng = base64Decode(

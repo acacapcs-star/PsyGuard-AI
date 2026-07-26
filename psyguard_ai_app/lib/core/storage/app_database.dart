@@ -431,7 +431,7 @@ class AppDatabase extends _$AppDatabase {
     )..where((t) => t.date.equals(today))).getSingleOrNull();
   }
 
-  Future<Map<String, dynamic>> buildSummaryData({int days = 7}) async {
+  Future<Map<String, dynamic>> buildSummaryData({int days = 7, bool isZh = true}) async {
     final since = normalizeDay(
       DateTime.now().subtract(Duration(days: days - 1)),
     );
@@ -457,6 +457,26 @@ class AppDatabase extends _$AppDatabase {
 
     final sortedReasons = reasonCount.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
+
+    // 🔒 reasons 依語言翻譯（原本存中文，英文模式匯出翻英）
+    String localizeReason(String zh) {
+      if (isZh) return zh;
+      const table = {
+        '當下心情明顯偏低': 'Mood clearly low',
+        '當下心情偏低': 'Mood low',
+        '當下心情略低': 'Mood slightly low',
+        '當下壓力明顯偏高': 'Stress clearly high',
+        '當下壓力偏高': 'Stress high',
+        '當下壓力略高': 'Stress slightly high',
+        '當下活力明顯偏低': 'Energy clearly low',
+        '當下活力偏低': 'Energy low',
+        '心情低落且壓力偏高': 'Low mood with high stress',
+        '心情低落且活力偏低': 'Low mood with low energy',
+        '當下狀態穩定': 'Stable',
+        '目前指標穩定，建議持續每日檢視': 'Indicators are stable — keep checking in daily',
+      };
+      return table[zh] ?? zh;
+    }
 
     return {
       'generatedAt': DateTime.now().toIso8601String(),
@@ -493,11 +513,18 @@ class AppDatabase extends _$AppDatabase {
       },
       'topReasons': sortedReasons
           .take(5)
-          .map((e) => {'reason': e.key, 'count': e.value})
+          .map((e) => {'reason': localizeReason(e.key), 'count': e.value})
           .toList(),
       'helpActions': {
         'toolUsageCount': tools.length,
         'completedToolCount': tools.where((t) => t.completed).length,
+      },
+      // 🔒 去識別化聲明（對齊摘要：僅分享分數，不含日記）
+      'privacy': {
+        'deIdentified': true,
+        'note': isZh
+            ? '此報告僅含情緒分數與統計，不含任何日記內容，可安全分享給家長或輔導人員。'
+            : 'This report contains only mood scores and statistics, no diary content. Safe to share with guardians or counselors.',
       },
     };
   }

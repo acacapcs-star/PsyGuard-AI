@@ -18,7 +18,7 @@ class _PenguinParkPageState extends ConsumerState<PenguinParkPage>
   int _xp = 0;
   int _skin = 0;
   String _petType = 'otter';
-  String _petName = 'Lumi';
+  String _petName = 'Luna';
   bool _isZh = true;
   bool _showFish = false;
   bool _showShy = false;
@@ -96,7 +96,7 @@ class _PenguinParkPageState extends ConsumerState<PenguinParkPage>
       _xp      = prefs.getInt('lumi_xp')    ?? 0;
       _skin    = prefs.getInt('lumi_skin')   ?? 0;
       _petType = prefs.getString('pet_type') ?? 'otter';
-      _petName = prefs.getString('pet_name') ?? 'Lumi';
+      _petName = prefs.getString('pet_name') ?? 'Luna';
     });
   }
 

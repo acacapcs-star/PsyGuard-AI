@@ -55,7 +55,7 @@ class PetReminderBubble extends StatefulWidget {
 
 class _PetReminderBubbleState extends State<PetReminderBubble> {
   _BubbleMessage? _message;
-  String _petName = 'Lumi';
+  String _petName = 'Luna';
   String _petType = 'otter';
   bool _visible = false;
   Timer? _hideTimer;
@@ -74,7 +74,7 @@ class _PetReminderBubbleState extends State<PetReminderBubble> {
 
   Future<void> _prepare() async {
     final prefs = await SharedPreferences.getInstance();
-    _petName = prefs.getString('pet_name') ?? 'Lumi';
+    _petName = prefs.getString('pet_name') ?? 'Luna';
     _petType = prefs.getString('pet_type') ?? 'otter';
 
     final msg = await _pickMessage(prefs);

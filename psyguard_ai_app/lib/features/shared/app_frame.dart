@@ -36,7 +36,7 @@ class AppFrame extends ConsumerWidget {
               child: Align(
                 alignment: Alignment.bottomLeft,
                 child: Text(
-                  'Lumi',
+                  'Luna',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 26,

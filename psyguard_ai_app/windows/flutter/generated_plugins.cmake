@@ -7,8 +7,10 @@ list(APPEND FLUTTER_PLUGIN_LIST
   flutter_tts
   local_auth_windows
   permission_handler_windows
+  share_plus
   speech_to_text_windows
   sqlite3_flutter_libs
+  url_launcher_windows
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST

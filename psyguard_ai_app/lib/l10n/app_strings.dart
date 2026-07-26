@@ -9,7 +9,7 @@ class AppStrings {
 
   bool get isZhTw => language == AppLanguage.zhTw;
 
-  String get appName => 'Lumi';
+  String get appName => 'Luna';
 
   String get todayMentalStateAnalysis => isZhTw ? '今日心理狀態分析' : "Today's Mental State Analysis";
 

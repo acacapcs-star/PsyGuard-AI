@@ -375,6 +375,13 @@ class TrendsPage extends ConsumerWidget {
     );
   }
 
+  /// 判斷某個值是否超過基準線 ±10%（對齊摘要「flagging shifts beyond ±10%」）
+  bool _isBeyond10(double value, double? baseline) {
+    if (baseline == null || baseline == 0) return false;
+    final ratio = (value - baseline) / baseline;
+    return ratio.abs() > 0.10;
+  }
+
   Widget _chartCard(
     BuildContext context, {
     required String title,
@@ -489,13 +496,20 @@ class TrendsPage extends ConsumerWidget {
                     isStrokeCapRound: true,
                     dotData: FlDotData(
                       show: true,
-                      getDotPainter: (spot, percent, bar, index) =>
-                          FlDotCirclePainter(
-                            radius: 4,
-                            color: Colors.white,
-                            strokeWidth: 2.5,
-                            strokeColor: color,
-                          ),
+                      getDotPainter: (spot, percent, bar, index) {
+                        // 📊 超過基準線 ±10% 的點 -> 橘色放大（對齊摘要 ±10% 波動）
+                        final beyond = _isBeyond10(spot.y, baseline);
+                        return FlDotCirclePainter(
+                          radius: beyond ? 6 : 4,
+                          color: beyond
+                              ? const Color(0xFFFF9800)
+                              : Colors.white,
+                          strokeWidth: 2.5,
+                          strokeColor: beyond
+                              ? const Color(0xFFEF6C00)
+                              : color,
+                        );
+                      },
                     ),
                     belowBarData: BarAreaData(
                       show: true,

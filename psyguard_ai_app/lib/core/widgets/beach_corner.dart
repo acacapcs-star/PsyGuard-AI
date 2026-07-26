@@ -408,7 +408,7 @@ class _SummerBeachCornerState extends State<SummerBeachCorner>
           borderRadius: BorderRadius.circular(20),
           child: Image.asset(
             'assets/images/mood_summer_beach.png',
-            fit: BoxFit.cover,
+            fit: BoxFit.contain,
             width: double.infinity,
             height: double.infinity,
             errorBuilder: (_, __, ___) => const Center(
@@ -590,7 +590,7 @@ class DrinkBarStrip extends ConsumerWidget {
               ),
               child: Image.asset(
                 kDrinkAssets[i],
-                height: 40, // 大杯的！
+                height: 52, // 大杯的！
                 errorBuilder: (_, __, ___) =>
                     const Text('🥤', style: TextStyle(fontSize: 26)),
               ),

@@ -25,6 +25,9 @@ import '../features/voice/voice_wake_page.dart';
 import '../features/penguin/penguin_park_page.dart';
 import '../features/checkin/presentation/month_overview_page.dart';
 import '../core/security/secret_swipe_shell.dart';
+import '../features/cbt/presentation/cbt_page.dart';
+import '../features/quiz/presentation/distortion_quiz_page.dart';
+import '../features/persona/presentation/persona_page.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -52,6 +55,24 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'chat',
         pageBuilder: (context, state) =>
             _buildPageWithSlide(context, state, const ChatPage()),
+      ),
+      GoRoute(
+        path: '/thought-coach',
+        name: 'thought-coach',
+        pageBuilder: (context, state) =>
+            _buildPageWithSlide(context, state, const CbtPage()),
+      ),
+      GoRoute(
+        path: '/distortion-quiz',
+        name: 'distortion-quiz',
+        pageBuilder: (context, state) =>
+            _buildPageWithSlide(context, state, const DistortionQuizPage()),
+      ),
+      GoRoute(
+        path: '/weekly-persona',
+        name: 'weekly-persona',
+        pageBuilder: (context, state) =>
+            _buildPageWithSlide(context, state, const WeeklyPersonaPage()),
       ),
       GoRoute(
         path: '/checkin',

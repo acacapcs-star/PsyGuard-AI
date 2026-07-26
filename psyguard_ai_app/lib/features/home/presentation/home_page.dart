@@ -558,26 +558,59 @@ class _HomeContentState extends State<_HomeContent> {
                   : 'Turn your records into a clear summary you can share with a professional.',
             ),
             _InteractiveCard(
-              title: copy.isZhTw ? '🐧 Lumi 樂園' : '🐧 Lumi Park',
-              subtitle: copy.isZhTw ? '和企鵝互動紓壓' : 'Play with Lumi',
+              title: copy.isZhTw ? '思考教練' : 'Thought Coach',
+              subtitle: copy.isZhTw ? '轉念練習 (CBT)' : 'Reframe your thoughts (CBT)',
+              icon: Icons.psychology_rounded,
+              color: const Color(0xFF5A9B9E),
+              route: '/thought-coach',
+              tooltipTitle: copy.isZhTw ? '思考教練' : 'Thought Coach',
+              tooltipDescription: copy.isZhTw
+                  ? '陷入負面想法時，讓我陪你用 CBT 換個角度看。'
+                  : 'Stuck in a negative thought? Let me guide you to reframe it with CBT.',
+            ),
+            _InteractiveCard(
+              title: copy.isZhTw ? '思考陷阱測驗' : 'Thinking Trap Quiz',
+              subtitle: copy.isZhTw ? '測你的思考習慣' : 'Discover your patterns',
+              icon: Icons.quiz_rounded,
+              color: const Color(0xFF9575CD),
+              route: '/distortion-quiz',
+              tooltipTitle: copy.isZhTw ? '思考陷阱測驗' : 'Thinking Trap Quiz',
+              tooltipDescription: copy.isZhTw
+                  ? '12 題測驗，找出你最容易掉進的思考陷阱。'
+                  : '12 questions to reveal your most common thinking trap.',
+            ),
+            _InteractiveCard(
+              title: copy.isZhTw ? '本週人設' : 'Weekly Persona',
+              subtitle: copy.isZhTw ? '這週的你是哪隻動物' : 'Your animal this week',
+              icon: Icons.pets_rounded,
+              color: const Color(0xFFF48FB1),
+              route: '/weekly-persona',
+              tooltipTitle: copy.isZhTw ? '本週人設' : 'Weekly Persona',
+              tooltipDescription: copy.isZhTw
+                  ? '根據這週的心情，給你一張專屬的動物人設卡。'
+                  : 'Get an animal persona card based on your week\'s mood.',
+            ),
+            _InteractiveCard(
+              title: copy.isZhTw ? '🐧 Luna 樂園' : '🐧 Luna Park',
+              subtitle: copy.isZhTw ? '和企鵝互動紓壓' : 'Play with Luna',
               icon: Icons.pets_rounded,
               color: const Color(0xFF0ABFBC),
               route: '/penguin',
-              tooltipTitle: copy.isZhTw ? 'Lumi 樂園' : 'Lumi Park',
+              tooltipTitle: copy.isZhTw ? 'Luna 樂園' : 'Luna Park',
               tooltipDescription: copy.isZhTw
-                  ? '和Lumi互動、丟魚、摸摸，讓心情好一點。'
-                  : 'Feed Lumi, pet Lumi, and feel a little better.',
+                  ? '和Luna互動、丟魚、摸摸，讓心情好一點。'
+                  : 'Feed Luna, pet Luna, and feel a little better.',
             ),
             _InteractiveCard(
-              title: copy.isZhTw ? '嘿，在嗎？' : 'Hey, Lumi?',
-              subtitle: copy.isZhTw ? '聲控喚醒Lumi' : 'Voice wake Lumi',
+              title: copy.isZhTw ? '嘿，在嗎？' : 'Hey, Luna?',
+              subtitle: copy.isZhTw ? '聲控喚醒Luna' : 'Voice wake Luna',
               icon: Icons.mic_rounded,
               color: const Color(0xFF5B6EAE),
               route: '/voice',
               tooltipTitle: copy.isZhTw ? '聲控喚醒' : 'Voice Wake',
               tooltipDescription: copy.isZhTw
-                  ? '說「嘿，在嗎？」喚醒Lumi陪你聊聊。'
-                  : 'Say "Hey Lumi" to wake up your companion.',
+                  ? '說「嘿，在嗎？」喚醒Luna陪你聊聊。'
+                  : 'Say "Hey Luna" to wake up your companion.',
             ),
           ],
         ),
@@ -865,7 +898,7 @@ class _SwipeableCardsState extends State<_SwipeableCards> {
   Future<void> _loadPet() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _petName = prefs.getString('pet_name') ?? 'Lumi';
+      _petName = prefs.getString('pet_name') ?? 'Luna';
       _petType = prefs.getString('pet_type') ?? 'otter';
     });
   }
@@ -1272,7 +1305,7 @@ class _CornerPenguinState extends ConsumerState<_CornerPenguin>
                 borderRadius: BorderRadius.circular(20),
                 child: Image.asset(
                   'assets/images/mood_fox_lamp.jpg',
-                  fit: BoxFit.cover,
+                  fit: BoxFit.contain,
                   width: double.infinity,
                   height: double.infinity,
                   errorBuilder: (_, __, ___) => const Center(

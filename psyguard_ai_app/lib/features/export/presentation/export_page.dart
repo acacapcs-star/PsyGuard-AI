@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/export/summary_export_service.dart';
@@ -33,8 +34,15 @@ class _ExportPageState extends ConsumerState<ExportPage> {
       final file = await service.exportSummary(
         days: _days,
         format: ExportFormat.json,
+        isZh: copy.isZhTw,
       );
 
+      if (!mounted) return;
+      // 📤 匯出後跳分享面板（AirDrop／存檔案／傳給家長或輔導老師）
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        subject: copy.isZhTw ? 'lii 情緒摘要報告' : 'lii Wellbeing Summary',
+      );
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,

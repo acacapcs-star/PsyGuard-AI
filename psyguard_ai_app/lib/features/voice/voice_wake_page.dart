@@ -250,7 +250,7 @@ class _VoiceWakePageState extends ConsumerState<VoiceWakePage>
         if (!_isNoteMode) {
           _statusText = isZh
               ? '點擊麥克風說「嘿，在嗎？」'
-              : 'Tap the mic and say "Hey Lumi"';
+              : 'Tap the mic and say "Hey Luna"';
         }
       });
     } else {
@@ -269,8 +269,8 @@ class _VoiceWakePageState extends ConsumerState<VoiceWakePage>
           if (!_isNoteMode) {
             setState(() {
               _statusText = isZh
-                  ? 'Lumi：嘿！我在這裡陪你 💙'
-                  : "Lumi: Hey! I'm here for you 💙";
+                  ? 'Luna：嘿！我在這裡陪你 💙'
+                  : "Luna: Hey! I'm here for you 💙";
               _isListening = false;
             });
           }
@@ -293,7 +293,7 @@ class _VoiceWakePageState extends ConsumerState<VoiceWakePage>
   Widget build(BuildContext context) {
     final isZh = ref.watch(appLanguageControllerProvider) == AppLanguage.zhTw;
     if (!_statusInitialized) {
-      _statusText = isZh ? '點擊麥克風說「嘿，在嗎？」' : 'Tap the mic and say "Hey Lumi"';
+      _statusText = isZh ? '點擊麥克風說「嘿，在嗎？」' : 'Tap the mic and say "Hey Luna"';
       _statusInitialized = true;
     }
     return Scaffold(
@@ -305,14 +305,14 @@ class _VoiceWakePageState extends ConsumerState<VoiceWakePage>
           icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
           onPressed: () => context.go('/home'),
         ),
-        title: Text(isZh ? '嘿，在嗎？' : 'Hey Lumi', style: const TextStyle(color: Colors.white)),
+        title: Text(isZh ? '嘿，在嗎？' : 'Hey Luna', style: const TextStyle(color: Colors.white)),
         actions: [
           TextButton(
             onPressed: () => setState(() {
               _isNoteMode = !_isNoteMode;
               _statusText = _isNoteMode
                   ? (isZh ? '說話後自動整理成筆記 📝' : 'Speak and auto-organize into notes 📝')
-                  : (isZh ? '點擊麥克風說「嘿，在嗎？」' : 'Tap the mic and say "Hey Lumi"');
+                  : (isZh ? '點擊麥克風說「嘿，在嗎？」' : 'Tap the mic and say "Hey Luna"');
               _spokenText = '';
             }),
             child: Text(

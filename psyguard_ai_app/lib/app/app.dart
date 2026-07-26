@@ -27,6 +27,12 @@ class LumiApp extends ConsumerWidget {
         debugShowCheckedModeBanner: false,
         theme: LumiTheme.lightTheme,
         routerConfig: router,
+        // ⌨️ 全域點空白收鍵盤（修 CBT／筆記本／聊天等鍵盤關不掉）
+        builder: (context, child) => GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+          child: child,
+        ),
         locale: language.locale,
         supportedLocales: const [Locale('en'), Locale('zh', 'TW')],
         localizationsDelegates: const [
