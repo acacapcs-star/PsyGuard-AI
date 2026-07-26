@@ -97,7 +97,8 @@ class HomePage extends ConsumerWidget {
       ),
       child: Scaffold(
         backgroundColor: (() {
-          final moodColor = ref.watch(moodThemeProvider).backgroundColor;
+          final moodIsDark = ref.watch(backgroundThemeProvider).mode == BgMode.dark;
+          final moodColor = ref.watch(moodThemeProvider).backgroundColorFor(moodIsDark);
           if (moodColor.a != 0) return moodColor; // 有選氛圍（非「無」），優先使用
           return ref.watch(backgroundThemeProvider).backgroundColor; // 沒選氛圍，回到深淺模式
         })(),
@@ -151,14 +152,30 @@ class HomePage extends ConsumerWidget {
   }
 
   Widget _buildDrawer(BuildContext context, AppStrings copy) {
-    final items = [
+    final zh = copy.isZhTw;
+    final items = <(String, String, IconData)>[
       ('/home', copy.navHome, Icons.home_rounded),
-      ('/chat', copy.navChat, Icons.chat_bubble_rounded),
+      ('#', zh ? '每日紀錄' : 'Daily', Icons.circle),
       ('/checkin', copy.navCheckin, Icons.edit_note_rounded),
       ('/sleep', copy.navSleep, Icons.bedtime_rounded),
       ('/trends', copy.navTrends, Icons.timeline_rounded),
+      ('/calendar-overview', zh ? '月曆總覽' : 'Calendar', Icons.calendar_month_rounded),
+      ('#', zh ? '練習工具' : 'Practice', Icons.circle),
+      ('/chat', copy.navChat, Icons.chat_bubble_rounded),
+      ('/thought-coach', zh ? '思考教練' : 'Thought Coach', Icons.psychology_rounded),
+      ('/distortion-quiz', zh ? '思考陷阱測驗' : 'Thinking Trap Quiz', Icons.quiz_rounded),
       ('/tools', copy.navTools, Icons.style_rounded),
+      ('#', zh ? '陪伴' : 'Companions', Icons.circle),
+      ('/hope-box', zh ? '🌙 希望盒' : '🌙 Hope Box', Icons.auto_awesome_rounded),
+      ('/weekly-persona', zh ? '本週人設' : 'Weekly Persona', Icons.pets_rounded),
+      ('/penguin', zh ? 'Luna 樂園' : 'Luna Park', Icons.park_rounded),
+      ('/pet', zh ? '我的夥伴' : 'My Pet', Icons.favorite_rounded),
+      ('#', zh ? '報告' : 'Reports', Icons.circle),
+      ('/ai_report', zh ? 'AI 報告' : 'AI Report', Icons.description_rounded),
+      ('/ai_history', zh ? 'AI 歷史' : 'AI History', Icons.history_rounded),
+      ('#', zh ? '其他' : 'More', Icons.circle),
       ('/safety', copy.navSafety, Icons.health_and_safety_rounded),
+      ('/voice', zh ? '語音' : 'Voice', Icons.mic_rounded),
       ('/export', copy.navExport, Icons.download_rounded),
       ('/settings', copy.navSettings, Icons.settings_rounded),
     ];
@@ -202,6 +219,17 @@ class HomePage extends ConsumerWidget {
             child: ListView(
               padding: const EdgeInsets.symmetric(vertical: 12),
               children: items.map((item) {
+                if (item.$1 == '#') {
+                  return Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 18, 24, 6),
+                    child: Text(item.$2,
+                        style: GoogleFonts.nunitoSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.5,
+                            color: LumiTheme.textSecondary)),
+                  );
+                }
                 final currentRoute = GoRouterState.of(context).uri.toString();
                 final isActive = currentRoute == item.$1;
                 return Padding(
@@ -1034,7 +1062,7 @@ class _SwipeableCardsState extends State<_SwipeableCards> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Image.asset(
-                      'assets/images/${_petType}_happy.png',
+                      'assets/images/${_petType == 'otter' ? 'otter1' : 'capy1'}.png',
                       width: 80,
                       height: 80,
                       fit: BoxFit.contain,
@@ -1149,7 +1177,7 @@ class _SunMoonToggle extends ConsumerWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('選擇底色', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                Text(AppStrings.of(ref.watch(appLanguageControllerProvider)).isZhTw ? '選擇底色' : 'Pick a background', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,

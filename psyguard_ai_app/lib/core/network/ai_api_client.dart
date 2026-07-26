@@ -181,8 +181,8 @@ class OpenAiCompatibleClient implements AiApiClient {
   }) async {
     if (!_config.isConfigured) {
       throw StateError(
-        'AI 功能暫時無法使用：API 設定未完成。\n'
-        '請在 .env 檔案中設定有效的 API_KEY。',
+        'AI features are currently unavailable: API not configured.\n'
+        'Please set a valid API_KEY in the .env file.',
       );
     }
 

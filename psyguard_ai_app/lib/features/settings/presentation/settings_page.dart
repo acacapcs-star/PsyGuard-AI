@@ -496,13 +496,6 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 ],
               ),
             ),
-            // 🧪 加密自我測試（確認沒問題後可以整段刪掉）
-            const SizedBox(height: 16),
-            OutlinedButton.icon(
-              onPressed: () => _runCryptoSelfTest(context),
-              icon: const Text('🧪'),
-              label: const Text('測試加密（開發用）'),
-            ),
             const SizedBox(height: 24),
           ],
         ),

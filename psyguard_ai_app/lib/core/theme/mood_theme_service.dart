@@ -40,6 +40,13 @@ extension MoodThemeLabel on MoodTheme {
     }
   }
 
+  // dark mode 時：同色系暗版（保留色相，壓暗）
+  Color backgroundColorFor(bool isDark) {
+    final base = backgroundColor;
+    if (!isDark || base.a == 0) return base;
+    return Color.lerp(base, const Color(0xFF14161B), 0.85)!;
+  }
+
   String labelZh() {
     switch (this) {
       case MoodTheme.none: return '無氛圍';

@@ -320,7 +320,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () => Navigator.pop(ctx),
-                      child: const Text('繼續說'),
+                      child: Consumer(builder: (c, r, _) => Text(AppStrings.of(r.watch(appLanguageControllerProvider)).isZhTw ? '繼續說' : 'Keep talking')),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -334,7 +334,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                         Navigator.pop(ctx);
                         context.go('/safety');
                       },
-                      child: const Text('求助資源'),
+                      child: Consumer(builder: (c, r, _) => Text(AppStrings.of(r.watch(appLanguageControllerProvider)).isZhTw ? '求助資源' : 'Get help')),
                     ),
                   ),
                 ],
@@ -378,11 +378,11 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                     Navigator.pop(ctx);
                     context.go('/safety');
                   },
-                  child: const Text('前往求助資源', style: TextStyle(color: Colors.white)),
+                  child: Consumer(builder: (c, r, _) => Text(AppStrings.of(r.watch(appLanguageControllerProvider)).isZhTw ? '前往求助資源' : 'Get help resources', style: const TextStyle(color: Colors.white))),
                 ),
                 TextButton(
                   onPressed: () => Navigator.pop(ctx),
-                  child: const Text('繼續對話'),
+                  child: Consumer(builder: (c, r, _) => Text(AppStrings.of(r.watch(appLanguageControllerProvider)).isZhTw ? '繼續對話' : 'Keep chatting')),
                 ),
               ],
             ),

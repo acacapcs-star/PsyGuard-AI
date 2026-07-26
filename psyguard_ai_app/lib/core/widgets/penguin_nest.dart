@@ -193,11 +193,26 @@ class _PenguinNestRowState extends State<PenguinNestRow> {
 }
 
 /// 單一個巢：底下是巢，上面是蛋或孵出來的小企鵝
-class _NestSlot extends StatelessWidget {
+class _NestSlot extends StatefulWidget {
   final int index;
   final bool hatched;
 
   const _NestSlot({required this.index, required this.hatched});
+
+  @override
+  State<_NestSlot> createState() => _NestSlotState();
+}
+
+class _NestSlotState extends State<_NestSlot>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _jump = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 480));
+
+  @override
+  void dispose() {
+    _jump.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -240,22 +255,32 @@ class _NestSlot extends StatelessWidget {
                 scale: CurvedAnimation(parent: anim, curve: Curves.elasticOut),
                 child: FadeTransition(opacity: anim, child: child),
               ),
-              child: hatched
-                  ? Image.asset(
-                      index.isEven
-                          ? 'assets/images/mood_baby_penguin_1.png'
-                          : 'assets/images/mood_baby_penguin_2.png',
-                      key: ValueKey('baby-$index'),
-                      width: kEggWidth + 8,
-                      height: kEggHeight,
-                      fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => const Text(
-                        '🐧',
-                        style: TextStyle(fontSize: 32),
+              child: widget.hatched
+                  ? GestureDetector(
+                      onTap: () => _jump.forward(from: 0),
+                      child: ListenableBuilder(
+                        listenable: _jump,
+                        builder: (context, child) {
+                          final t = _jump.value;
+                          final dy = (t < 0.5 ? -40 * t : -40 * (1 - t));
+                          return Transform.translate(
+                              offset: Offset(0, dy), child: child);
+                        },
+                        child: Image.asset(
+                          const ['assets/images/penguin1.png','assets/images/penguin2.png','assets/images/penguin3.png','assets/images/penguin5.png'][widget.index % 4],
+                          key: ValueKey('baby-${widget.index}'),
+                          width: kEggWidth + 8,
+                          height: kEggHeight,
+                          fit: BoxFit.contain,
+                          errorBuilder: (_, __, ___) => const Text(
+                            '🐧',
+                            style: TextStyle(fontSize: 32),
+                          ),
+                        ),
                       ),
                     )
                   : Container(
-                      key: ValueKey('egg-$index'),
+                      key: ValueKey('egg-${widget.index}'),
                       width: kEggWidth,
                       height: kEggHeight,
                       decoration: BoxDecoration(

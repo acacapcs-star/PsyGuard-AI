@@ -72,11 +72,10 @@ class _PenguinParkPageState extends ConsumerState<PenguinParkPage>
   }
 }
   String _animalImage(String type, int skin) {
-    final s = skin + 1;
+    final n = (skin.clamp(0, 3)) + 2; // 首頁用 otter1/capy1，樂園用 2-5
     switch (type) {
-      case 'otter':    return 'assets/images/otter_s$s.png';
-      case 'capybara': return 'assets/images/capy_s$s.png';
-      default:         return 'assets/images/otter_s$s.png';
+      case 'capybara': return 'assets/images/capy$n.png';
+      default:         return 'assets/images/otter$n.png';
     }
   }
 

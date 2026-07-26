@@ -24,7 +24,7 @@ class _PetSelectionPageState extends ConsumerState<PetSelectionPage> {
       'name_en': 'Otter',
       'desc_zh': '個性｜看起來在放空，其實什麼都知道\n興趣｜抱愛心漂流、叼魚、對天花板發呆三小時\n面向｜「算了沒關係」的鼻祖，但其實超在意',
       'desc_en': 'Personality | "I\'m fine" energy but processing 47 emotions simultaneously\nInterests | Floating, holding hearts, eating fish at 3am\nVibe | EMOTIONAL DAMAGE but make it soft',
-      'image': 'assets/images/pet_otter.jpeg',
+      'image': 'assets/images/otter1.png',
       'bg': 'assets/images/pet_otter_bg.jpeg',
     },
     'capybara': {
@@ -32,7 +32,7 @@ class _PetSelectionPageState extends ConsumerState<PetSelectionPage> {
       'name_en': 'Capybara',
       'desc_zh': '個性｜萬年淡定，天塌下來也是這個臉\n興趣｜坐著、繼續坐著、決定不動\n面向｜失敗十次臉不紅心不跳那種',
       'desc_en': 'Personality | Literally unbothered. Scientifically proven.\nInterests | Sitting, sitting with purpose, watching others panic\nVibe | "Is this the real strat?" — does nothing, wins anyway',
-      'image': 'assets/images/pet_capybara.jpeg',
+      'image': 'assets/images/capy1.png',
       'bg': 'assets/images/pet_capybara_bg.jpeg',
     },
   };
