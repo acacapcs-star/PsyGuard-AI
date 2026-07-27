@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -600,6 +601,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
   // ⏱️ 秘密日記什麼時候自動上鎖
   Widget _autoLockSelector(bool isZh) {
+    if (kIsWeb) return const SizedBox.shrink(); // autolock web skip
     return FutureBuilder<AutoLockPolicy>(
       future: SecretDiaryLock.instance.loadPolicy(),
       builder: (context, snap) {
@@ -669,6 +671,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
   // 🎂 年齡層（趨勢圖團體對比要用來對到同齡人常模）
   Widget _ageBandSelector(bool isZh) {
+    if (kIsWeb) return const SizedBox.shrink(); // ageband web skip
     return FutureBuilder<AgeBand?>(
       future: AgeBandStore.get(),
       builder: (context, snap) {
@@ -912,9 +915,14 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   Future<void> _loadTtsSpeechRate() async {
-    final speechRate = await ref
-        .read(localSettingsServiceProvider)
-        .getTtsSpeechRate();
+    double speechRate = defaultTtsSpeechRate;
+    try {
+      speechRate = await ref
+          .read(localSettingsServiceProvider)
+          .getTtsSpeechRate();
+    } catch (_) {
+      // 網頁版等不支援時用預設值，避免整頁崩潰（黑屏）
+    }
     if (!mounted) {
       return;
     }

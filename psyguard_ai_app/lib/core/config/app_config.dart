@@ -38,7 +38,12 @@ class AppConfig {
 
   factory AppConfig.fromEnv() {
     String value(String key, {String fallback = ''}) {
-      final fromDotEnv = dotenv.maybeGet(key);
+      String? fromDotEnv;
+      try {
+        fromDotEnv = dotenv.maybeGet(key);
+      } catch (_) {
+        fromDotEnv = null; // 網頁版 .env 沒載入時不爆，避免設定頁黑屏
+      }
       if (fromDotEnv != null && fromDotEnv.isNotEmpty) {
         return fromDotEnv;
       }
