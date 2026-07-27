@@ -105,6 +105,30 @@ class MockAiClient implements AiApiClient {
           '> 這是離線示範報告。若你之後設定 API Key，系統可以產出更貼近你數據的分析。';
     }
 
+    final lc = text.toLowerCase();
+    const pos = ['開心','快樂','高興','好棒','太好了','興奮','幸福','順利','舒暢','happy','great','good','excited','wonderful','glad','amazing'];
+    const neg = ['難過','焦慮','委屈','生氣','想哭','好累','壓力','害怕','孤單','憂鬱','煩','痛苦','低落','崩潰','sad','anxious','angry','tired','depress','lonely','stress','cry','upset'];
+    final isPos = pos.any((w) => lc.contains(w.toLowerCase()));
+    final isNeg = neg.any((w) => lc.contains(w.toLowerCase()));
+
+    if (isPos && isNeg == false) {
+      if (wantsEnglish) {
+        return 'That is so good to hear! Something must have gone well.\n\n'
+            'Want to tell me more about what made you feel this way? Savoring good moments is a real skill.';
+      }
+      return '聽到你這樣說真好！😊 一定有什麼好事發生了。\n\n'
+          '想多說說是什麼讓你這麼開心嗎？好好記住這些美好的時刻，也是照顧自己的一種方式。';
+    }
+
+    if (isNeg == false) {
+      if (wantsEnglish) {
+        return 'Thanks for sharing that with me.\n\n'
+            'How are you feeling about it right now? I am here to listen, whatever it is.';
+      }
+      return '謝謝你跟我說這些。\n\n'
+          '你現在對這件事的感覺是什麼呢？不管是什麼，我都在這裡聽你說。';
+    }
+
     if (wantsEnglish) {
       return 'Thank you for saying that. It is not easy to put this into words.\n\n'
           'I want to check one thing first: when you say "$text", what is the strongest feeling in your body or emotions, such as tightness in your chest, wanting to cry, a racing heart, or numbness?\n\n'

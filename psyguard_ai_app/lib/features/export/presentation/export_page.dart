@@ -41,7 +41,7 @@ class _ExportPageState extends ConsumerState<ExportPage> {
       // 📤 匯出後跳分享面板（AirDrop／存檔案／傳給家長或輔導老師）
       await Share.shareXFiles(
         [XFile(file.path)],
-        subject: copy.isZhTw ? 'lii 情緒摘要報告' : 'lii Wellbeing Summary',
+        subject: copy.isZhTw ? 'lii 情緒摘要報告' : 'lii Well-being Summary',
       );
       if (!mounted) return;
       ScaffoldMessenger.of(

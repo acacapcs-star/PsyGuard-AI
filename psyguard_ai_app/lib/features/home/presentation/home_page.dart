@@ -167,6 +167,7 @@ class HomePage extends ConsumerWidget {
       ('/tools', copy.navTools, Icons.style_rounded),
       ('#', zh ? '陪伴' : 'Companions', Icons.circle),
       ('/hope-box', zh ? '🌙 希望盒' : '🌙 Hope Box', Icons.auto_awesome_rounded),
+      ('/bookmark', zh ? '📑 我的 Pacers' : '📑 My Pacers', Icons.bookmark_rounded),
       ('/weekly-persona', zh ? '本週人設' : 'Weekly Persona', Icons.pets_rounded),
       ('/penguin', zh ? 'Luna 樂園' : 'Luna Park', Icons.park_rounded),
       ('/pet', zh ? '我的夥伴' : 'My Pet', Icons.favorite_rounded),
@@ -296,6 +297,7 @@ class _HomeContent extends StatefulWidget {
 
 class _HomeContentState extends State<_HomeContent> {
   int _cumulativeCount = 0;
+  String _homePetType = 'otter';
 
   @override
   void initState() {
@@ -304,6 +306,11 @@ class _HomeContentState extends State<_HomeContent> {
   }
 
   Future<void> _init() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final pt = prefs.getString('pet_type') ?? 'otter';
+      if (mounted) setState(() => _homePetType = pt);
+    } catch (_) {}
     await SilenceDetector().recordActivity();
     final count = await CumulativeRiskEngine().getRedCount();
     final alert = await SilenceDetector().checkSilence();
@@ -541,10 +548,19 @@ class _HomeContentState extends State<_HomeContent> {
           final m = ref.watch(moodThemeProvider);
           final isWinter =
               m == MoodTheme.christmas || m == MoodTheme.winterBreak;
-          if (isWinter) {
-            return PenguinNestRow(isZh: copy.isZhTw);
-          }
-          return ListenableBuilder(
+          return AnimatedSwitcher(
+            duration: const Duration(milliseconds: 750),
+            transitionBuilder: (child, anim) => ScaleTransition(
+              scale: anim,
+              child: FadeTransition(opacity: anim, child: child),
+            ),
+            child: isWinter
+                ? KeyedSubtree(
+                    key: const ValueKey('penguin-nest'),
+                    child: PenguinNestRow(isZh: copy.isZhTw))
+                : KeyedSubtree(
+                    key: const ValueKey('penguin-igloo'),
+                    child: ListenableBuilder(
             listenable: penguinNest,
             builder: (context, _) {
               if (!penguinNest.showRow) return const SizedBox.shrink();
@@ -571,6 +587,8 @@ class _HomeContentState extends State<_HomeContent> {
                 ),
               );
             },
+                    ),
+                  ),
           );
         }),
 
@@ -665,8 +683,19 @@ class _HomeContentState extends State<_HomeContent> {
                   : 'Collect words that lift you up.',
             ),
             _InteractiveCard(
-              title: copy.isZhTw ? '🐧 Luna 樂園' : '🐧 Luna Park',
-              subtitle: copy.isZhTw ? '和企鵝互動紓壓' : 'Play with Luna',
+              title: copy.isZhTw ? '📑 我的 Pacers' : '📑 My Pacers',
+              subtitle: copy.isZhTw ? '存下有人對你說過的話' : 'Save what someone said to you',
+              icon: Icons.bookmark_rounded,
+              color: const Color(0xFFB8A7E0),
+              route: '/bookmark',
+              tooltipTitle: copy.isZhTw ? '我的 Pacers' : 'My Pacers',
+              tooltipDescription: copy.isZhTw
+                  ? '存下有人對你說過、想一直記得的話，需要時打開來看。'
+                  : 'Save the words someone said that you want to keep.',
+            ),
+            _InteractiveCard(
+              title: (_homePetType == 'otter' ? '🦦 ' : '🦫 ') + (copy.isZhTw ? 'Luna 樂園' : 'Luna Park'),
+              subtitle: copy.isZhTw ? (_homePetType == 'otter' ? '和水獺互動紓壓' : '和水豚互動紓壓') : 'Play with Luna',
               icon: Icons.pets_rounded,
               color: const Color(0xFF0ABFBC),
               route: '/penguin',
@@ -1067,7 +1096,7 @@ class _SwipeableCardsState extends State<_SwipeableCards> {
                       height: 80,
                       fit: BoxFit.contain,
                       errorBuilder: (_, __, ___) => Text(
-                        _petType == 'otter' ? '🦦' : '🐹',
+                        _petType == 'otter' ? '🦦' : '🦫',
                         style: const TextStyle(fontSize: 60),
                       ),
                     ),
@@ -1089,10 +1118,13 @@ class _SwipeableCardsState extends State<_SwipeableCards> {
                             color: const Color(0xFF0ABFBC).withOpacity(0.15),
                             borderRadius: BorderRadius.circular(20),
                           ),
-                          child: Text(
-                            _petType == 'otter' ? '🦦 水獺' : '🐹 豚鼠',
-                            style: const TextStyle(fontSize: 12, color: Color(0xFF0ABFBC)),
-                          ),
+                          child: Consumer(builder: (context, ref, _) {
+                            final zh = AppStrings.of(ref.watch(appLanguageControllerProvider)).isZhTw;
+                            return Text(
+                              _petType == 'otter' ? (zh ? '🦦 水獺' : '🦦 Otter') : (zh ? '🦫 水豚' : '🦫 Capybara'),
+                              style: const TextStyle(fontSize: 12, color: Color(0xFF0ABFBC)),
+                            );
+                          }),
                         ),
                       ],
                     ),

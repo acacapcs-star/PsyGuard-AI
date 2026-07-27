@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'paw_tap.dart';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -256,8 +257,9 @@ class _NestSlotState extends State<_NestSlot>
                 child: FadeTransition(opacity: anim, child: child),
               ),
               child: widget.hatched
-                  ? GestureDetector(
-                      onTap: () => _jump.forward(from: 0),
+                  ? PawFreeZone(
+                      child: GestureDetector(
+                        onTap: () => _jump.forward(from: 0),
                       child: ListenableBuilder(
                         listenable: _jump,
                         builder: (context, child) {
@@ -278,7 +280,7 @@ class _NestSlotState extends State<_NestSlot>
                           ),
                         ),
                       ),
-                    )
+                    ))
                   : Container(
                       key: ValueKey('egg-${widget.index}'),
                       width: kEggWidth,

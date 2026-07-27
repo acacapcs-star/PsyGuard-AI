@@ -10,6 +10,7 @@ import '../features/checkin/presentation/checkin_page.dart';
 import '../features/export/presentation/export_page.dart';
 import '../features/home/presentation/home_page.dart';
 import '../features/hopebox/presentation/hope_box_page.dart';
+import '../features/bookmark/presentation/bookmark_page.dart';
 import '../features/settings/presentation/settings_page.dart';
 import '../features/safety/presentation/safety_page.dart';
 import '../features/sleep/presentation/sleep_history_page.dart';
@@ -80,6 +81,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         name: 'hope-box',
         pageBuilder: (context, state) =>
             _buildPageWithSlide(context, state, const HopeBoxPage()),
+      ),
+      GoRoute(
+        path: '/bookmark',
+        name: 'bookmark',
+        pageBuilder: (context, state) =>
+            _buildPageWithSlide(context, state, const BookmarkPage()),
       ),
       GoRoute(
         path: '/checkin',

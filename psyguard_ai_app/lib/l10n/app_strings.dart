@@ -71,7 +71,7 @@ class AppStrings {
   String get statusNeedsAttention => isZhTw ? '需要被關注' : 'Needs attention';
   String get statusWatchful => isZhTw ? '留意中' : 'Keep an eye on it';
   String get statusGood => isZhTw ? '狀態良好' : 'Doing okay';
-  String get todayStatus => isZhTw ? '今日身心狀態' : 'Today\'s wellbeing';
+  String get todayStatus => isZhTw ? '今日身心狀態' : 'Today\'s well-being';
   String get exploreSelf => isZhTw ? '探索自我' : 'Explore Yourself';
   String get moreFeatures => isZhTw ? '更多功能' : 'More Features';
   String get emergencyCase => isZhTw ? '案號 115-E018647' : 'Case 115-E018647';
@@ -198,7 +198,7 @@ class AppStrings {
       isZhTw ? '今天狀態不錯！繼續保持 ✨' : 'You are doing well today. Keep it up ✨';
   String get liiIsHere => isZhTw ? 'lii 在這裡陪你' : 'lii is here with you';
 
-  String get trendsTitle => isZhTw ? '身心趨勢' : 'Wellbeing Trends';
+  String get trendsTitle => isZhTw ? '身心趨勢' : 'Well-being Trends';
   String get analysisHistory => isZhTw ? '分析歷史' : 'Analysis History';
   String get aiTrendAnalysis => isZhTw ? 'AI 趨勢分析' : 'AI Trend Analysis';
   String days(int value) => isZhTw ? '$value 天' : '$value days';
@@ -236,9 +236,9 @@ class AppStrings {
       isZhTw ? '已匯出至：$path' : 'Exported to: $path';
   String exportFailed(Object error) =>
       isZhTw ? '匯出失敗：$error' : 'Export failed: $error';
-  String get wellbeingReport => isZhTw ? '身心報告' : 'wellbeing report';
+  String get wellbeingReport => isZhTw ? '身心報告' : 'well-being report';
   String exportReportTitle(int days) =>
-      isZhTw ? '$days 日身心報告' : '$days-day wellbeing report';
+      isZhTw ? '$days 日身心報告' : '$days-day well-being report';
   String exportReportBody(int days) => isZhTw
       ? '將近 $days 天的心情、睡眠、風險趨勢摘要匯出為 JSON，可分享給專業人員。'
       : 'Export the last $days days of mood, sleep, and risk trends as JSON for sharing with professionals.';

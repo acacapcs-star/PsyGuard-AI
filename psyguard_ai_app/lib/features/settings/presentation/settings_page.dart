@@ -9,6 +9,7 @@ import '../../../core/network/ai_api_client.dart';
 import '../../../core/network/ai_error_formatter.dart';
 import '../../../core/network/app_config_controller.dart';
 import '../../../core/security/local_settings_service.dart';
+import '../../../core/settings/font_scale_provider.dart';
 import '../../../core/storage/database_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../l10n/app_language.dart';
@@ -97,6 +98,58 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             _sectionTitle(language == AppLanguage.zhTw ? '🎂 年齡' : '🎂 Age'),
             const SizedBox(height: 12),
             _card(child: _ageBandSelector(language == AppLanguage.zhTw)),
+            const SizedBox(height: 18),
+            _sectionTitle(language == AppLanguage.zhTw ? '🔤 字體大小' : '🔤 Font Size'),
+            const SizedBox(height: 12),
+            _card(
+              child: Consumer(
+                builder: (context, r, _) {
+                  final current = r.watch(fontScaleProvider);
+                  final zh = language == AppLanguage.zhTw;
+                  final opts = <List<Object>>[
+                    [zh ? '小' : 'S', 0.9],
+                    [zh ? '標準' : 'M', 1.0],
+                    [zh ? '大' : 'L', 1.15],
+                    [zh ? '特大' : 'XL', 1.3],
+                  ];
+                  return Row(
+                    children: [
+                      for (final o in opts)
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 3),
+                            child: GestureDetector(
+                              onTap: () => r
+                                  .read(fontScaleProvider.notifier)
+                                  .set(o[1] as double),
+                              child: Container(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: current == (o[1] as double)
+                                      ? const Color(0xFF7E8FE8)
+                                      : Colors.grey.shade100,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  o[0] as String,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    color: current == (o[1] as double)
+                                        ? Colors.white
+                                        : Colors.black87,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
+            ),
             const SizedBox(height: 18),
             _sectionTitle(copy.languageSectionTitle),
             const SizedBox(height: 12),
@@ -601,7 +654,6 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
   // ⏱️ 秘密日記什麼時候自動上鎖
   Widget _autoLockSelector(bool isZh) {
-    if (kIsWeb) return const SizedBox.shrink(); // autolock web skip
     return FutureBuilder<AutoLockPolicy>(
       future: SecretDiaryLock.instance.loadPolicy(),
       builder: (context, snap) {
@@ -671,7 +723,6 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
   // 🎂 年齡層（趨勢圖團體對比要用來對到同齡人常模）
   Widget _ageBandSelector(bool isZh) {
-    if (kIsWeb) return const SizedBox.shrink(); // ageband web skip
     return FutureBuilder<AgeBand?>(
       future: AgeBandStore.get(),
       builder: (context, snap) {
