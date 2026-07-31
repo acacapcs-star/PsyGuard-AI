@@ -17,6 +17,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 
+import '../pacer/bookmark_quick_add.dart';
 import '../pacer/breath_plan.dart';
 import 'lii_orb.dart';
 
@@ -168,6 +169,7 @@ class _LiiBreathPageState extends State<LiiBreathPage>
 
       if (tick.finished) {
         _stop('慢慢回來');
+        _leaveWords();
         return;
       }
 
@@ -220,6 +222,23 @@ class _LiiBreathPageState extends State<LiiBreathPage>
   double _peak(double v) {
     final u = (v - 0.72) / 0.28;
     return u <= 0 ? 0 : u;
+  }
+
+  // BREATH_TO_LIFT 做完呼吸 → Luna 依心情留一句話，掛成一台纜車。
+  // 用 SnackBar 不用彈窗：剛做完呼吸的人不該被打斷。
+  Future<void> _leaveWords() async {
+    final quote = await BookmarkQuickAdd.addFromBreath(widget.mood);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: const Color(0xFF16264C),
+        duration: const Duration(seconds: 6),
+        content: Text(
+          'Luna 留了一句話給你\n$quote',
+          style: const TextStyle(color: Colors.white, height: 1.6),
+        ),
+      ),
+    );
   }
 
   void _buzz() {

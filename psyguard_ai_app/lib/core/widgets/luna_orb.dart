@@ -694,3 +694,210 @@ class _LunaRevealState extends State<LunaReveal>
     );
   }
 }
+
+// 纜車：球是支點，纜線穿過它，兩條繩子從球往下吊住車廂。
+// 車廂繞著球擺盪，纜線和球本身不動。
+class LunaCableCar extends StatefulWidget {
+  final Widget child;
+  final double childWidth;
+  final double childHeight;
+  final double t;
+  final double pull;
+  final double orbSize;
+  final double ropeLen;
+  final GlassTone tone;
+  final void Function(double t, double pull) onChanged;
+  final VoidCallback? onEnd;
+
+  const LunaCableCar({
+    super.key,
+    required this.child,
+    required this.childWidth,
+    required this.childHeight,
+    required this.t,
+    required this.pull,
+    required this.onChanged,
+    this.onEnd,
+    this.orbSize = 190,
+    this.ropeLen = 18,
+    this.tone = GlassTone.ice,
+  });
+
+  @override
+  State<LunaCableCar> createState() => _LunaCableCarState();
+}
+
+class _LunaCableCarState extends State<LunaCableCar>
+    with SingleTickerProviderStateMixin {
+  late final Ticker _ticker;
+  double _time = 0, _last = 0;
+  double _angle = 0, _vel = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _ticker = createTicker(_tick)..start();
+  }
+
+  @override
+  void dispose() {
+    _ticker.dispose();
+    super.dispose();
+  }
+
+  void _tick(Duration d) {
+    final now = d.inMicroseconds / 1e6;
+    var dt = now - _last;
+    _last = now;
+    if (dt <= 0 || dt > 0.05) dt = 1 / 60;
+    _time = now;
+
+    const k = 30.0;
+    const c = 2.8;
+    _vel += (-k * _angle - c * _vel) * dt;
+    _angle += _vel * dt;
+
+    const maxA = 5 * math.pi / 180;
+    if (_angle > maxA) {
+      _angle = maxA;
+      _vel *= -0.2;
+    } else if (_angle < -maxA) {
+      _angle = -maxA;
+      _vel *= -0.2;
+    }
+
+    if (_angle.abs() < 0.0004 && _vel.abs() < 0.004) {
+      _angle = 0;
+      _vel = 0;
+    }
+    if (mounted) setState(() {});
+  }
+
+  void _drag(DragUpdateDetails d) {
+    final nt = (widget.t - d.delta.dx / 160).clamp(0.0, 1.0);
+    final np = (widget.pull - d.delta.dy / 90).clamp(0.0, 1.0);
+    _vel += d.delta.dx * 0.028;
+    widget.onChanged(nt, np);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final orb = widget.orbSize;
+    final rope = widget.ropeLen * (1 - 0.6 * widget.pull);
+    final childTop = orb + rope;
+    final w = widget.childWidth;
+    final pivot = Offset(w / 2, orb / 2);
+
+    return SizedBox(
+      width: w,
+      height: childTop + widget.childHeight,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned(
+            left: -20,
+            right: -20,
+            top: orb / 2 - 1.5,
+            child: Container(
+              height: 3,
+              decoration: BoxDecoration(
+                color: const Color(0x73FFFFFF),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          Transform(
+            transform: Matrix4.rotationZ(_angle),
+            origin: pivot,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Positioned.fill(
+                  child: CustomPaint(
+                    painter: _RopePainter(
+                      pivot: pivot,
+                      orb: orb,
+                      childTop: childTop,
+                      childWidth: w,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  left: 0,
+                  top: childTop,
+                  width: widget.childWidth,
+                  height: widget.childHeight,
+                  child: widget.child,
+                ),
+              ],
+            ),
+          ),
+          Positioned(
+            left: w / 2 - orb / 2,
+            top: 0,
+            width: orb,
+            height: orb,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onPanUpdate: _drag,
+              onPanEnd: (_) => widget.onEnd?.call(),
+              child: Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border:
+                      Border.all(color: const Color(0xCCFFFFFF), width: 3.2),
+                  boxShadow: const [
+                    BoxShadow(
+                        color: Color(0x59000000),
+                        blurRadius: 8,
+                        offset: Offset(0, 3)),
+                  ],
+                ),
+                padding: const EdgeInsets.all(2.5),
+                child: ClipOval(
+                  child: LunaOrb(
+                    time: _time,
+                    w: 80 - 160 * widget.t,
+                    tone: widget.tone,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 兩條繩子：從球的下緣兩側分出來，扣住車廂的兩個上角。
+class _RopePainter extends CustomPainter {
+  final Offset pivot;
+  final double orb, childTop, childWidth;
+
+  _RopePainter({
+    required this.pivot,
+    required this.orb,
+    required this.childTop,
+    required this.childWidth,
+  });
+
+  @override
+  void paint(Canvas canvas, Size box) {
+    final p = Paint()
+      ..color = const Color(0x99FFFFFF)
+      ..strokeWidth = 1.8
+      ..strokeCap = StrokeCap.round;
+
+    final ly = pivot.dy + orb * 0.34;
+    final lx = orb * 0.26;
+    const inset = 16.0;
+
+    canvas.drawLine(Offset(pivot.dx - lx, ly), Offset(inset, childTop), p);
+    canvas.drawLine(
+        Offset(pivot.dx + lx, ly), Offset(childWidth - inset, childTop), p);
+  }
+
+  @override
+  bool shouldRepaint(covariant _RopePainter old) => true;
+}
