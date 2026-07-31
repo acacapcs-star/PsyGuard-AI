@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -338,10 +339,8 @@ class _FishVisualLayerState extends ConsumerState<FishVisualLayer>
       return IgnorePointer(
         child: Stack(
           children: [
-            // 籃框 + 軌跡 + 籃球（CustomPaint 一次畫完）
-            Positioned.fill(
-              child: CustomPaint(painter: _HoopBallPainter(pond)),
-            ),
+            // （籃框+籃球已搬到最上層 FishTouchLayer，浮在卡片上）
+            // 這層只留魚，讓魚半遮半掩在卡片後面
             for (final f in pond.fish)
               Positioned(
                 left: f.x - f.size / 2,
@@ -551,6 +550,12 @@ class FishTouchLayer extends ConsumerWidget {
 
     return Stack(
       children: [
+        // 🏀 籃框+籃球浮在卡片上面（純顯示，不擋手勢）
+        Positioned.fill(
+          child: IgnorePointer(
+            child: CustomPaint(painter: _HoopBallPainter(pond)),
+          ),
+        ),
         for (final f in pond.fish)
           Positioned(
             left: f.x - f.size / 2 - 6,
@@ -572,27 +577,56 @@ class FishTouchLayer extends ConsumerWidget {
               onPanCancel: () => ref.read(fishPondProvider).release(f),
             ),
           ),
-        // 籃球（拉弓瞄準）
+        // 籃球（拉弓瞄準）— 整頁接收，只有按在球附近才搶手勢，
+        // 其他地方穿透放行給卡片/捲動，才不會「碰不到球」。
         if (pond.phase == BallPhase.resting ||
             pond.phase == BallPhase.aiming)
-          Positioned(
-            left: pond.bx - FishPondController.ballR - 8,
-            top: pond.by - FishPondController.ballR - 8,
-            width: FishPondController.ballR * 2 + 16,
-            height: FishPondController.ballR * 2 + 16,
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onPanStart: (_) {
-                HapticFeedback.selectionClick();
-                ref.read(fishPondProvider).aimStart();
+          Positioned.fill(
+            child: RawGestureDetector(
+              behavior: HitTestBehavior.translucent,
+              gestures: <Type, GestureRecognizerFactory>{
+                _BallDragRecognizer:
+                    GestureRecognizerFactoryWithHandlers<_BallDragRecognizer>(
+                  () => _BallDragRecognizer(),
+                  (rec) {
+                    rec.ballPos = Offset(pond.bx, pond.by);
+                    rec.grabRadius = FishPondController.ballR * 4.5;
+                    rec.onStart = (_) {
+                      HapticFeedback.selectionClick();
+                      ref.read(fishPondProvider).aimStart();
+                    };
+                    rec.onUpdate = (d) {
+                      ref.read(fishPondProvider).aimUpdate(d.delta);
+                    };
+                    rec.onEnd = (_) {
+                      ref.read(fishPondProvider).aimRelease();
+                    };
+                    rec.onCancel = () {
+                      ref.read(fishPondProvider).aimRelease();
+                    };
+                  },
+                ),
               },
-              onPanUpdate: (d) =>
-                  ref.read(fishPondProvider).aimUpdate(d.delta),
-              onPanEnd: (_) => ref.read(fishPondProvider).aimRelease(),
-              onPanCancel: () => ref.read(fishPondProvider).aimRelease(),
+              child: const SizedBox.expand(),
             ),
           ),
       ],
     );
+  }
+}
+
+
+/// 籃球專用手勢辨識器：手指按在球附近才拿下手勢，其他地方放行給頁面。
+/// 內建 PanGestureRecognizer 要移動 36px 才出手，會被卡片/捲動搶走；
+/// 這裡在 pointer down 當下就判斷離球多遠，近就 accept、遠就不進場。
+class _BallDragRecognizer extends PanGestureRecognizer {
+  Offset ballPos = Offset.zero;
+  double grabRadius = 64;
+
+  @override
+  void addAllowedPointer(PointerDownEvent event) {
+    if ((event.localPosition - ballPos).distance > grabRadius) return;
+    super.addAllowedPointer(event);
+    resolve(GestureDisposition.accepted);
   }
 }

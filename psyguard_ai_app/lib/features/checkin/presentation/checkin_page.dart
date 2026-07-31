@@ -2,6 +2,7 @@ import 'note_page.dart';
 import '../../../core/ers/speech_metrics.dart';
 import '../../../core/security/secret_swipe_shell.dart';
 import 'package:flutter/material.dart';
+import '../../../core/analytics/usage_tracker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -75,12 +76,6 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
       if (!mounted) return;
       setState(() => _saving = false);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(copy.savedRisk(risk.riskLevelKey.toUpperCase())),
-        ),
-      );
-
       // ERS分析
       await Future.delayed(const Duration(milliseconds: 300));
       if (!mounted) return;
@@ -89,9 +84,10 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
       final db = ref.read(appDatabaseProvider);
       final yesterday = now.subtract(const Duration(days: 1));
       final sleepLogs = await db.getSleepLogsSince(yesterday);
+      // 沒有睡眠紀錄時，用中性值（不冤枉成高風險）；真正風險交給心情/壓力/能量反映
       final realSleepHours = sleepLogs.isNotEmpty
           ? sleepLogs.last.sleepHours
-          : 3.0;
+          : 7.5;
 
       // 🎤 語言串流：優先用真實語音特徵（7 天內錄過音才算數），
       //    沒有的話才退回用壓力推算，這樣沒用過語音的人也不會壞掉。
@@ -102,6 +98,8 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
           voice?.negativeWordRatio ?? (stress / 100.0 * 0.8);
       final inferredPauseFreq = voice?.pauseFrequency ??
           (stress > 70 ? 8.0 : stress > 50 ? 5.0 : 2.0);
+      final realStreak = await UsageTracker.streakDays();
+      final realConsistency = await UsageTracker.consistency7();
       final ersResult = ersEngine.calculate(
         ERSInput(
           speechRate: inferredSpeechRate,
@@ -111,15 +109,41 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
           stressScore: stress.toDouble(),
           energyScore: energy.toDouble(),
           sleepDuration: realSleepHours,
-          appUsageStreak: mood < 30 ? 1.0 : mood < 50 ? 3.0 : 7.0,
-          checkInConsistency: mood < 30 ? 0.2 : mood < 50 ? 0.5 : 0.8,
+          appUsageStreak: realStreak.toDouble(),
+          checkInConsistency: realConsistency,
         ),
         const PersonalBaseline(),
+        hasVoice: voice != null,
       );
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setDouble('last_ers_score', ersResult.adjustedERS);
-      await prefs.setString('last_ers_level', ersResult.riskLevel);
+      // 多天平滑：用近 3 次 ERS 平均，避免單日暴衝誤觸警報
+      final recent = prefs.getStringList('ers_recent') ?? [];
+      recent.add(ersResult.adjustedERS.toStringAsFixed(2));
+      while (recent.length > 3) {
+        recent.removeAt(0);
+      }
+      await prefs.setStringList('ers_recent', recent);
+      final smoothed = recent
+              .map((e) => double.tryParse(e) ?? 0)
+              .fold<double>(0, (p, e) => p + e) /
+          recent.length;
+      final smoothedLevel = smoothed >= 70
+          ? 'red'
+          : smoothed >= 45
+              ? 'yellow'
+              : 'green';
+      await prefs.setDouble('last_ers_score', smoothed);
+      await prefs.setString('last_ers_level', smoothedLevel);
       if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(copy.savedRisk(smoothedLevel == 'red'
+              ? 'HIGH'
+              : smoothedLevel == 'yellow'
+                  ? 'MEDIUM'
+                  : 'LOW')),
+        ),
+      );
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
@@ -182,7 +206,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
             title: copy.mood,
             value: _mood,
             icon: _moodEmoji(_mood.round()),
-            color: const Color(0xFF667EEA),
+            color: const Color(0xFF4A90D9),
             minAssistiveLabel: copy.veryBad,
             maxAssistiveLabel: copy.veryGood,
             onChanged: (v) => setState(() => _mood = v),
@@ -190,19 +214,19 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
           const SizedBox(height: 16),
           _buildSliderSection(
             title: copy.stress,
-            value: _stress,
+            value: 100 - _stress,
             icon: _stressEmoji(_stress.round()),
-            color: const Color(0xFFF5576C),
-            minAssistiveLabel: copy.veryGood,
-            maxAssistiveLabel: copy.veryBad,
-            onChanged: (v) => setState(() => _stress = v),
+            color: const Color(0xFF9B59B6),
+            minAssistiveLabel: copy.veryBad,
+            maxAssistiveLabel: copy.veryGood,
+            onChanged: (v) => setState(() => _stress = 100 - v),
           ),
           const SizedBox(height: 16),
           _buildSliderSection(
             title: copy.energy,
             value: _energy,
             icon: _energyEmoji(_energy.round()),
-            color: const Color(0xFF43E97B),
+            color: const Color(0xFF27AE60),
             minAssistiveLabel: copy.veryBad,
             maxAssistiveLabel: copy.veryGood,
             onChanged: (v) => setState(() => _energy = v),
@@ -330,7 +354,7 @@ class _CheckinPageState extends ConsumerState<CheckinPage> {
     final moodLabel = title == copy.mood
         ? _moodDescriptor(percent, copy)
         : title == copy.stress
-            ? _stressDescriptor(percent, copy)
+            ? _stressDescriptor(100 - percent, copy)
             : title == copy.energy
                 ? _energyDescriptor(percent, copy)
                 : null;

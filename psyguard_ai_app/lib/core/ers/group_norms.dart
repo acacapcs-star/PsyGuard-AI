@@ -64,12 +64,21 @@ class GroupNorm {
   final double mood; // 0-100
   final double sleepHours; // 0-12
   final double riskScore; // 0-100，越低越好
+  final int count; // 真實匿名樣本數（本地估計值為 0）
 
   const GroupNorm({
     required this.mood,
     required this.sleepHours,
     required this.riskScore,
+    this.count = 0,
   });
+
+  factory GroupNorm.fromJson(Map<String, dynamic> j) => GroupNorm(
+        mood: (j['mood'] as num).toDouble(),
+        sleepHours: (j['sleepHours'] as num).toDouble(),
+        riskScore: (j['riskScore'] as num).toDouble(),
+        count: (j['count'] as num?)?.toInt() ?? 0,
+      );
 }
 
 /// 研究常模。
@@ -93,5 +102,33 @@ class GroupNorms {
   /// 呼叫端已經是 await，所以之後換掉不影響任何其他程式碼。
   static Future<GroupNorm> fetch(AgeBand band) async {
     return _local[band] ?? _local[AgeBand.age16to18]!;
+  }
+
+  /// 顯示同齡比較（peers）的最低樣本數。
+  /// 低於這個數字就不顯示 —— 同時顧到統計效度與隱私：
+  /// 人數太少的平均沒有意義，也可能被反推出是誰。
+  static const int minSampleSize = 15;
+
+  /// 目前這組常模是否有足夠的真實同齡樣本可以顯示。
+  static bool hasEnoughSample(GroupNorm norm) => norm.count >= minSampleSize;
+
+  /// 後端聚合：把某年齡層「所有匿名使用者」的數值加總後取平均（total / n）。
+  /// 這一定要在伺服器端做（本機看不到其他人的資料，不能自己湊人數）。
+  /// 不足 minSampleSize 人時回傳 null，代表暫時不顯示 peers。
+  static GroupNorm? aggregate(List<GroupNorm> samples) {
+    final n = samples.length;
+    if (n < minSampleSize) return null;
+    double mood = 0, sleep = 0, risk = 0;
+    for (final s in samples) {
+      mood += s.mood;
+      sleep += s.sleepHours;
+      risk += s.riskScore;
+    }
+    return GroupNorm(
+      mood: mood / n,
+      sleepHours: sleep / n,
+      riskScore: risk / n,
+      count: n,
+    );
   }
 }

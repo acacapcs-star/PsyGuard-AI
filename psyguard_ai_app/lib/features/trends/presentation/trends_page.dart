@@ -40,7 +40,10 @@ final trendGroupNormProvider = FutureProvider<GroupNorm?>((ref) async {
     return null;
   }
   final band = await AgeBandStore.get() ?? AgeBand.age16to18;
-  return GroupNorms.fetch(band);
+  final norm = await GroupNorms.fetch(band);
+  // 樣本數不足 15 人時不顯示同齡比較（統計效度 + 隱私）
+  if (!GroupNorms.hasEnoughSample(norm)) return null;
+  return norm;
 });
 
 /// 三張趨勢卡各自要不要顯示：mood / sleep / risk
@@ -546,8 +549,8 @@ class TrendsPage extends ConsumerWidget {
                     child: Text(
                       baselineIsGroup
                           ? (copy.isZhTw
-                              ? '同齡人參考線（基於研究常模）'
-                              : 'Peer reference (based on research norms)')
+                              ? '同齡人參考線（參與者尚不足，數據僅供參考）'
+                              : 'Peer reference (small sample — for reference only)')
                           : (copy.isZhTw ? '你的期間平均' : 'Your period average'),
                       style: const TextStyle(
                           fontSize: 11, color: Color(0xFF9AA5B1)),

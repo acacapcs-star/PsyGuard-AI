@@ -110,21 +110,21 @@ class ERSPercentileWidget extends ConsumerWidget {
           const SizedBox(height: 8),
           Text(
             isZh
-                ? '你的心理負荷感高於$ageGroup同齡者的 $percentile%'
-                : 'Your mental load is higher than $percentile% of your $ageGroup peers',
+                ? 'lii 正在認識你的日常，慢慢陪你看見自己的變化'
+                : 'lii is learning your normal — building a picture of you over time',
             style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
           ),
           const SizedBox(height: 16),
           Row(
             children: [
               _StreamBadge(isZh ? '語言' : 'Language',
-                  ersResult.streamScores['language'] ?? 0),
+                  ersResult.streamScores['language'] ?? 0, isZh: isZh),
               const SizedBox(width: 6),
-              _StreamBadge(isZh ? '生理' : 'Physical',
-                  ersResult.streamScores['physical'] ?? 0),
+              _StreamBadge(isZh ? '情緒' : 'Emotion',
+                  ersResult.streamScores['physical'] ?? 0, isZh: isZh),
               const SizedBox(width: 6),
-              _StreamBadge(isZh ? '行為' : 'Behavior',
-                  ersResult.streamScores['behavior'] ?? 0),
+              _StreamBadge(isZh ? '生活節奏' : 'Routine',
+                  ersResult.streamScores['behavior'] ?? 0, isZh: isZh),
             ],
           ),
         ],
@@ -144,10 +144,12 @@ class ERSPercentileWidget extends ConsumerWidget {
 class _StreamBadge extends StatelessWidget {
   final String label;
   final double score;
+  final bool isZh;
 
-  const _StreamBadge(this.label, this.score);
+  const _StreamBadge(this.label, this.score, {this.isZh = true});
 
   Color get _color {
+    if (score < 0) return const Color(0xFF9AA5B1);
     if (score >= 70) return const Color(0xFFD14343);
     if (score >= 45) return const Color(0xFFF5A623);
     return const Color(0xFF0ABFBC);
@@ -177,15 +179,25 @@ class _StreamBadge extends StatelessWidget {
                 ),
               ),
             ),
-            Text(
-              score.toStringAsFixed(0),
-              maxLines: 1,
-              style: TextStyle(
-                color: _color,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
+            score < 0
+                ? Text(
+                    isZh ? '尚未紀錄' : 'not recorded yet',
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    style: TextStyle(
+                        color: _color,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 11,
+                        height: 1.1),
+                  )
+                : Text(
+                    score.toStringAsFixed(0),
+                    maxLines: 1,
+                    style: TextStyle(
+                        color: _color,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16),
+                  ),
           ],
         ),
       ),

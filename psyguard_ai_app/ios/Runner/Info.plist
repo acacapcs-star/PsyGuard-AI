@@ -72,5 +72,7 @@
 	<string>需要使用 Face ID 來解鎖你的秘密日記 / Face ID is used to unlock your secret diary</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>需要使用語音辨識來聽懂你對 Hey Lumi 說的話 / Speech recognition is used to understand what you say to Hey Lumi</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>選擇照片作為引言卡背景 / Choose a photo for your quote card background</string>
 </dict>
 </plist>

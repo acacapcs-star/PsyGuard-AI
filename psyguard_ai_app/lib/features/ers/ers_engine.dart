@@ -85,7 +85,7 @@ class ERSEngine {
   // ── 加權融合計算 Raw ERS ──────────────────────────────
 
   ERSResult calculate(ERSInput input, PersonalBaseline baseline,
-      {bool isZh = true}) {
+      {bool isZh = true, bool hasVoice = true}) {
     // 串流一：語言（40%）
     final stream1 = (
       normalizeSpeechRate(input.speechRate) * 0.4 +
@@ -107,8 +107,10 @@ class ERSEngine {
       normalizeConsistency(input.checkInConsistency) * 0.25
     );
 
-    // 加權融合
-    final rawERS = stream1 * 0.40 + stream2 * 0.35 + stream3 * 0.25;
+    // 加權融合（沒有真實語音時，語言串流不列入，權重重新分配給生理+行為）
+    final rawERS = hasVoice
+        ? stream1 * 0.40 + stream2 * 0.35 + stream3 * 0.25
+        : stream2 * (0.35 / 0.60) + stream3 * (0.25 / 0.60);
 
     // 個人基線校正
     final baselineMoodEffect = (50 - baseline.avgMood) * 0.1;
@@ -136,7 +138,7 @@ class ERSEngine {
       riskLevel: riskLevel,
       riskLabel: riskLabel,
       streamScores: {
-        'language': stream1,
+        'language': hasVoice ? stream1 : -1.0,
         'physical': stream2,
         'behavior': stream3,
       },

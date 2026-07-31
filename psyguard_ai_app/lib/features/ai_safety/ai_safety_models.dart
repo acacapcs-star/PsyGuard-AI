@@ -33,8 +33,8 @@ class AISafetyEngine {
       return InterventionConfig(
         level: InterventionLevel.red,
         message: isZh
-            ? '守護精靈注意到你最近狀態需要支持，輔導老師已收到通知，是否需要今天和老師聊聊？'
-            : 'Your guardian noticed you could use some support. A counselor has been notified. Would you like to talk with them today?',
+            ? 'lii 注意到你最近很不容易，輔導老師已收到通知，要不要今天和老師聊聊？'
+            : 'lii noticed things have been really hard lately. A counselor has been notified. Would you like to talk with them today?',
         actionLabel: isZh ? '好的，我想聊聊' : "Okay, I'd like to talk",
         actionRoute: '/safety',
         notifyCounselor: true,
@@ -46,8 +46,8 @@ class AISafetyEngine {
       return InterventionConfig(
         level: InterventionLevel.red,
         message: isZh
-            ? '你今天承受了很多，守護精靈在這裡陪你。需要我幫你聯絡輔導室嗎？'
-            : 'You have carried a lot today, and your guardian is here with you. Would you like help contacting the counseling office?',
+            ? '你今天承受了很多，lii 在這裡陪你。需要我幫你聯絡輔導室嗎？'
+            : 'You have carried a lot today, and lii is here with you. Would you like help contacting the counseling office?',
         actionLabel: isZh ? '查看支援資源' : 'See support resources',
         actionRoute: '/safety',
         notifyCounselor: false,
@@ -59,8 +59,8 @@ class AISafetyEngine {
       return InterventionConfig(
         level: InterventionLevel.yellow,
         message: isZh
-            ? '最近感覺如何？守護精靈想和你說說話 💙'
-            : 'How have you been lately? Your guardian would love to chat 💙',
+            ? '最近感覺如何？lii 想和你說說話 💙'
+            : 'How have you been lately? lii is here if you want to talk 💙',
         actionLabel: isZh ? '和AI聊聊' : 'Chat with AI',
         actionRoute: '/chat',
         notifyCounselor: false,

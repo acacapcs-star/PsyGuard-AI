@@ -74,20 +74,28 @@ class SafetyFlowService {
       resources: const [
         SafetyResource(
           name: '校內輔導室',
-          contact: '請依學校公告',
-          description: '優先聯絡導師、輔導老師或學務處。',
+          contact: '04-2233-4105',
+          description: '優先聯絡導師、輔導老師或學務處（範例，可換成貴校輔導室電話）。',
         ),
         SafetyResource(
-          name: '安心專線',
+          name: '安心專線 · 24 小時',
           contact: '1925',
-          description: '24 小時心理支持與轉介。',
+          description: '衛福部免費心理支持與自殺防治專線。',
         ),
-        SafetyResource(name: '生命線', contact: '1995', description: '提供情緒支持與傾聽。'),
-        SafetyResource(name: '警察', contact: '110', description: '有立即人身危險時撥打。'),
         SafetyResource(
-          name: '消防救護',
-          contact: '119',
-          description: '有緊急醫療需求時撥打。',
+          name: '生命線',
+          contact: '1995',
+          description: '24 小時情緒支持與危機協談。',
+        ),
+        SafetyResource(
+          name: '張老師',
+          contact: '1980',
+          description: '心理諮詢輔導（週一至六 09:00–21:00）。',
+        ),
+        SafetyResource(
+          name: '緊急救護／報警',
+          contact: '119 · 110',
+          description: '有立即危險時撥打（119 救護、110 報警）。',
         ),
       ],
       copyTemplate: copyTemplate,
@@ -170,20 +178,39 @@ class SafetyFlowService {
       resources: const [
         SafetyResource(
           name: 'School counseling office',
-          contact: 'Check your school notice',
+          contact: '04-2233-4105',
           description:
-              'Contact your homeroom teacher, counselor, or student affairs office first.',
+              'Reach out to your teacher, counselor, or student affairs office first (sample number — replace with your school).',
         ),
         SafetyResource(
-          name: 'Local crisis line',
-          contact: 'Use your local number',
+          name: 'Careline · 24h (TW)',
+          contact: '1925',
           description:
-              '24-hour emotional support and referral where available.',
+              'Free mental-health and suicide-prevention line (Taiwan).',
         ),
         SafetyResource(
-          name: 'Emergency services',
-          contact: 'Local emergency number',
-          description: 'Call if there is immediate danger.',
+          name: 'Lifeline (TW)',
+          contact: '1995',
+          description:
+              '24-hour emotional support and crisis counseling (Taiwan).',
+        ),
+        SafetyResource(
+          name: '988 Suicide & Crisis Lifeline (US)',
+          contact: '988',
+          description:
+              'Call or text 988 — free, confidential, 24/7 (United States).',
+        ),
+        SafetyResource(
+          name: 'Crisis Text Line (US)',
+          contact: 'Text HOME to 741741',
+          description:
+              'Free, confidential text support, 24/7 (United States).',
+        ),
+        SafetyResource(
+          name: 'Emergency',
+          contact: '119 · 110 (TW) / 911 (US)',
+          description:
+              'Immediate danger — Taiwan: 119 ambulance, 110 police. United States: 911.',
         ),
       ],
       copyTemplate: copyTemplate,

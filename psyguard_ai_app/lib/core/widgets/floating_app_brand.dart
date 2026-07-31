@@ -161,7 +161,10 @@ class _FloatingAppBrandIconState extends ConsumerState<FloatingAppBrandIcon>
                   top: 16 + floatOffset,
                   child: Transform.rotate(
                     angle: swayAngle * 0.85,
-                    child: AppBrandIcon(size: widget.size, padding: 0),
+                    child: Image.asset('assets/images/lii_ball.png',
+                        width: widget.size,
+                        height: widget.size,
+                        fit: BoxFit.contain),
                   ),
                 ),
                 // 底部陰影，飄浮時跟著縮小變淡

@@ -64,9 +64,9 @@ class AppStrings {
   String get navExport => isZhTw ? '匯出報告' : 'Export Report';
   String get navSettings => isZhTw ? '設定' : 'Settings';
 
-  String get goodMorning => isZhTw ? '早安，' : 'Good morning,';
-  String get goodAfternoon => isZhTw ? '午安，' : 'Good afternoon,';
-  String get goodEvening => isZhTw ? '晚安，' : 'Good evening,';
+  String get goodMorning => isZhTw ? '早安' : 'Good morning';
+  String get goodAfternoon => isZhTw ? '午安' : 'Good afternoon';
+  String get goodEvening => isZhTw ? '晚安' : 'Good evening';
   String get peacefulDay => isZhTw ? '願你擁有平靜的一天' : 'May you have a calm day';
   String get statusNeedsAttention => isZhTw ? '需要被關注' : 'Needs attention';
   String get statusWatchful => isZhTw ? '留意中' : 'Keep an eye on it';
@@ -107,8 +107,8 @@ class AppStrings {
 
   String get checkinTitle => navCheckin;
   String get mood => isZhTw ? '情緒穩定度' : 'Emotional Stability';
-  String get stress => isZhTw ? '心理負荷感' : 'Psychological Load';
-  String get energy => isZhTw ? '心理韌性值' : 'Mental Resilience';
+  String get stress => isZhTw ? '情緒輕鬆度' : 'Emotional Ease';
+  String get energy => isZhTw ? '情緒韌性值' : 'Emotional Resilience';
   String get todayNote => isZhTw ? '今日筆記' : 'Today\'s Note';
   String get noteHint =>
       isZhTw ? '想記下什麼嗎？（選填）' : 'Anything to write down? (optional)';
@@ -189,11 +189,11 @@ class AppStrings {
   String get safetyOptionResources =>
       isZhTw ? 'C. 查看求助資源 (1925) ↓' : 'C. See support resources ↓';
   String get guardianHigh => isZhTw
-      ? '守護精靈注意到你最近狀態需要支持，不管你選哪條路，我都在 🤍'
-      : 'Your guardian noticed you could use some support lately. Whichever path you choose, I am here 🤍';
+      ? 'lii 一直都在你身邊，不管你選哪條路，我都陪著你 🤍'
+      : 'lii is here with you. Whichever path you choose, I am here 🤍';
   String get guardianMedium => isZhTw
-      ? '最近感覺如何？守護精靈想和你說說話 💙'
-      : 'How have you been feeling? Your guardian would love to talk 💙';
+      ? '最近感覺如何？lii 想陪你說說話 💙'
+      : 'How have you been feeling? lii is here if you want to talk 💙';
   String get guardianLow =>
       isZhTw ? '今天狀態不錯！繼續保持 ✨' : 'You are doing well today. Keep it up ✨';
   String get liiIsHere => isZhTw ? 'lii 在這裡陪你' : 'lii is here with you';

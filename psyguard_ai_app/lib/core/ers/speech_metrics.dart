@@ -80,11 +80,15 @@ const List<String> _negativeEn = [
   'worried', 'worry', 'nervous', 'crying', 'cry', 'insomnia',
 ];
 
+/// 音量低於這個值就當作沒在說話。
+/// speech_to_text 的 level 各平台範圍不一，取寬鬆一點的門檻。
+const double _kQuietLevel = 1.0;
+
 /// 中間空檔超過這個長度才算一次停頓
 const Duration _kPauseThreshold = Duration(milliseconds: 1200);
 
 /// 太短的錄音算不出有意義的數字
-const double _kMinDurationSec = 3.0;
+const double _kMinDurationSec = 1.0;
 
 /// 收集一次說話過程中的事件，結束時算出特徵。
 ///
@@ -95,29 +99,50 @@ const double _kMinDurationSec = 3.0;
 ///   // 說完
 ///   await c.finish(finalText, isZh: true);
 class SpeechMetricsCollector {
+  // SPEECH_FIX
   DateTime? _startedAt;
   DateTime? _lastEventAt;
   int _lastLength = 0;
   int _pauseCount = 0;
+
+  /// 同一輪只結算一次 —— 原本 onResult 和「按停止」會各叫一次 finish，
+  /// 同一次說話被存成兩筆，平均值和趨勢圖都被灌了重複資料。
+  bool _done = false;
+
+  /// 靜音是從什麼時候開始的（null = 現在有聲音）
+  DateTime? _quietSince;
 
   void start() {
     _startedAt = DateTime.now();
     _lastEventAt = _startedAt;
     _lastLength = 0;
     _pauseCount = 0;
+    _done = false;
+    _quietSince = null;
+  }
+
+  /// 音量回呼。這才是真的停頓偵測 ——
+  /// 辨識引擎在人不說話時根本不吐結果，所以不能靠 onEvent 數停頓。
+  ///
+  /// speech_to_text 的 level 大約是 -2（安靜）到 10+（大聲），
+  /// 平台之間有差異，所以門檻取得寬鬆一點。
+  void onSoundLevel(double level) {
+    final now = DateTime.now();
+    if (level <= _kQuietLevel) {
+      _quietSince ??= now;
+      if (now.difference(_quietSince!) >= _kPauseThreshold) {
+        _pauseCount++;
+        _quietSince = now; // 持續安靜就每隔一段記一次
+      }
+    } else {
+      _quietSince = null;
+    }
   }
 
   /// 每次辨識結果更新時呼叫（部分結果也要）
   void onEvent(String text) {
     final now = DateTime.now();
     _startedAt ??= now;
-    final last = _lastEventAt ?? now;
-
-    // 字數沒增加、又隔了一段時間 -> 這中間是停頓
-    if (text.length <= _lastLength && now.difference(last) >= _kPauseThreshold) {
-      _pauseCount++;
-    }
-
     if (text.length > _lastLength) _lastLength = text.length;
     _lastEventAt = now;
   }
@@ -125,6 +150,7 @@ class SpeechMetricsCollector {
   /// 說完之後算出特徵並存起來。
   /// 錄太短或沒內容會回傳 null，也不會覆蓋掉上一次的紀錄。
   Future<SpeechMetrics?> finish(String finalText, {required bool isZh}) async {
+    if (_done) return null; // 同一輪只結算一次
     final started = _startedAt;
     if (started == null) return null;
 
@@ -136,17 +162,12 @@ class SpeechMetricsCollector {
     final tokens = _tokenize(finalText, isZh);
     if (tokens.isEmpty) return null;
 
-    final lowered = finalText.toLowerCase();
-    final table = isZh ? _negativeZh : _negativeEn;
-    var negHits = 0;
-    for (final w in table) {
-      if (lowered.contains(w)) negHits++;
-    }
+    _done = true;
 
     final minutes = durationSec / 60.0;
     final metrics = SpeechMetrics(
       speechRate: (tokens.length / minutes).clamp(0.0, 600.0),
-      negativeWordRatio: (negHits / tokens.length * 4).clamp(0.0, 1.0),
+      negativeWordRatio: _negativeRatio(finalText, tokens.length, isZh),
       pauseFrequency: (_pauseCount / minutes).clamp(0.0, 60.0),
       durationSec: durationSec,
       recordedAt: DateTime.now(),
@@ -154,6 +175,30 @@ class SpeechMetricsCollector {
 
     await SpeechMetricsStore.save(metrics);
     return metrics;
+  }
+
+  /// 負面詞密度。
+  ///
+  /// 原本只看「有沒有出現」，所以「好累好累好累」跟「有點累」同分；
+  /// 英文用 contains 又沒有詞界，'cry' 會被 crystal 命中。
+  /// 改成：中文數出現次數並乘上詞長（因為分母是字數），英文用詞界比對。
+  static double _negativeRatio(String text, int tokenCount, bool isZh) {
+    if (tokenCount == 0) return 0;
+    final lowered = text.toLowerCase();
+    var hitUnits = 0;
+
+    if (isZh) {
+      for (final w in _negativeZh) {
+        final n = w.allMatches(lowered).length;
+        if (n > 0) hitUnits += n * w.length; // 分母是字數，命中也要換算成字
+      }
+    } else {
+      for (final w in _negativeEn) {
+        final re = RegExp('(?<![a-z])' + RegExp.escape(w) + '(?![a-z])');
+        hitUnits += re.allMatches(lowered).length;
+      }
+    }
+    return (hitUnits / tokenCount).clamp(0.0, 1.0);
   }
 
   /// 中文按字算，英文按詞算

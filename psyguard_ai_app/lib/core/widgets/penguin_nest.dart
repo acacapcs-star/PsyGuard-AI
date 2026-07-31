@@ -205,13 +205,30 @@ class _NestSlot extends StatefulWidget {
 }
 
 class _NestSlotState extends State<_NestSlot>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final AnimationController _jump = AnimationController(
       vsync: this, duration: const Duration(milliseconds: 480));
+  late final AnimationController _waddle = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 900));
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.hatched) _waddle.repeat(reverse: true);
+  }
+
+  @override
+  void didUpdateWidget(covariant _NestSlot old) {
+    super.didUpdateWidget(old);
+    if (widget.hatched && _waddle.isAnimating == false) {
+      _waddle.repeat(reverse: true);
+    }
+  }
 
   @override
   void dispose() {
     _jump.dispose();
+    _waddle.dispose();
     super.dispose();
   }
 
@@ -261,12 +278,16 @@ class _NestSlotState extends State<_NestSlot>
                       child: GestureDetector(
                         onTap: () => _jump.forward(from: 0),
                       child: ListenableBuilder(
-                        listenable: _jump,
+                        listenable: Listenable.merge([_jump, _waddle]),
                         builder: (context, child) {
                           final t = _jump.value;
                           final dy = (t < 0.5 ? -40 * t : -40 * (1 - t));
+                          final w = (_waddle.value - 0.5) * 2;
                           return Transform.translate(
-                              offset: Offset(0, dy), child: child);
+                            offset: Offset(0, dy),
+                            child: Transform.rotate(
+                                angle: w * 0.1, child: child),
+                          );
                         },
                         child: Image.asset(
                           const ['assets/images/penguin1.png','assets/images/penguin2.png','assets/images/penguin3.png','assets/images/penguin5.png'][widget.index % 4],

@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 class LumiTheme {
   // ── Colors (Serene Nature Palette) ────────────────────────────────
   // Sage Green & Warm Sand
-  static const Color primary = Color(0xFF0ABFBC); // Sage Green (Calming, Trust)
+  static const Color primary = Color(0xFF0ABFBC); // ERS 綠
   static const Color secondary = Color(0xFF81D4D2); // Warm Sand (Grounding)
   static const Color background = Color(0xFFF8FFFE); // Warm Off-White
   static const Color surface = Colors.white;

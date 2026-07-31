@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -27,6 +28,7 @@ class _WeekSummary {
 
 class _MonthOverviewPageState extends ConsumerState<MonthOverviewPage> {
   bool _loading = true;
+  final Set<int> _expandedMonths = {};
   bool _unlocked = false;
   final SecretDiaryLock _lock = SecretDiaryLock.instance;
   int _year = DateTime.now().year;
@@ -284,6 +286,7 @@ class _MonthOverviewPageState extends ConsumerState<MonthOverviewPage> {
       backgroundColor: _bg,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
+        systemOverlayStyle: SystemUiOverlayStyle.dark,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF2C5282)),
@@ -361,20 +364,43 @@ class _MonthOverviewPageState extends ConsumerState<MonthOverviewPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: _bar,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          monthName,
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                      GestureDetector(
+                        onTap: () => setState(() {
+                          if (_expandedMonths.contains(month)) {
+                            _expandedMonths.remove(month);
+                          } else {
+                            _expandedMonths.add(month);
+                          }
+                        }),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: _bar,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  monthName,
+                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                                ),
+                              ),
+                              Icon(
+                                _expandedMonths.contains(month)
+                                    ? Icons.keyboard_arrow_up_rounded
+                                    : Icons.keyboard_arrow_down_rounded,
+                                color: Colors.white,
+                                size: 22,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      ...weeks.asMap().entries.map((entry) {
+                      if (_expandedMonths.contains(month)) const SizedBox(height: 8),
+                      if (_expandedMonths.contains(month))
+                        ...weeks.asMap().entries.map((entry) {
                         final weekIdx = entry.key;
                         final week = entry.value;
                         final hasAny = week.redItems.isNotEmpty || week.yellowItems.isNotEmpty;

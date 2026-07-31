@@ -172,8 +172,11 @@ class _HopeBoxPageState extends ConsumerState<HopeBoxPage> {
                 child: ElevatedButton.icon(
                   onPressed: () => _addDialog(isZh),
                   icon: const Icon(Icons.add, size: 20),
-                  label: Text(isZh ? '寫下自己的話' : 'Add your own',
-                      style: TextStyle(fontWeight: FontWeight.w600)),
+                  label: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(isZh ? '寫下自己的話' : 'Add your own',
+                        style: const TextStyle(fontWeight: FontWeight.w600)),
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFFFD166),
                     foregroundColor: const Color(0xFF0D1426),

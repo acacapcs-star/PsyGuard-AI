@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter/material.dart';
+import '../../../core/ers/speech_metrics.dart';
 import '../../ers/incongruence_detector.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -44,6 +45,7 @@ enum _TtsPlaybackState { stopped, playing, paused }
 class _ChatPageState extends ConsumerState<ChatPage> {
   final TextEditingController _textController = TextEditingController();
   final SpeechToText _speech = SpeechToText();
+  final SpeechMetricsCollector _voiceMetrics = SpeechMetricsCollector();
   final FlutterTts _tts = FlutterTts();
   bool _isSending = false;
   bool _voiceInitialized = false;
@@ -79,7 +81,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   }
 
   Future<void> _ensureVoiceInitialized() async {
-    if (_voiceInitialized) return;
+    if (_voiceInitialized && _speechReady) return;
 
     try {
       _speechReady = await _speech.initialize(
@@ -261,13 +263,21 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
     if (_isListening) {
       await _speech.stop();
+      _voiceMetrics.finish(_textController.text, isZh: copy.isZhTw);
       if (mounted) setState(() => _isListening = false);
       return;
     }
 
+    _voiceMetrics.start();
     await _speech.listen(
       localeId: _speechLocaleFor(language),
+      // SPEECH_FIX 停頓要靠音量判定 —— 引擎在人不說話時不會吐結果
+      onSoundLevelChange: _voiceMetrics.onSoundLevel,
       onResult: (result) {
+        _voiceMetrics.onEvent(result.recognizedWords);
+        if (result.finalResult) {
+          _voiceMetrics.finish(result.recognizedWords, isZh: copy.isZhTw);
+        }
         setState(() {
           _textController.text = result.recognizedWords;
           _textController.selection = TextSelection.fromPosition(

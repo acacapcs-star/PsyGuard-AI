@@ -106,10 +106,16 @@ class MockAiClient implements AiApiClient {
     }
 
     final lc = text.toLowerCase();
-    const pos = ['開心','快樂','高興','好棒','太好了','興奮','幸福','順利','舒暢','happy','great','good','excited','wonderful','glad','amazing'];
-    const neg = ['難過','焦慮','委屈','生氣','想哭','好累','壓力','害怕','孤單','憂鬱','煩','痛苦','低落','崩潰','sad','anxious','angry','tired','depress','lonely','stress','cry','upset'];
-    final isPos = pos.any((w) => lc.contains(w.toLowerCase()));
-    final isNeg = neg.any((w) => lc.contains(w.toLowerCase()));
+    const negPhrases = [
+      '不開心','不开心','不快樂','不快乐','不高興','不高兴','不好','沒精神','没精神',
+      '不順','不顺','沒力','没力','不爽','不舒服','沒動力','没动力','沒意義','没意义',
+      'not happy','not good','not great','not okay','not ok','feel bad','feeling bad','no energy'
+    ];
+    const pos = ['開心','开心','快樂','快乐','高興','高兴','好棒','太好了','興奮','兴奋','幸福','順利','顺利','舒暢','舒畅','happy','great','good','excited','wonderful','glad','amazing'];
+    const neg = ['難過','难过','焦慮','焦虑','委屈','生氣','生气','想哭','好累','壓力','压力','害怕','孤單','孤单','憂鬱','忧郁','煩','烦','痛苦','低落','崩潰','崩溃','sad','anxious','angry','tired','depress','lonely','stress','cry','upset'];
+    final isNegPhrase = negPhrases.any((w) => lc.contains(w.toLowerCase()));
+    final isPos = isNegPhrase == false && pos.any((w) => lc.contains(w.toLowerCase()));
+    final isNeg = isNegPhrase || neg.any((w) => lc.contains(w.toLowerCase()));
 
     if (isPos && isNeg == false) {
       if (wantsEnglish) {

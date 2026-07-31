@@ -1,6 +1,8 @@
 import 'dart:math' as math;
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'encouragement_banner.dart';
 import '../../ers/silence_detector.dart';
 import '../../ers/cumulative_risk_engine.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -18,6 +20,7 @@ import '../../../core/storage/app_database.dart';
 import '../../../core/widgets/app_brand_icon.dart';
 import '../../../core/widgets/floating_app_brand.dart';
 import '../../../core/widgets/mood_fall_overlay.dart';
+import '../../../core/widgets/floating_pacer.dart';
 import '../../../core/widgets/snow_cap.dart';
 import '../../../core/widgets/paw_tap.dart';
 import '../../../core/widgets/fish_pond.dart';
@@ -31,6 +34,8 @@ import '../../../core/widgets/brand_loading_indicator.dart';
 import '../../../core/security/local_settings_service.dart';
 import '../../../l10n/app_strings.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../core/widgets/lii_breath_entry.dart';
+import '../../../core/widgets/luna_orb.dart';
 
 class HomeDashboard {
   HomeDashboard({
@@ -143,6 +148,13 @@ class HomePage extends ConsumerWidget {
             const Positioned.fill(child: HongbaoLayer()),
             // ☀️ 魚與籃球的觸控層（只有魚/球位置攔截手指，其他全穿透）
             const Positioned.fill(child: FishTouchLayer()),
+            // ❄️ 冰霜觸碰層（手碰到哪就結冰，不擋操作）
+            // LII_BREATH_ENTRY 🌙 lii 呼吸入口（自己輕輕呼吸，點下去進呼吸會話）
+            const Positioned(
+              right: kLiiEntryRight,
+              bottom: kLiiEntryBottom,
+              child: LiiBreathButton(),
+            ),
           ],
         ),
         ),
@@ -156,6 +168,7 @@ class HomePage extends ConsumerWidget {
     final items = <(String, String, IconData)>[
       ('/home', copy.navHome, Icons.home_rounded),
       ('#', zh ? '每日紀錄' : 'Daily', Icons.circle),
+      ('/dashboard', zh ? '儀表板' : 'Dashboard', Icons.dashboard_rounded),
       ('/checkin', copy.navCheckin, Icons.edit_note_rounded),
       ('/sleep', copy.navSleep, Icons.bedtime_rounded),
       ('/trends', copy.navTrends, Icons.timeline_rounded),
@@ -174,11 +187,13 @@ class HomePage extends ConsumerWidget {
       ('#', zh ? '報告' : 'Reports', Icons.circle),
       ('/ai_report', zh ? 'AI 報告' : 'AI Report', Icons.description_rounded),
       ('/ai_history', zh ? 'AI 歷史' : 'AI History', Icons.history_rounded),
+      ('/api-usage', zh ? 'API 用量' : 'API Usage', Icons.data_usage_rounded),
       ('#', zh ? '其他' : 'More', Icons.circle),
       ('/safety', copy.navSafety, Icons.health_and_safety_rounded),
       ('/voice', zh ? '語音' : 'Voice', Icons.mic_rounded),
       ('/export', copy.navExport, Icons.download_rounded),
       ('/settings', copy.navSettings, Icons.settings_rounded),
+      ('/about', zh ? '關於與聲明' : 'About & Statement', Icons.info_outline_rounded),
     ];
 
     return Drawer(
@@ -197,21 +212,11 @@ class HomePage extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const AppBrandIcon(
-                  size: 52,
-                  radius: 16,
-                  padding: 4,
-                  backgroundColor: Color(0xFFF7FAF6),
-                  borderColor: Color(0xFFE2E9E2),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'lii',
-                  style: GoogleFonts.varelaRound(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: LumiTheme.textPrimary,
-                  ),
+                Image.asset(
+                  'assets/images/lii_ball.png',
+                  width: 52,
+                  height: 52,
+                  fit: BoxFit.contain,
                 ),
               ],
             ),
@@ -299,6 +304,109 @@ class _HomeContentState extends State<_HomeContent> {
   int _cumulativeCount = 0;
   String _homePetType = 'otter';
 
+  Future<void> _maybeShowDailyPacer() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final now = DateTime.now();
+      final todayStr = '${now.year}-${now.month}-${now.day}';
+      const kAlwaysShow = false; if (kAlwaysShow == false && prefs.getString('daily_pacer_date') == todayStr) return;
+      final raw = prefs.getString('bookmarks_v2');
+      if (raw == null || raw.isEmpty) return;
+      final list = jsonDecode(raw) as List;
+      if (list.isEmpty) return;
+      final pick =
+          list[math.Random().nextInt(list.length)] as Map<String, dynamic>;
+      final quote = pick['quote'] as String? ?? '';
+      final author = pick['author'] as String? ?? '';
+      if (quote.isEmpty) return;
+      await prefs.setString('daily_pacer_date', todayStr);
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        builder: (ctx) => Consumer(
+          builder: (c, r, _) {
+            final zh =
+                AppStrings.of(r.watch(appLanguageControllerProvider)).isZhTw;
+            return _dailyPacerCard(ctx, quote, author, zh);
+          },
+        ),
+      );
+    } catch (_) {}
+  }
+
+  Widget _dailyPacerCard(
+      BuildContext ctx, String quote, String author, bool zh) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.all(28),
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: const [
+            BoxShadow(
+                color: Colors.black26, blurRadius: 20, offset: Offset(0, 8)),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // LUNA_DAILY 水晶球：左邊夜空、右邊玻璃，會自己輕輕呼吸。
+            // 這張是每天早上跳的，刻意不能拖 —— 看一眼就關掉，不要變成任務。
+            const SizedBox(
+              width: 72,
+              height: 72,
+              child: LunaOrbLive(w: 0),
+            ),
+            const SizedBox(height: 8),
+            const Text('lii',
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF7E8FE8))),
+            const SizedBox(height: 6),
+            Text(zh ? '今天的一句話' : 'Today\'s line',
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+            const SizedBox(height: 18),
+            const SizedBox(height: 2),
+            Text(quote,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF2C3150),
+                    height: 1.5)),
+            if (author.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Text('\u2014 $author',
+                  style: TextStyle(
+                      fontSize: 13,
+                      fontStyle: FontStyle.italic,
+                      color: Colors.grey.shade600)),
+            ],
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0ABFBC),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14)),
+                ),
+                onPressed: () => Navigator.pop(ctx),
+                child: Text(zh ? '收到了 🌙' : 'Got it 🌙',
+                    style: const TextStyle(fontWeight: FontWeight.w700)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -311,6 +419,8 @@ class _HomeContentState extends State<_HomeContent> {
       final pt = prefs.getString('pet_type') ?? 'otter';
       if (mounted) setState(() => _homePetType = pt);
     } catch (_) {}
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _maybeShowDailyPacer());
     await SilenceDetector().recordActivity();
     final count = await CumulativeRiskEngine().getRedCount();
     final alert = await SilenceDetector().checkSilence();
@@ -423,6 +533,16 @@ class _HomeContentState extends State<_HomeContent> {
             ? '一眼看見全年重要事項，紅色緊急、黃色重要，一目了然。'
             : 'See all important items at a glance — red for urgent, yellow for important.',
       ),
+      _cardData(
+        copy.isZhTw ? '我的專屬格言' : 'My Quote Cards',
+        copy.isZhTw ? '手作暖話卡' : 'Make your own',
+        Icons.auto_awesome_rounded,
+        const Color(0xFF9B5DE5),
+        '/my-cards',
+        copy.isZhTw
+            ? '自己做暖話卡：選底色、字體、加照片，寫下屬於你的格言。'
+            : 'Make your own quote card — pick a color, font, photo, and words.',
+      ),
     ];
 
     return ListView(
@@ -432,26 +552,74 @@ class _HomeContentState extends State<_HomeContent> {
       children: [
         const SizedBox(height: 12),
         // ── Greeting ──────────────────────────────────
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Text(
-                widget.greeting,
-                style: theme.textTheme.displayMedium?.copyWith(
-                  color: LumiTheme.textPrimary,
+        // 深色模式時問候語改米白，亮色維持原本深色字
+        Consumer(builder: (context, ref, _) {
+          final greetingIsDark =
+              ref.watch(backgroundThemeProvider).mode == BgMode.dark;
+          const cream = Color(0xFFF5F0E6);
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      widget.greeting,
+                      style: theme.textTheme.displayMedium?.copyWith(
+                        color: greetingIsDark ? cream : LumiTheme.textPrimary,
+                      ),
+                    ),
+                  ),
+                  const _SunMoonToggle(),
+                ],
+              ),
+              Text(
+                copy.peacefulDay,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: greetingIsDark
+                      ? cream.withValues(alpha: 0.82)
+                      : LumiTheme.textSecondary,
                 ),
               ),
+            ],
+          );
+        }),
+        // ── 使用指南（球球下方兩行小字）──────────────
+        Consumer(builder: (context, ref, _) {
+          final guideIsDark =
+              ref.watch(backgroundThemeProvider).mode == BgMode.dark;
+          const cream = Color(0xFFF5F0E6);
+          final guideColor = guideIsDark
+              ? cream.withValues(alpha: 0.78)
+              : LumiTheme.textSecondary;
+          return Padding(
+            padding: const EdgeInsets.only(top: 12, bottom: 2),
+            child: Column(
+              children: [
+                Text(
+                  copy.isZhTw
+                      ? '💡 長按任一張卡片，看更多內容'
+                      : '💡 Long-press any card for more details',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodySmall
+                      ?.copyWith(color: guideColor, fontSize: 12, height: 1.35),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  copy.isZhTw
+                      ? '✨ 點或長按氛圍球，發現隱藏小遊戲'
+                      : '✨ Tap or hold the mood ball for a hidden game',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodySmall
+                      ?.copyWith(color: guideColor, fontSize: 12, height: 1.35),
+                ),
+              ],
             ),
-            const _SunMoonToggle(),
-          ],
-        ),
-        Text(
-          copy.peacefulDay,
-          style: theme.textTheme.bodyLarge?.copyWith(
-            color: LumiTheme.textSecondary,
-          ),
-        ),
+          );
+        }),
+        // 💬 每日鼓勵（依 ERS 狀態變化）
+        const EncouragementBanner(),
         // 💬 寵物提醒泡泡（沒東西提醒時自己不顯示）
         PetReminderBubble(isZh: copy.isZhTw),
         const SizedBox(height: 32),
@@ -515,7 +683,7 @@ class _HomeContentState extends State<_HomeContent> {
           crossAxisCount: 2,
           mainAxisSpacing: 14,
           crossAxisSpacing: 14,
-          childAspectRatio: 1.55,
+          childAspectRatio: 1.15,
           children: [
             ...exploreCards.map((card) {
             final isBoldTarget =
@@ -546,8 +714,7 @@ class _HomeContentState extends State<_HomeContent> {
         // 🐧 冬天顯示企鵝巢；非冬天企鵝回 igloo
         Consumer(builder: (context, ref, _) {
           final m = ref.watch(moodThemeProvider);
-          final isWinter =
-              m == MoodTheme.christmas || m == MoodTheme.winterBreak;
+          final isWinter = m.fallEffect == FallEffectType.snow;
           return AnimatedSwitcher(
             duration: const Duration(milliseconds: 750),
             transitionBuilder: (child, anim) => ScaleTransition(
@@ -558,36 +725,10 @@ class _HomeContentState extends State<_HomeContent> {
                 ? KeyedSubtree(
                     key: const ValueKey('penguin-nest'),
                     child: PenguinNestRow(isZh: copy.isZhTw))
-                : KeyedSubtree(
-                    key: const ValueKey('penguin-igloo'),
-                    child: ListenableBuilder(
-            listenable: penguinNest,
-            builder: (context, _) {
-              if (!penguinNest.showRow) return const SizedBox.shrink();
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 26),
-                child: Center(
-                  child: Column(
-                    children: [
-                      Text(
-                        copy.isZhTw ? '🏠 企鵝回冰屋了' : '🏠 The penguins went home',
-                        style: const TextStyle(
-                            fontSize: 13, fontWeight: FontWeight.w600),
-                      ),
-                      const SizedBox(height: 12),
-                      Image.asset(
-                        'assets/images/igloo.png',
-                        height: 130,
-                        fit: BoxFit.contain,
-                        errorBuilder: (_, __, ___) =>
-                            const Text('🛖', style: TextStyle(fontSize: 60)),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-                    ),
+                // igloo 已經移進第六格了，中間這塊不再顯示東西
+                : const KeyedSubtree(
+                    key: ValueKey('penguin-empty'),
+                    child: SizedBox.shrink(),
                   ),
           );
         }),
@@ -610,7 +751,7 @@ class _HomeContentState extends State<_HomeContent> {
           crossAxisCount: 2,
           mainAxisSpacing: 14,
           crossAxisSpacing: 14,
-          childAspectRatio: 1.55,
+          childAspectRatio: 1.15,
           children: [
             MicroShake(
               enabled: _isHighRisk,
@@ -672,7 +813,7 @@ class _HomeContentState extends State<_HomeContent> {
                   : 'Get an animal persona card based on your week\'s mood.',
             ),
             _InteractiveCard(
-              title: copy.isZhTw ? '🌙 希望盒' : '🌙 Hope Box',
+              title: copy.isZhTw ? '希望盒' : 'Hope Box',
               subtitle: copy.isZhTw ? '收藏溫柔的話陪你' : 'Cards that carry you',
               icon: Icons.auto_awesome_rounded,
               color: const Color(0xFF7E8FE8),
@@ -683,7 +824,7 @@ class _HomeContentState extends State<_HomeContent> {
                   : 'Collect words that lift you up.',
             ),
             _InteractiveCard(
-              title: copy.isZhTw ? '📑 我的 Pacers' : '📑 My Pacers',
+              title: copy.isZhTw ? '我的 Pacers' : 'My Pacers',
               subtitle: copy.isZhTw ? '存下有人對你說過的話' : 'Save what someone said to you',
               icon: Icons.bookmark_rounded,
               color: const Color(0xFFB8A7E0),
@@ -694,7 +835,7 @@ class _HomeContentState extends State<_HomeContent> {
                   : 'Save the words someone said that you want to keep.',
             ),
             _InteractiveCard(
-              title: (_homePetType == 'otter' ? '🦦 ' : '🦫 ') + (copy.isZhTw ? 'Luna 樂園' : 'Luna Park'),
+              title: copy.isZhTw ? 'Luna 樂園' : 'Luna Park',
               subtitle: copy.isZhTw ? (_homePetType == 'otter' ? '和水獺互動紓壓' : '和水豚互動紓壓') : 'Play with Luna',
               icon: Icons.pets_rounded,
               color: const Color(0xFF0ABFBC),
@@ -777,7 +918,13 @@ class _InteractiveCardState extends State<_InteractiveCard>
 
   @override
   Widget build(BuildContext context) {
-    final bgColor = widget.color.withValues(alpha: 0.08);
+    // 白色打底 + 8% 主題色 → 先合成成「不透明」的淡彩白。
+    // 關鍵是不透明：深色模式時深藍頁面就透不上來，
+    // 卡片永遠維持亮色版的白底淡彩，深色文字才看得清楚。
+    final bgColor = Color.alphaBlend(
+      widget.color.withValues(alpha: 0.18),
+      Colors.white,
+    );
 
     return SnowCap(
       // 雪系氛圍時，卡片頂端會積雪；按住雪堆用手溫融化它
@@ -808,10 +955,10 @@ class _InteractiveCardState extends State<_InteractiveCard>
           decoration: BoxDecoration(
             color: bgColor,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: widget.color.withValues(alpha: 0.12)),
+            border: Border.all(color: widget.color.withValues(alpha: 0.22)),
             boxShadow: [
               BoxShadow(
-                color: widget.color.withValues(alpha: 0.06),
+                color: Colors.black.withValues(alpha: 0.10),
                 blurRadius: 12,
                 offset: const Offset(0, 4),
               ),
@@ -821,60 +968,40 @@ class _InteractiveCardState extends State<_InteractiveCard>
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Row(
-                children: [
-                  // 秋天氛圍時，小狐狸可能躲在這個 icon 口袋後面
-                  FoxPocket(
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: widget.color.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(widget.icon,
-                          color: widget.color, size: 22),
-                    ),
+              FoxPocket(
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: widget.color.withValues(alpha: 0.24),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      widget.title,
-                      style: GoogleFonts.nunitoSans(
-                        fontSize: 13.5,
-                        fontWeight: widget.isBold
-                            ? FontWeight.w900
-                            : FontWeight.w700,
-                        color: LumiTheme.textPrimary,
-                        height: 1.15,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Padding(
-                padding: const EdgeInsets.only(left: 2),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        widget.subtitle,
-                        style: GoogleFonts.nunitoSans(
-                          fontSize: 12,
-                          color: LumiTheme.textSecondary,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      size: 12,
-                      color: LumiTheme.textLight,
-                    ),
-                  ],
+                  child: Icon(widget.icon, color: widget.color, size: 20),
                 ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                widget.title,
+                style: GoogleFonts.nunitoSans(
+                  fontSize: 15,
+                  fontWeight:
+                      widget.isBold ? FontWeight.w900 : FontWeight.w600,
+                  color: LumiTheme.textPrimary,
+                  height: 1.15,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 2),
+              Text(
+                widget.subtitle,
+                style: GoogleFonts.nunitoSans(
+                  fontSize: 11,
+                  color: LumiTheme.textSecondary,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
@@ -1064,17 +1191,6 @@ class _SwipeableCardsState extends State<_SwipeableCards> {
                           ],
                         ),
                       ),
-                      if (isDark)
-                        Positioned.fill(
-                          child: IgnorePointer(
-                            child: Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(20),
-                                color: Colors.black.withValues(alpha: 0.35),
-                              ),
-                            ),
-                          ),
-                        ),
                     ],
                   );
                 },
@@ -1373,8 +1489,23 @@ class _CornerPenguinState extends ConsumerState<_CornerPenguin>
           );
         },
         child: effect == FallEffectType.snow
-            // ❄️ 冬系：工程師企鵝（點他會生蛋）
-            ? Stack(
+            // ❄️ 孵完 → 這一格換成冰屋（igloo），不再單獨掛在中間
+            ? (penguinNest.stage == NestStage.done
+                ? AspectRatio(
+                    aspectRatio: 1.15,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: Image.asset(
+                        'assets/images/igloo.png',
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const Center(
+                          child: Text('🛖', style: TextStyle(fontSize: 48)),
+                        ),
+                      ),
+                    ),
+                  )
+                // ❄️ 冬系：工程師企鵝（點他會生蛋）
+                : Stack(
                 clipBehavior: Clip.none,
                 children: [
                   Padding(
@@ -1408,17 +1539,21 @@ class _CornerPenguinState extends ConsumerState<_CornerPenguin>
                       ),
                     ),
                 ],
-              )
-            // 🍁 秋：燈下讀書狐狸
-            : ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: Image.asset(
-                  'assets/images/mood_fox_lamp.jpg',
-                  fit: BoxFit.contain,
-                  width: double.infinity,
-                  height: double.infinity,
-                  errorBuilder: (_, __, ___) => const Center(
-                    child: Text('🦊', style: TextStyle(fontSize: 48)),
+              ))
+            // 🍁 秋：燈下讀書狐狸 —— 用 AspectRatio 鎖成格子比例、cover 填滿，
+            //         這樣圖片比例不符時也乖乖待在格子裡，不會凸出去
+            : AspectRatio(
+                aspectRatio: 1.15,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Image.asset(
+                    'assets/images/mood_fox_lamp.jpg',
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    height: double.infinity,
+                    errorBuilder: (_, __, ___) => const Center(
+                      child: Text('🦊', style: TextStyle(fontSize: 48)),
+                    ),
                   ),
                 ),
               ),

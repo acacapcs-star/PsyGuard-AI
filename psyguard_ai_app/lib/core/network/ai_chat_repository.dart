@@ -101,6 +101,7 @@ class AiChatRepositoryImpl implements AiChatRepository {
           model: _config.model,
         );
 
+        await _recordApiUsage(userText, content);
         return AiReply(
           content: content,
           isFallback: false,
@@ -134,6 +135,18 @@ class AiChatRepositoryImpl implements AiChatRepository {
       model: _config.model,
       warningMessage: userFacingAiError(lastError, language: _language),
     );
+  }
+
+  Future<void> _recordApiUsage(String prompt, String completion) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final chars = prompt.length + completion.length;
+      final estTokens = (chars / 3).round();
+      final reqs = (prefs.getInt('api_usage_requests') ?? 0) + 1;
+      final toks = (prefs.getInt('api_usage_tokens') ?? 0) + estTokens;
+      await prefs.setInt('api_usage_requests', reqs);
+      await prefs.setInt('api_usage_tokens', toks);
+    } catch (_) {}
   }
 
   Future<List<Map<String, String>>> _buildPromptMessages({

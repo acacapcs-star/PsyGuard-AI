@@ -11,6 +11,8 @@ import '../features/export/presentation/export_page.dart';
 import '../features/home/presentation/home_page.dart';
 import '../features/hopebox/presentation/hope_box_page.dart';
 import '../features/bookmark/presentation/bookmark_page.dart';
+import '../features/card_studio/presentation/card_studio_page.dart';
+import '../features/card_studio/presentation/my_cards_page.dart';
 import '../features/settings/presentation/settings_page.dart';
 import '../features/safety/presentation/safety_page.dart';
 import '../features/sleep/presentation/sleep_history_page.dart';
@@ -30,11 +32,17 @@ import '../core/security/secret_swipe_shell.dart';
 import '../features/cbt/presentation/cbt_page.dart';
 import '../features/quiz/presentation/distortion_quiz_page.dart';
 import '../features/persona/presentation/persona_page.dart';
+import '../core/analytics/usage_tracker.dart';
+import '../core/analytics/usage_stats_page.dart';
+import '../features/api_usage/presentation/api_usage_page.dart';
+import '../features/dashboard/presentation/dashboard_page.dart';
+import '../features/about/presentation/about_page.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/welcome',
     redirect: (context, state) async { return null; },
+    observers: [UsageObserver()],
     routes: [
       GoRoute(
         path: '/welcome',
@@ -177,6 +185,24 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             _buildPageWithSlide(context, state, const VoiceWakePage()),
       ),
       GoRoute(
+        path: '/api-usage',
+        name: 'api-usage',
+        pageBuilder: (context, state) =>
+            _buildPageWithSlide(context, state, const ApiUsagePage()),
+      ),
+      GoRoute(
+        path: '/dashboard',
+        name: 'dashboard',
+        pageBuilder: (context, state) =>
+            _buildPageWithSlide(context, state, const DashboardPage()),
+      ),
+      GoRoute(
+        path: '/about',
+        name: 'about',
+        pageBuilder: (context, state) =>
+            _buildPageWithSlide(context, state, const AboutPage()),
+      ),
+      GoRoute(
         path: '/penguin',
         name: 'penguin',
         pageBuilder: (context, state) =>
@@ -195,6 +221,24 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(
+        path: '/card-studio',
+        name: 'card_studio',
+        pageBuilder: (context, state) =>
+            _buildPageWithSlide(context, state, const CardStudioPage()),
+      ),
+      GoRoute(
+        path: '/my-cards',
+        name: 'my_cards',
+        pageBuilder: (context, state) =>
+            _buildPageWithSlide(context, state, const MyCardsPage()),
+      ),
+      GoRoute(
+        path: '/usage-stats',
+        name: 'usage_stats',
+        pageBuilder: (context, state) =>
+            _buildPageWithSlide(context, state, const UsageStatsPage()),
+      ),
+      GoRoute(
         path: '/settings',
         name: 'settings',
         pageBuilder: (context, state) =>
@@ -211,6 +255,7 @@ CustomTransitionPage _buildPageWithSlide(
 ) {
   return CustomTransitionPage(
     key: state.pageKey,
+    name: state.name ?? state.uri.path,
     child: child,
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
       const begin = Offset(1.0, 0.0); // Enter from Right

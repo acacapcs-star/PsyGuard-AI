@@ -149,6 +149,7 @@ class _NotePageState extends ConsumerState<NotePage> {
   void dispose() {
     if (widget.secret) _lock.scheduleLock(); // 🔒 依設定決定何時清掉金鑰
     _pwCtrl.dispose();
+    _pwConfirmCtrl.dispose();
     super.dispose();
   }
 
@@ -164,6 +165,7 @@ class _NotePageState extends ConsumerState<NotePage> {
   bool _busy = false;
   String? _lockError;
   final TextEditingController _pwCtrl = TextEditingController();
+  final TextEditingController _pwConfirmCtrl = TextEditingController();
 
   Future<void> _tryBiometric() async {
     setState(() {
@@ -205,6 +207,13 @@ class _NotePageState extends ConsumerState<NotePage> {
           setState(() {
             _busy = false;
             _lockError = _isZh ? '密碼至少 4 個字' : 'Password needs at least 4 characters';
+          });
+          return;
+        }
+        if (pw != _pwConfirmCtrl.text) {
+          setState(() {
+            _busy = false;
+            _lockError = _isZh ? '兩次密碼不一樣' : 'Passwords do not match';
           });
           return;
         }
@@ -418,13 +427,49 @@ class _NotePageState extends ConsumerState<NotePage> {
                       border: const OutlineInputBorder(),
                     ),
                   ),
+                  if (!setUp) ...[
+                    const SizedBox(height: 14),
+                    TextField(
+                      controller: _pwConfirmCtrl,
+                      obscureText: true,
+                      onSubmitted: (_) => _tryPassword(),
+                      decoration: InputDecoration(
+                        labelText: _isZh ? '再次輸入密碼' : 'Confirm password',
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFDECEC),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.warning_amber_rounded,
+                              color: Color(0xFFD32F2F), size: 18),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _isZh
+                                  ? '請記牢密碼，並抄下建立後出現的復原碼，遺失將無法復原。'
+                                  : 'Remember your password and save the recovery code that appears after — lost access cannot be restored.',
+                              style: const TextStyle(
+                                  color: Color(0xFFD32F2F), fontSize: 12, height: 1.4),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 16),
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: _busy ? null : _tryPassword,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2C5282),
+                        backgroundColor: const Color(0xFF0ABFBC),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
@@ -525,16 +570,16 @@ class _NotePageState extends ConsumerState<NotePage> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('📝 Clear all notes?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-        content: const Text('This will delete all notes for this day. This cannot be undone.'),
+        title: Text(_isZh ? '📝 清除所有筆記？' : '📝 Clear all notes?', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        content: Text(_isZh ? '這會刪除今天所有筆記，無法復原。' : 'This will delete all notes for this day. This cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            child: Text(_isZh ? '取消' : 'Cancel', style: const TextStyle(color: Colors.grey)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Clear All', style: TextStyle(color: Color(0xFFEF5350), fontWeight: FontWeight.bold)),
+            child: Text(_isZh ? '全部清除' : 'Clear All', style: const TextStyle(color: Color(0xFFEF5350), fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -563,17 +608,17 @@ class _NotePageState extends ConsumerState<NotePage> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const _GuideRow(icon: '•', text: '[Bullet] Great for quick ideas and key points.'),
-            const _GuideRow(icon: '☑', text: '[Todo] Tap the checkbox to mark done.'),
-            const _GuideRow(icon: '🟢', text: '[Priority] Tap dot to cycle 15 levels. Long press to pick directly.'),
-            const _GuideRow(icon: '↕', text: '[Reorder] Long press any item to drag and reorder.'),
-            const _GuideRow(icon: '🤖', text: '[AI Sync] All notes sync to AI chat. Luna will check in on your urgent red tasks!'),
+            _GuideRow(icon: '•', text: _isZh ? '[重點] 快速記下想法和關鍵字。' : '[Bullet] Great for quick ideas and key points.'),
+            _GuideRow(icon: '☑', text: _isZh ? '[待辦] 點方框標記完成。' : '[Todo] Tap the checkbox to mark done.'),
+            _GuideRow(icon: '🟢', text: _isZh ? '[優先級] 點圓點循環 15 級，長按直接選。' : '[Priority] Tap dot to cycle 15 levels. Long press to pick directly.'),
+            _GuideRow(icon: '↕', text: _isZh ? '[排序] 長按任一項可拖曳調整順序。' : '[Reorder] Long press any item to drag and reorder.'),
+            _GuideRow(icon: '🤖', text: _isZh ? '[AI 同步] 筆記會同步給 Luna，紅色緊急任務牠會主動關心你。' : '[AI Sync] All notes sync to AI chat. Luna will check in on your urgent red tasks!'),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text(_isZh ? '我知道了 0_0/' : 'Got it 0_0/', style: TextStyle(color: Color(0xFF0ABFBC), fontWeight: FontWeight.bold)),
+            child: Text(_isZh ? '我知道了' : 'Got it', style: TextStyle(color: Color(0xFF0ABFBC), fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -675,12 +720,12 @@ class _NotePageState extends ConsumerState<NotePage> {
             Text(
                 widget.secret
                     ? (_isZh ? '🔒 秘密日記' : '🔒 Secret Diary')
-                    : "Today's Diary \0_0/",
+                    : (_isZh ? '今日筆記' : "Today's Diary"),
                 style: GoogleFonts.playfairDisplay(
               fontSize: 20, fontStyle: FontStyle.italic,
               color: _accent,
             )),
-            Text(_isZh ? '支援即時連動 AI 對話' : 'Syncs with AI chat in real time', style: const TextStyle(fontSize: 10, color: Color(0xFF0ABFBC))),
+            Text(_isZh ? '即時同步 AI' : 'Syncs with AI', style: const TextStyle(fontSize: 10, color: Color(0xFF0ABFBC))),
           ],
         ),
         actions: [

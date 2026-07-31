@@ -21,9 +21,9 @@ class BackgroundThemeState {
       case BgColorChoice.greenLight:
         return const Color(0xFFE8F5E9);
       case BgColorChoice.navyDark:
-        return const Color(0xFF0D1B2A);
+        return const Color(0xFF16283C); // 帶藍的深色，像 logo 球球，不那麼黑
       case BgColorChoice.forestDark:
-        return const Color(0xFF0D2818);
+        return const Color(0xFF12261C); // 真正的深墨綠（原本誤植成深藍）
     }
   }
 

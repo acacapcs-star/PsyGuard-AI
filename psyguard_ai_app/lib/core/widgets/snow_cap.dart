@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -222,6 +223,8 @@ class SnowCap extends ConsumerStatefulWidget {
 
 class _SnowCapState extends ConsumerState<SnowCap>
     with TickerProviderStateMixin {
+  Timer? _snowGrow; // 每 3 秒往上積一點雪
+  int _extraLevel = 0; // 額外累積的雪量（有上限）
   late final AnimationController _melt;
   late final AnimationController _fade;
   late final AnimationController _wiggle; // 狐狸躲在後面時，整張卡片微微晃動
@@ -309,6 +312,7 @@ class _SnowCapState extends ConsumerState<SnowCap>
 
   @override
   Widget build(BuildContext context) {
+    return widget.child; // 積雪已移除，改用觸碰冰霜 ❄️
     final effect = ref.watch(moodThemeProvider).fallEffect;
     final snowy = effect == FallEffectType.snow;
     final seeking = effect == FallEffectType.leaves ||
@@ -332,7 +336,7 @@ class _SnowCapState extends ConsumerState<SnowCap>
 
     if (level == 0 && !hiding && !_foxFound) return widget.child;
 
-    final thickness = 6.0 + level * 3.0;
+    final thickness = 6.0 + (level + _extraLevel) * 3.0;
     return Stack(
       clipBehavior: Clip.none,
       children: [
@@ -412,10 +416,11 @@ class _SnowCapState extends ConsumerState<SnowCap>
           ),
         if (level > 0)
         Positioned(
-          top: -thickness * 0.45,
+          // 高度給足，雪的隨機圓才不會超出容器被裁掉（右半消失的元兇）
+          top: -thickness - 6,
           left: 0,
           right: 0,
-          height: thickness + 10,
+          height: thickness * 2 + 24,
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onLongPressStart: (_) {

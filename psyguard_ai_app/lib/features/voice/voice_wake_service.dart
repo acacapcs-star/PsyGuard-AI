@@ -52,7 +52,10 @@ class VoiceWakeService {
     ///    用來算語速與停頓，不影響原本的流程
     Function(String)? onSpeechEvent,
   }) async {
-    if (!_isAvailable) return;
+    if (!_isAvailable) {
+      _isAvailable = await _speech.initialize();
+      if (!_isAvailable) return;
+    }
     _isListening = true;
     _wakeWordTriggered = false;
     await _speech.listen(

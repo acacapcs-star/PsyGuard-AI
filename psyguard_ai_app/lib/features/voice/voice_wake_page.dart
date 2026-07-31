@@ -9,6 +9,7 @@ import '../../l10n/app_language.dart';
 import '../../core/security/local_settings_service.dart';
 import 'voice_wake_service.dart';
 import '../../core/ers/speech_metrics.dart';
+import '../../core/network/ai_chat_repository.dart';
 import 'dart:math';
 
 class VoiceWakePage extends ConsumerStatefulWidget {
@@ -275,15 +276,29 @@ class _VoiceWakePageState extends ConsumerState<VoiceWakePage>
             });
           }
         },
-        onResult: (text) {
+        onResult: (text) async {
           // 🎤 算出語速／負面詞密度／停頓頻率，供 ERS 使用
           _metrics.finish(text, isZh: isZh);
+          if (!mounted) return;
           setState(() {
             _spokenText = text;
             _statusText = _isNoteMode
                 ? (isZh ? '說完了，點「整理成筆記」👆' : 'Done! Tap "Organize Notes" 👆')
-                : (isZh ? '聽到了：$text' : 'Heard: $text');
+                : (isZh ? 'Luna 思考中...' : 'Luna is thinking...');
           });
+          if (!_isNoteMode && text.trim().isNotEmpty) {
+            try {
+              final reply = await ref
+                  .read(aiChatRepositoryProvider)
+                  .sendMessage(sessionId: 'voice_wake', userText: text);
+              if (!mounted) return;
+              setState(() => _statusText = reply.content);
+            } catch (_) {
+              if (!mounted) return;
+              setState(() => _statusText =
+                  isZh ? 'Luna：我在這裡陪你 💙' : "Luna: I'm here for you 💙");
+            }
+          }
         },
       );
     }
