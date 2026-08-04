@@ -213,6 +213,64 @@ class _VoiceWakePageState extends ConsumerState<VoiceWakePage>
       setState(() => _statusText = isZh ? '整理失敗，請重試' : 'Failed to organize, please try again');
     }
   }
+  // 取消/畫掉：跨日期找出關鍵字，最早那天打勾劃線，其餘天刪除
+  Future<int> _cancelInNotes(List<String> keywords) async {
+    final prefs = await SharedPreferences.getInstance();
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    int affected = 0;
+    for (final rawKw in keywords) {
+      final kw = rawKw.trim();
+      if (kw.isEmpty) continue;
+      final matches = <Map<String, dynamic>>[];
+      for (int off = -3; off <= 31; off++) {
+        final d = today.add(Duration(days: off));
+        final key = 'note_${d.year}_${d.month}_${d.day}';
+        final raw = prefs.getString(key);
+        if (raw == null) continue;
+        final List items = jsonDecode(raw);
+        for (final it in items) {
+          if ((it['text'] ?? '').toString().contains(kw)) {
+            matches.add({'date': d, 'key': key});
+            break;
+          }
+        }
+      }
+      if (matches.isEmpty) continue;
+      matches.sort((a, b) =>
+          (a['date'] as DateTime).compareTo(b['date'] as DateTime));
+      final earliestKey = matches.first['key'] as String;
+      final keys = matches.map((m) => m['key'] as String).toSet();
+      for (final key in keys) {
+        final raw = prefs.getString(key);
+        if (raw == null) continue;
+        final List items = jsonDecode(raw);
+        if (key == earliestKey) {
+          bool marked = false;
+          final kept = [];
+          for (final it in items) {
+            final isMatch = (it['text'] ?? '').toString().contains(kw);
+            if (isMatch && !marked) {
+              it['checked'] = true;
+              kept.add(it);
+              marked = true;
+            } else if (!isMatch) {
+              kept.add(it);
+            }
+          }
+          await prefs.setString(key, jsonEncode(kept));
+        } else {
+          final kept = items
+              .where((it) => !((it['text'] ?? '').toString().contains(kw)))
+              .toList();
+          await prefs.setString(key, jsonEncode(kept));
+        }
+      }
+      affected++;
+    }
+    return affected;
+  }
+
 
 
   Future<String?> _pickPriority(bool isZh) async {
