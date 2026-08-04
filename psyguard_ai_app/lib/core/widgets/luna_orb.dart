@@ -28,6 +28,25 @@ const Offset _c = Offset(80, 80);
 enum GlassTone { ice, sea, amethyst, amber, moss, dawn }
 
 extension GlassToneX on GlassTone {
+  String get labelEn {
+    switch (this) {
+      case GlassTone.ice:
+        return 'Ice';
+      case GlassTone.sea:
+        return 'Sea';
+      case GlassTone.amethyst:
+        return 'Amethyst';
+      case GlassTone.amber:
+        return 'Amber';
+      case GlassTone.moss:
+        return 'Moss';
+      case GlassTone.dawn:
+        return 'Dawn';
+    }
+  }
+
+  String labelFor(bool zh) => zh ? label : labelEn;
+
   String get label {
     switch (this) {
       case GlassTone.ice:
@@ -673,24 +692,65 @@ class _LunaRevealState extends State<LunaReveal>
     super.dispose();
   }
 
+
+  /// 中文一個字一單位，英文一個詞一單位 ——
+  /// 逐字切在中文是對的，在英文會把 healthy 斷成 h / ealthy。
+  static List<String> _units(String text) {
+    final out = <String>[];
+    final buf = StringBuffer();
+    void flush() {
+      if (buf.isNotEmpty) {
+        out.add(buf.toString());
+        buf.clear();
+      }
+    }
+
+    // 英數字算同一個詞；緊跟在詞後的標點併進去，不然 MSLab. 會被切成兩塊。
+    // 存進來的換行不照搬 —— 卡片寬度不同，硬換行會斷在奇怪的地方。
+    const wordish =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'-";
+    const tail = ".,!?;:";
+    for (final raw in text.characters) {
+      final ch = (raw == '\n' || raw == '\r' || raw == '\t') ? ' ' : raw;
+      if (wordish.contains(ch)) {
+        buf.write(ch);
+      } else if (ch == ' ') {
+        buf.write(' ');
+        flush();
+      } else if (buf.isNotEmpty && tail.contains(ch)) {
+        buf.write(ch);
+      } else {
+        flush();
+        out.add(ch);
+      }
+    }
+    flush();
+    return out;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final chars = widget.text.characters.toList();
-    final head = _shown * (chars.length + 4) - 2;
+    final units = _units(widget.text);
+    final head = _shown * (units.length + 4) - 2;
+    final base = widget.style;
+    final col = base.color ?? Colors.white;
 
-    return Wrap(
-      alignment: WrapAlignment.start,
-      runSpacing: 2,
-      children: List.generate(chars.length, (i) {
-        final o = (head - i).clamp(0.0, 1.0);
-        return Opacity(
-          opacity: o,
-          child: Transform.translate(
-            offset: Offset(0, (1 - o) * 10),
-            child: Text(chars[i], style: widget.style),
-          ),
-        );
-      }),
+    // 用 RichText 而不是 Wrap —— Wrap 會把每個字當成獨立元件排版，
+    // 行距永遠對不起來。這裡是同一段文字，只是每個字的透明度不同。
+    return RichText(
+      textAlign: TextAlign.left,
+      text: TextSpan(
+        children: List.generate(units.length, (i) {
+          final o = (head - i).clamp(0.0, 1.0);
+          return TextSpan(
+            text: units[i],
+            style: base.copyWith(
+              color: col.withAlpha((o * 255).round()),
+              shadows: o < 0.05 ? const [] : base.shadows,
+            ),
+          );
+        }),
+      ),
     );
   }
 }
@@ -707,6 +767,9 @@ class LunaCableCar extends StatefulWidget {
   final double ropeLen;
   final GlassTone tone;
   final void Function(double t, double pull) onChanged;
+
+  /// false = 球完全不接手勢（推播卡要能左右滑，球不能攔）
+  final bool interactive;
   final VoidCallback? onEnd;
 
   const LunaCableCar({
@@ -721,6 +784,7 @@ class LunaCableCar extends StatefulWidget {
     this.orbSize = 190,
     this.ropeLen = 18,
     this.tone = GlassTone.ice,
+    this.interactive = true,
   });
 
   @override
@@ -839,8 +903,13 @@ class _LunaCableCarState extends State<LunaCableCar>
             height: orb,
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onPanUpdate: _drag,
-              onPanEnd: (_) => widget.onEnd?.call(),
+              // 用 HorizontalDrag 而不是 Pan ——
+              // 巢狀在 PageView 裡時，內層的水平拖曳會贏得手勢仲裁，
+              // Pan 不一定贏，所以之前在推播卡上拉不動球。
+              onHorizontalDragUpdate: _drag,
+              onHorizontalDragEnd: (_) => widget.onEnd?.call(),
+              onVerticalDragUpdate: _drag,
+              onVerticalDragEnd: (_) => widget.onEnd?.call(),
               child: Container(
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,

@@ -82,7 +82,7 @@ const List<String> _negativeEn = [
 
 /// 音量低於這個值就當作沒在說話。
 /// speech_to_text 的 level 各平台範圍不一，取寬鬆一點的門檻。
-const double _kQuietLevel = 1.0;
+const double _kQuietLevel = -0.5;
 
 /// 中間空檔超過這個長度才算一次停頓
 const Duration _kPauseThreshold = Duration(milliseconds: 1200);
@@ -112,6 +112,12 @@ class SpeechMetricsCollector {
   /// 靜音是從什麼時候開始的（null = 現在有聲音）
   DateTime? _quietSince;
 
+  /// 最後一次辨識到的文字 —— finish() 拿不到 controller 內容時的後備
+  String _lastText = '';
+
+  /// 這一段連續安靜有沒有記過了 —— 避免同一次停頓被重複計數
+  bool _pauseCounted = false;
+
   void start() {
     _startedAt = DateTime.now();
     _lastEventAt = _startedAt;
@@ -119,6 +125,8 @@ class SpeechMetricsCollector {
     _pauseCount = 0;
     _done = false;
     _quietSince = null;
+    _lastText = '';
+    _pauseCounted = false;
   }
 
   /// 音量回呼。這才是真的停頓偵測 ——
@@ -130,12 +138,14 @@ class SpeechMetricsCollector {
     final now = DateTime.now();
     if (level <= _kQuietLevel) {
       _quietSince ??= now;
-      if (now.difference(_quietSince!) >= _kPauseThreshold) {
+      if (!_pauseCounted &&
+          now.difference(_quietSince!) >= _kPauseThreshold) {
         _pauseCount++;
-        _quietSince = now; // 持續安靜就每隔一段記一次
+        _pauseCounted = true; // 這一段安靜只記一次，等有聲音才重置
       }
     } else {
       _quietSince = null;
+      _pauseCounted = false;
     }
   }
 
@@ -144,15 +154,21 @@ class SpeechMetricsCollector {
     final now = DateTime.now();
     _startedAt ??= now;
     if (text.length > _lastLength) _lastLength = text.length;
+    if (text.trim().isNotEmpty) _lastText = text;
     _lastEventAt = now;
   }
 
   /// 說完之後算出特徵並存起來。
   /// 錄太短或沒內容會回傳 null，也不會覆蓋掉上一次的紀錄。
-  Future<SpeechMetrics?> finish(String finalText, {required bool isZh}) async {
+  Future<SpeechMetrics?> finish(String rawText, {required bool isZh}) async {
+    final finalText = rawText.trim().isEmpty ? _lastText : rawText;
+    // ignore: avoid_print
+    print('[VOICE] enter done=$_done started=$_startedAt len=${finalText.length}');
     if (_done) return null; // 同一輪只結算一次
     final started = _startedAt;
     if (started == null) return null;
+    // ignore: avoid_print
+    print('[VOICE] dur=${DateTime.now().difference(started).inMilliseconds / 1000.0}');
 
     final durationSec =
         DateTime.now().difference(started).inMilliseconds / 1000.0;
@@ -160,6 +176,8 @@ class SpeechMetricsCollector {
     if (finalText.trim().isEmpty) return null;
 
     final tokens = _tokenize(finalText, isZh);
+    // ignore: avoid_print
+    print('[VOICE] tok isZh=$isZh n=${tokens.length} dur=$durationSec text="$finalText"');
     if (tokens.isEmpty) return null;
 
     _done = true;
@@ -173,6 +191,11 @@ class SpeechMetricsCollector {
       recordedAt: DateTime.now(),
     );
 
+    // ignore: avoid_print
+    print('[VOICE] rate=' + metrics.speechRate.toStringAsFixed(0) +
+        ' pause=' + metrics.pauseFrequency.toStringAsFixed(1) +
+        ' neg=' + metrics.negativeWordRatio.toStringAsFixed(2) +
+        ' dur=' + metrics.durationSec.toStringAsFixed(0));
     await SpeechMetricsStore.save(metrics);
     return metrics;
   }

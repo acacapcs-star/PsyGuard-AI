@@ -275,9 +275,6 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       onSoundLevelChange: _voiceMetrics.onSoundLevel,
       onResult: (result) {
         _voiceMetrics.onEvent(result.recognizedWords);
-        if (result.finalResult) {
-          _voiceMetrics.finish(result.recognizedWords, isZh: copy.isZhTw);
-        }
         setState(() {
           _textController.text = result.recognizedWords;
           _textController.selection = TextSelection.fromPosition(
@@ -936,7 +933,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   }
 
   String _speechLocaleFor(AppLanguage language) {
-    return language == AppLanguage.zhTw ? 'zh_TW' : 'en_US';
+    return language == AppLanguage.zhTw ? 'zh-TW' : 'en-US';
   }
 
   Future<void> _autoSaveToNote(String userText, String aiReply) async {

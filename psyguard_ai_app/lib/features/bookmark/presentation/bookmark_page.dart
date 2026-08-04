@@ -78,6 +78,8 @@ class Bookmark {
   final double? orbT;
   /// 球的顏色 0=冰藍 1=海藍 2=紫水晶
   final int toneIndex;
+  /// 收藏當下的心情 0~100。null = 舊資料，不限心情，隨時可能被抽到。
+  final int? moodTag;
 
   const Bookmark({
     required this.quote,
@@ -90,12 +92,17 @@ class Bookmark {
     this.customImagePath = '',
     this.orbT,
     this.toneIndex = 0,
+    this.moodTag,
   });
 
   bool get hasCustomImage => customImagePath.isNotEmpty;
 
   Bookmark copyWith(
-          {double? darkY, double? darkRange, double? orbT, int? toneIndex}) =>
+          {double? darkY,
+          double? darkRange,
+          double? orbT,
+          int? toneIndex,
+          int? moodTag}) =>
       Bookmark(
         quote: quote,
         author: author,
@@ -107,6 +114,7 @@ class Bookmark {
         customImagePath: customImagePath,
         orbT: orbT ?? this.orbT,
         toneIndex: toneIndex ?? this.toneIndex,
+        moodTag: moodTag ?? this.moodTag,
       );
 
   Map<String, dynamic> toJson() => {
@@ -120,6 +128,7 @@ class Bookmark {
         'customImagePath': customImagePath,
         if (orbT != null) 'orbT': orbT,
         'tone': toneIndex,
+        if (moodTag != null) 'mood': moodTag,
       };
 
   factory Bookmark.fromJson(Map<String, dynamic> j) => Bookmark(
@@ -133,6 +142,7 @@ class Bookmark {
         customImagePath: j['customImagePath'] as String? ?? '',
         orbT: (j['orbT'] as num?)?.toDouble(),
         toneIndex: (j['tone'] as num?)?.toInt() ?? 0,
+        moodTag: (j['mood'] as num?)?.toInt(),
       );
 }
 
@@ -394,7 +404,7 @@ class _BookmarkPageState extends ConsumerState<BookmarkPage> {
                     height: c.rect.height,
                     child: GestureDetector(
                       onTap: () => _viewBookmark(c.index, zh),
-                      child: _cableCar(_items[c.index]),
+                      child: _cableCar(_items[c.index], c.index),
                     ),
                   ),
               ],
@@ -405,11 +415,68 @@ class _BookmarkPageState extends ConsumerState<BookmarkPage> {
     );
   }
 
-  Widget _cableCar(Bookmark b) {
+  Widget _cableCar(Bookmark b, int index) {
     final useImage = b.imageIndex >= 0;
     final bg = useImage
         ? null
         : _bgColors[b.colorIndex.clamp(0, _bgColors.length - 1)];
+    // CAR_DELETE 右上角的 ✕。不用滑動刪除 —— 纜車太小，很容易誤觸。
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        _cableCarBody(b, bg, useImage),
+        Positioned(
+          top: 10,
+          right: -6,
+          child: GestureDetector(
+            onTap: () => _confirmDeleteCar(index),
+            child: Container(
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.92),
+                boxShadow: const [
+                  BoxShadow(
+                      color: Colors.black26,
+                      blurRadius: 4,
+                      offset: Offset(0, 2)),
+                ],
+              ),
+              child: const Icon(Icons.close_rounded,
+                  size: 14, color: Color(0xFF6C7BA6)),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _confirmDeleteCar(int index) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('刪掉這則？ / Delete this one?'),
+        content: const Text('刪了就找不回來了 / This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('取消 / Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _delete(index);
+            },
+            child: const Text('刪除 / Delete',
+                style: TextStyle(color: Color(0xFFD9534F))),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _cableCarBody(Bookmark b, Color? bg, bool useImage) {
     return Column(
       children: [
         Container(
@@ -428,7 +495,7 @@ class _BookmarkPageState extends ConsumerState<BookmarkPage> {
               color: bg,
               image: b.hasCustomImage
                   ? DecorationImage(
-                      image: FileImage(File(b.customImagePath)),
+                      image: _imgOf(b.customImagePath),
                       fit: BoxFit.cover,
                     )
                   : useImage
@@ -508,7 +575,10 @@ class _BookmarkPageState extends ConsumerState<BookmarkPage> {
         builder: (ctx, setCard) => Dialog(
         backgroundColor: Colors.transparent,
         insetPadding: const EdgeInsets.all(28),
-        child: Column(
+        // DELETE_SCROLL 卡片加球超過 500px，在手機上會把按鈕擠出畫面 ——
+        // 包一層捲動，Save/Delete/Close 一定按得到。
+        child: SingleChildScrollView(
+          child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             RepaintBoundary(
@@ -595,6 +665,7 @@ class _BookmarkPageState extends ConsumerState<BookmarkPage> {
               ],
             ),
           ],
+          ),
         ),
       ),
       ),
@@ -634,6 +705,11 @@ class _BookmarkPageState extends ConsumerState<BookmarkPage> {
 
   /// 從相簿選一張照片，複製到 app 永久目錄後回傳新路徑。
   /// （相簿原檔可能被使用者刪掉，所以自己留一份。）
+  /// 舊資料是檔案路徑、新資料是 b64: 前綴，兩種都要讀得到
+  static ImageProvider _imgOf(String p) => p.startsWith('b64:')
+      ? MemoryImage(base64Decode(p.substring(4)))
+      : FileImage(File(p));
+
   Future<String?> _pickCustomImage() async {
     try {
       final picker = ImagePicker();
@@ -643,10 +719,10 @@ class _BookmarkPageState extends ConsumerState<BookmarkPage> {
         imageQuality: 88,
       );
       if (picked == null) return null;
-      final dir = await getApplicationDocumentsDirectory();
-      final name = 'quote_bg_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final saved = await File(picked.path).copy('${dir.path}/$name');
-      return saved.path;
+      // 存 base64 而不是檔案路徑 —— dart:io 的 File 在瀏覽器不存在，
+      // 原本的寫法在 web 上一定丟例外，照片功能整個是壞的。
+      final bytes = await picked.readAsBytes();
+      return 'b64:' + base64Encode(bytes);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -690,7 +766,47 @@ class _BookmarkPageState extends ConsumerState<BookmarkPage> {
                     Text(zh ? '新增一個 Pacer 🔖' : 'Add a Pacer 🔖',
                         style: const TextStyle(
                             fontSize: 18, fontWeight: FontWeight.w800)),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 12),
+                    // COLD_START 16 位試用者裡 10 位沒寫成，3 位說「想不出來要寫什麼」。
+                    // 空白框對青少年太難 —— 給開頭讓他接，比從無到有容易得多。
+                    Text(
+                      zh ? '想不到的話，從這裡開始：' : 'Not sure? Start with:',
+                      style: TextStyle(
+                          fontSize: 12, color: Colors.grey.shade600),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: (zh
+                              ? const [
+                                  '有人跟我說',
+                                  '我想記得那天',
+                                  '如果以後忘記了',
+                                  '謝謝你那時候',
+                                ]
+                              : const [
+                                  'Someone told me',
+                                  'I want to remember',
+                                  'If I ever forget',
+                                  'Thank you for',
+                                ])
+                          .map((seed) => ActionChip(
+                                label: Text(seed,
+                                    style: const TextStyle(fontSize: 12.5)),
+                                onPressed: () {
+                                  quoteCtrl.text = seed;
+                                  quoteCtrl.selection =
+                                      TextSelection.fromPosition(
+                                    TextPosition(
+                                        offset: quoteCtrl.text.length),
+                                  );
+                                  setSheet(() {});
+                                },
+                              ))
+                          .toList(),
+                    ),
+                    const SizedBox(height: 14),
                     TextField(
                       controller: quoteCtrl,
                       maxLines: 3,
@@ -776,7 +892,7 @@ class _BookmarkPageState extends ConsumerState<BookmarkPage> {
                             ),
                             image: customImagePath.isNotEmpty
                                 ? DecorationImage(
-                                    image: FileImage(File(customImagePath)),
+                                    image: _imgOf(customImagePath),
                                     fit: BoxFit.cover,
                                   )
                                 : null,
@@ -1399,7 +1515,13 @@ class _PacerCardViewState extends State<_PacerCardView> {
 
   ImageProvider? get _image {
     final b = widget.bookmark;
-    if (b.hasCustomImage) return FileImage(File(b.customImagePath));
+    if (b.hasCustomImage) {
+      final p = b.customImagePath;
+      if (p.startsWith('b64:')) {
+        return MemoryImage(base64Decode(p.substring(4)));
+      }
+      return FileImage(File(p));
+    }
     if (b.imageIndex >= 0) {
       return AssetImage(
           widget.bgImages[b.imageIndex.clamp(0, widget.bgImages.length - 1)]);
@@ -1451,12 +1573,16 @@ class _PacerCardViewState extends State<_PacerCardView> {
         child: Stack(
           fit: StackFit.expand,
           children: [
+            // 照片跟著文字一起浮現 —— 拉球的時候整張卡一起醒過來
             if (img != null)
-              InteractiveViewer(
+              Opacity(
+                opacity: (0.18 + 0.82 * t).clamp(0.0, 1.0),
+                child: InteractiveViewer(
                 minScale: 1,
                 maxScale: 3.5,
                 clipBehavior: Clip.none,
-                child: Image(image: img, fit: BoxFit.cover),
+                  child: Image(image: img, fit: BoxFit.cover),
+                ),
               ),
             // 沒有邊界的染色：從底部往上化開，越上面越透明
             DecoratedBox(
@@ -1477,7 +1603,7 @@ class _PacerCardViewState extends State<_PacerCardView> {
             Align(
               alignment: Alignment.bottomCenter,
               child: Padding(
-                padding: const EdgeInsets.all(14),
+                padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1498,7 +1624,7 @@ class _PacerCardViewState extends State<_PacerCardView> {
                       ),
                     ),
                     if (b.author.isNotEmpty) ...[
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 4),
                       Text(
                         '\u2014 ${b.author}',
                         textAlign: TextAlign.left,

@@ -11,16 +11,18 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../pacer/breath_plan.dart';
 import 'lii_breath_page.dart';
 import 'package:go_router/go_router.dart';
 import 'lii_orb.dart';
+import '../crystals/crystal_collection_page.dart';
 
 /// 入口按鈕的位置。撞到你其他浮動元件的話改這裡就好。
 const double kLiiEntryRight = 18;
-const double kLiiEntryBottom = 96;
-const double kLiiEntrySize = 54;
+const double kLiiEntryBottom = 350;
+const double kLiiEntrySize = 110;
 
 /// ERS 分數 → 用哪種模式出現。門檻跟 risk_engine 一致。
 LiiBreathMode liiModeFromErs(int ers) {
@@ -75,12 +77,28 @@ class _LiiBreathButtonState extends State<LiiBreathButton>
   final SilentBreath _silent = SilentBreath();
   final OrbSplit _split = OrbSplit();
   double _b = 0;
+
+  // RESIZABLE_ORB 球的大小由使用者決定，記在本機。
+  double _size = 90; // 暫時寫死，把存起來的過大尺寸蓋掉
+  Offset? _pos;
+  double _moved = 0;
+  double _sizeAtStart = kLiiEntrySize;
   int _skip = 0;
 
   @override
   void initState() {
     super.initState();
     _ticker = createTicker(_tick)..start();
+    SharedPreferences.getInstance().then((p) {
+      final v = p.getDouble('lii_orb_size');
+      final x = p.getDouble('lii_orb_x');
+      final y = p.getDouble('lii_orb_y');
+      if (!mounted) return;
+      setState(() {
+        // if (v != null) _size = v; // 暫時不讀存檔，避免讀回過大的尺寸
+        if (x != null && y != null) _pos = Offset(x, y);
+      });
+    });
   }
 
   @override
@@ -119,27 +137,141 @@ class _LiiBreathButtonState extends State<LiiBreathButton>
   }
 
   // CARD_PREVIEW 長按 → Pacer Lift（你原本就有的那個）
-  void _openCard() => context.push('/bookmark');
+  // 長按 → 水晶收藏
+  void _openCard() => showCrystalCollection(context);
 
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      label: '陪你呼吸',
+  Future<void> _savePos() async {
+    if (_pos == null) return;
+    final p = await SharedPreferences.getInstance();
+    await p.setDouble('lii_orb_x', _pos!.dx);
+    await p.setDouble('lii_orb_y', _pos!.dy);
+  }
+
+  Future<void> _saveSize() async {
+    final p = await SharedPreferences.getInstance();
+    await p.setDouble('lii_orb_size', _size);
+  }
+
+  /// FOUR_CORNERS 四個角都能拉。把手是透明的 ——
+  /// 手機上不留一個圖示在畫面裡，用法寫在 welcome page。
+  Widget _corner({
+    required bool left,
+    required bool top,
+    required double grip,
+  }) {
+    return Positioned(
+      left: left ? 0 : null,
+      right: left ? null : 0,
+      top: top ? 0 : null,
+      bottom: top ? null : 0,
+      width: grip,
+      height: grip,
       child: GestureDetector(
-        onLongPress: _openCard,
-        child: SizedBox(
-        width: kLiiEntrySize,
-        height: kLiiEntrySize,
-        child: LiiOrb(
-          breath: _b,
-          split: _split,
-          amplitude: 1,
-          lunaGlow: 0.42,
-          onTap: _open,
-          ),
-        ),
+        behavior: HitTestBehavior.opaque,
+        onPanUpdate: (d) {
+          // 往「離開球心」的方向拖 = 變大，不管抓的是哪一個角
+          final dx = left ? -d.delta.dx : d.delta.dx;
+          final dy = top ? -d.delta.dy : d.delta.dy;
+          setState(() {
+            _size = (_size + (dx + dy)).clamp(40.0, 240.0);
+          });
+        },
+        onPanEnd: (_) => _saveSize(),
+        child: const SizedBox.expand(),
       ),
     );
   }
+
+  // ONE_GESTURE 四個功能共用一層手勢，用「起點在哪」和「先往哪個方向動」
+  // 決定要做什麼。一旦決定就不中途變卦 —— 這樣它們不會互搶。
+  //   四角      → 縮放
+  //   中間左右  → 水晶／夜空切換
+  //   中間上下  → 移動位置
+  //   點著不動  → 進呼吸頁
+  String _mode = '';        // '' | 'resize' | 'split' | 'move'
+  Offset _start = Offset.zero;
+  bool _cornerStart = false;
+  bool _flipLeft = false, _flipTop = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(builder: (context, box) {
+      final w = box.maxWidth, h = box.maxHeight;
+      final grip = (_size * 0.22).clamp(18.0, 32.0);
+      final pos = _pos ??
+          Offset(w - kLiiEntryRight - _size, h - kLiiEntryBottom - _size);
+      final left = pos.dx.clamp(0.0, (w - _size).clamp(0.0, w));
+      final top = pos.dy.clamp(0.0, (h - _size).clamp(0.0, h));
+
+      return Stack(children: [
+        Positioned(
+          left: left,
+          top: top,
+          width: _size,
+          height: _size,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTapUp: (_) {
+              if (_mode.isEmpty) _open();
+            },
+            onPanStart: (d) {
+              _mode = '';
+              _start = d.localPosition;
+              _flipLeft = d.localPosition.dx < _size / 2;
+              _flipTop = d.localPosition.dy < _size / 2;
+              final dx = _flipLeft
+                  ? d.localPosition.dx
+                  : _size - d.localPosition.dx;
+              final dy = _flipTop
+                  ? d.localPosition.dy
+                  : _size - d.localPosition.dy;
+              _cornerStart = dx < grip && dy < grip;
+            },
+            onPanUpdate: (d) {
+              final off = d.localPosition - _start;
+              // 還沒決定要做什麼：等移動超過 6px 再判斷
+              if (_mode.isEmpty) {
+                if (off.distance < 6) return;
+                if (_cornerStart) {
+                  _mode = 'resize';
+                } else {
+                  _mode = off.dx.abs() > off.dy.abs() ? 'split' : 'move';
+                }
+              }
+              setState(() {
+                switch (_mode) {
+                  case 'resize':
+                    final gx = _flipLeft ? -d.delta.dx : d.delta.dx;
+                    final gy = _flipTop ? -d.delta.dy : d.delta.dy;
+                    _size = (_size + gx + gy).clamp(44.0, 240.0);
+                    break;
+                  case 'split':
+                    _split.dragBy(d.delta.dx, _size);
+                    break;
+                  case 'move':
+                    _pos = Offset(left, top) + d.delta;
+                    break;
+                }
+              });
+            },
+            onPanEnd: (_) {
+              if (_mode == 'resize') _saveSize();
+              if (_mode == 'move') _savePos();
+              if (_mode == 'split') _split.end();
+              _mode = '';
+            },
+            child: IgnorePointer(
+              child: LiiOrb(
+                breath: _b,
+                split: _split,
+                amplitude: 1,
+                lunaGlow: 0.42,
+              ),
+            ),
+          ),
+        ),
+      ]);
+    });
+  }
+
 }

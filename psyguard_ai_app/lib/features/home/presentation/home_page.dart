@@ -36,6 +36,8 @@ import '../../../l10n/app_strings.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/widgets/lii_breath_entry.dart';
 import '../../../core/widgets/luna_orb.dart';
+import 'dart:io';
+import '../../../core/crystals/crystal_collection_page.dart';
 
 class HomeDashboard {
   HomeDashboard({
@@ -150,10 +152,33 @@ class HomePage extends ConsumerWidget {
             const Positioned.fill(child: FishTouchLayer()),
             // ❄️ 冰霜觸碰層（手碰到哪就結冰，不擋操作）
             // LII_BREATH_ENTRY 🌙 lii 呼吸入口（自己輕輕呼吸，點下去進呼吸會話）
-            const Positioned(
-              right: kLiiEntryRight,
-              bottom: kLiiEntryBottom,
-              child: LiiBreathButton(),
+            const Positioned.fill(child: LiiBreathButton()),
+            // CRYSTAL_BOX 水晶收藏的獨立入口。跟球分開，
+            // 有自己的手勢，不會跟拖曳/縮放/切換互搶。
+            Positioned(
+              right: 20,
+              bottom: 28,
+              child: GestureDetector(
+                onTap: () => showCrystalCollection(context),
+                child: Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: const Color(0xE616264C),
+                    border: Border.all(
+                        color: const Color(0x66FFD166), width: 1.5),
+                    boxShadow: const [
+                      BoxShadow(
+                          color: Color(0x40000000),
+                          blurRadius: 8,
+                          offset: Offset(0, 3)),
+                    ],
+                  ),
+                  child: const Icon(Icons.auto_awesome,
+                      size: 20, color: Color(0xFFFFD166)),
+                ),
+              ),
             ),
           ],
         ),
@@ -307,18 +332,23 @@ class _HomeContentState extends State<_HomeContent> {
   Future<void> _maybeShowDailyPacer() async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      // 使用者可以關掉推播。18 位試用者裡有 2 位說「以前的話跳出來可能更難過」——
+      // 推播是唯一會主動打斷人的功能，必須留一個關得掉的開關。
+      if (prefs.getBool('daily_pacer_on') == false) return;
       final now = DateTime.now();
       final todayStr = '${now.year}-${now.month}-${now.day}';
-      const kAlwaysShow = false; if (kAlwaysShow == false && prefs.getString('daily_pacer_date') == todayStr) return;
+      const kAlwaysShow = true; if (kAlwaysShow == false && prefs.getString('daily_pacer_date') == todayStr) return;
       final raw = prefs.getString('bookmarks_v2');
       if (raw == null || raw.isEmpty) return;
       final list = jsonDecode(raw) as List;
       if (list.isEmpty) return;
-      final pick =
-          list[math.Random().nextInt(list.length)] as Map<String, dynamic>;
-      final quote = pick['quote'] as String? ?? '';
-      final author = pick['author'] as String? ?? '';
-      if (quote.isEmpty) return;
+      // DAILY_SWIPE 抽一疊，可以左右滑
+      final all = list.cast<Map<String, dynamic>>()
+          .where((e) => ((e['quote'] as String?) ?? '').isNotEmpty)
+          .toList();
+      if (all.isEmpty) return;
+      all.shuffle(math.Random());
+      final deck = all.take(5).toList();
       await prefs.setString('daily_pacer_date', todayStr);
       if (!mounted) return;
       showDialog(
@@ -327,7 +357,7 @@ class _HomeContentState extends State<_HomeContent> {
           builder: (c, r, _) {
             final zh =
                 AppStrings.of(r.watch(appLanguageControllerProvider)).isZhTw;
-            return _dailyPacerCard(ctx, quote, author, zh);
+            return _dailyPacerCard(ctx, deck, zh);
           },
         ),
       );
@@ -335,73 +365,57 @@ class _HomeContentState extends State<_HomeContent> {
   }
 
   Widget _dailyPacerCard(
-      BuildContext ctx, String quote, String author, bool zh) {
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.all(28),
-      child: Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: const [
-            BoxShadow(
-                color: Colors.black26, blurRadius: 20, offset: Offset(0, 8)),
-          ],
-        ),
+      BuildContext ctx, List<Map<String, dynamic>> deck, bool zh) {
+    // 不用 Dialog —— 它會攔掉水平手勢，PageView 就滑不動了。
+    // 改用透明的 Material 直接鋪在遮罩上。
+    return Material(
+      type: MaterialType.transparency,
+      child: Center(
+        child: SizedBox(
+        height: 520,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // LUNA_DAILY 水晶球：左邊夜空、右邊玻璃，會自己輕輕呼吸。
-            // 這張是每天早上跳的，刻意不能拖 —— 看一眼就關掉，不要變成任務。
-            const SizedBox(
-              width: 72,
-              height: 72,
-              child: LunaOrbLive(w: 0),
-            ),
-            const SizedBox(height: 8),
-            const Text('lii',
-                style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF7E8FE8))),
-            const SizedBox(height: 6),
-            Text(zh ? '今天的一句話' : 'Today\'s line',
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
-            const SizedBox(height: 18),
-            const SizedBox(height: 2),
-            Text(quote,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF2C3150),
-                    height: 1.5)),
-            if (author.isNotEmpty) ...[
-              const SizedBox(height: 10),
-              Text('\u2014 $author',
-                  style: TextStyle(
-                      fontSize: 13,
-                      fontStyle: FontStyle.italic,
-                      color: Colors.grey.shade600)),
-            ],
-            const SizedBox(height: 24),
             SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0ABFBC),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14)),
+              height: 440,
+              child: PageView.builder(
+                itemCount: deck.length,
+                controller: PageController(viewportFraction: 0.88),
+                itemBuilder: (c, i) => Center(
+                  child: _DailyCableCard(
+                    key: ValueKey('daily_$i'),
+                    data: deck[i],
+                  ),
                 ),
-                onPressed: () => Navigator.pop(ctx),
-                child: Text(zh ? '收到了 🌙' : 'Got it 🌙',
-                    style: const TextStyle(fontWeight: FontWeight.w700)),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              zh ? '\u2190 左右滑看更多' : '\u2190 swipe for more',
+              style: const TextStyle(fontSize: 11, color: Colors.white70),
+            ),
+            const SizedBox(height: 10),
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text(zh ? '收起來' : 'Got it',
+                  style: const TextStyle(color: Colors.white, fontSize: 14)),
+            ),
+            // 在被打斷的當下就能關掉 —— 會想關的人正是此刻覺得不舒服的人，
+            // 比叫他去設定裡找準確得多。
+            TextButton(
+              onPressed: () async {
+                final p = await SharedPreferences.getInstance();
+                await p.setBool('daily_pacer_on', false);
+                if (ctx.mounted) Navigator.of(ctx).pop();
+              },
+              child: Text(
+                zh ? '不要再自動跳出' : 'Stop showing this',
+                style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.5), fontSize: 12),
               ),
             ),
           ],
+          ),
         ),
       ),
     );
@@ -585,41 +599,6 @@ class _HomeContentState extends State<_HomeContent> {
             ],
           );
         }),
-        // ── 使用指南（球球下方兩行小字）──────────────
-        Consumer(builder: (context, ref, _) {
-          final guideIsDark =
-              ref.watch(backgroundThemeProvider).mode == BgMode.dark;
-          const cream = Color(0xFFF5F0E6);
-          final guideColor = guideIsDark
-              ? cream.withValues(alpha: 0.78)
-              : LumiTheme.textSecondary;
-          return Padding(
-            padding: const EdgeInsets.only(top: 12, bottom: 2),
-            child: Column(
-              children: [
-                Text(
-                  copy.isZhTw
-                      ? '💡 長按任一張卡片，看更多內容'
-                      : '💡 Long-press any card for more details',
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodySmall
-                      ?.copyWith(color: guideColor, fontSize: 12, height: 1.35),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  copy.isZhTw
-                      ? '✨ 點或長按氛圍球，發現隱藏小遊戲'
-                      : '✨ Tap or hold the mood ball for a hidden game',
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodySmall
-                      ?.copyWith(color: guideColor, fontSize: 12, height: 1.35),
-                ),
-              ],
-            ),
-          );
-        }),
-        // 💬 每日鼓勵（依 ERS 狀態變化）
-        const EncouragementBanner(),
         // 💬 寵物提醒泡泡（沒東西提醒時自己不顯示）
         PetReminderBubble(isZh: copy.isZhTw),
         const SizedBox(height: 32),
@@ -1842,6 +1821,139 @@ class _EasterBunnyCornerState extends State<_EasterBunnyCorner>
             errorBuilder: (_, __, ___) => const Center(
               child: Text('🐰', style: TextStyle(fontSize: 44)),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// DAILY_SWIPE 每日推播的纜車卡：球吊在上面，下面掛那則 pacer
+class _DailyCableCard extends StatefulWidget {
+  final Map<String, dynamic> data;
+  const _DailyCableCard({super.key, required this.data});
+
+  @override
+  State<_DailyCableCard> createState() => _DailyCableCardState();
+}
+
+class _DailyCableCardState extends State<_DailyCableCard> {
+  double _t = 1;
+  double _pull = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final d = widget.data;
+    final quote = (d['quote'] as String?) ?? '';
+    final author = (d['author'] as String?) ?? '';
+    final tone = GlassTone
+        .values[((d['tone'] as num?)?.toInt() ?? 0)
+            .clamp(0, GlassTone.values.length - 1)];
+    final path = (d['customImagePath'] as String?) ?? '';
+    final deep = tone.stops.last;
+
+    return LunaCableCar(
+      childWidth: 240,
+      childHeight: 300,
+      orbSize: 92,
+      ropeLen: 12,
+      tone: tone,
+      t: _t,
+      pull: _pull,
+      // 球縮小到 104，卡片本身就有地方可以左右滑；
+      // 在球上拖 = 拉文字，在卡片上拖 = 換下一則。
+      // 推播卡的球不吃任何拖曳 —— 這裡的主要動作是「滑到下一則」，
+      // 球一旦攔截手勢就翻不了頁。拉文字的功能留在 Pacer Lift。
+      onChanged: (nt, np) => setState(() {
+        _t = nt;
+        _pull = np;
+      }),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              tone.stops[0].withAlpha(0xD9),
+              tone.stops[1].withAlpha(0xC4),
+              tone.stops[2].withAlpha(0xB3),
+            ],
+          ),
+          border: Border.all(color: Colors.white, width: 4),
+          boxShadow: const [
+            BoxShadow(
+                color: Colors.black38, blurRadius: 16, offset: Offset(0, 6)),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              if (path.isNotEmpty)
+                Image(
+                  image: path.startsWith('b64:')
+                      ? MemoryImage(base64Decode(path.substring(4)))
+                          as ImageProvider
+                      : FileImage(File(path)),
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => const SizedBox(),
+                ),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      deep.withAlpha(0x00),
+                      deep.withAlpha(0x4D),
+                      deep.withAlpha(0x99),
+                    ],
+                    stops: const [0.32, 0.7, 1.0],
+                  ),
+                ),
+              ),
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      LunaReveal(
+                        text: quote,
+                        progress: _t,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                          height: 1.35,
+                          shadows: [
+                            Shadow(blurRadius: 12, color: Colors.black87),
+                            Shadow(blurRadius: 3, color: Colors.black87),
+                          ],
+                        ),
+                      ),
+                      if (author.isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        Text('\u2014 $author',
+                            textAlign: TextAlign.left,
+                            style: const TextStyle(
+                              fontSize: 11.5,
+                              fontStyle: FontStyle.italic,
+                              color: Color(0xE6FFFFFF),
+                              shadows: [
+                                Shadow(blurRadius: 6, color: Colors.black87),
+                              ],
+                            )),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),

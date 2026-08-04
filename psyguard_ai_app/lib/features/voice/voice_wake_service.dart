@@ -51,6 +51,10 @@ class VoiceWakeService {
     /// 🎤 每次辨識更新都會呼叫（含中途的部分結果），
     ///    用來算語速與停頓，不影響原本的流程
     Function(String)? onSpeechEvent,
+
+    /// 🎤 音量回呼。停頓要靠音量判定 ——
+    /// 辨識引擎在人不說話時不會吐結果，靠 onSpeechEvent 數不到停頓。
+    Function(double)? onSoundLevel,
   }) async {
     if (!_isAvailable) {
       _isAvailable = await _speech.initialize();
@@ -59,6 +63,7 @@ class VoiceWakeService {
     _isListening = true;
     _wakeWordTriggered = false;
     await _speech.listen(
+      onSoundLevelChange: onSoundLevel,
       onResult: (result) {
         onSpeechEvent?.call(result.recognizedWords);
         final text = result.recognizedWords.toLowerCase();
@@ -73,7 +78,7 @@ class VoiceWakeService {
       },
       listenFor: const Duration(seconds: 30),
       pauseFor: const Duration(seconds: 3),
-      localeId: isZh ? 'zh_TW' : 'en_US',
+      localeId: isZh ? 'zh-TW' : 'en-US',
     );
   }
 

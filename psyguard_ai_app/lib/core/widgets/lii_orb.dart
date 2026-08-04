@@ -14,6 +14,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'luna_orb.dart';
 
 const double _kUnit = 160;
 const double _kR = 80;
@@ -82,6 +83,12 @@ class LiiOrb extends StatefulWidget {
   /// Luna 光暈強度，跟著模式走（daily .65 / check-in .90 / safety 1.0 / silent .42）
   final double lunaGlow;
 
+  /// 水晶色。夜空的漸層會跟著它走。
+  final GlassTone tone;
+
+  /// 秒數。序曲時兩顆點會飄，主段收攏定位。
+  final double time;
+
   final OrbSplit split;
   final VoidCallback? onTap;
 
@@ -95,6 +102,8 @@ class LiiOrb extends StatefulWidget {
     this.youOpacity = 1,
     this.starsOpacity = 1,
     this.lunaGlow = 0.65,
+    this.tone = GlassTone.ice,
+    this.time = 0,
     this.onTap,
   });
 
@@ -132,6 +141,8 @@ class _LiiOrbState extends State<LiiOrb> {
               you: widget.youOpacity,
               stars: widget.starsOpacity,
               lunaGlow: widget.lunaGlow,
+              tone: widget.tone,
+              time: widget.time,
             ),
           ),
         );
@@ -170,6 +181,8 @@ const List<_Star> _kBgStars = <_Star>[
 
 class _OrbPainter extends CustomPainter {
   final double breath, meet, amplitude, w, luna, you, stars, lunaGlow;
+  final double time;
+  final GlassTone tone;
 
   _OrbPainter({
     required this.breath,
@@ -180,6 +193,8 @@ class _OrbPainter extends CustomPainter {
     required this.you,
     required this.stars,
     required this.lunaGlow,
+    this.tone = GlassTone.ice,
+    this.time = 0,
   });
 
   // ── 幾何 ──────────────────────────────────────────────
@@ -326,7 +341,7 @@ class _OrbPainter extends CustomPainter {
     _rectGrad(
       c,
       ui.Gradient.linear(const Offset(24, 0), const Offset(136, 160),
-          const [Color(0xFF2A5F8F), Color(0xFF1A3D6E), Color(0xFF0F2444)],
+          [tone.stops[1], tone.stops[2], tone.stops[3]],
           const [0.0, 0.45, 1.0]),
     );
     _rectGrad(
@@ -561,5 +576,7 @@ class _OrbPainter extends CustomPainter {
       old.you != you ||
       old.stars != stars ||
       old.amplitude != amplitude ||
-      old.lunaGlow != lunaGlow;
+      old.lunaGlow != lunaGlow ||
+      old.tone != tone ||
+      old.time != time;
 }

@@ -17,8 +17,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 
+import '../crystals/crystal_collection_page.dart';
+import '../audio/tide_sound.dart';
+import '../crystals/crystal_store.dart';
 import '../pacer/bookmark_quick_add.dart';
 import '../pacer/breath_plan.dart';
+import 'luna_orb.dart';
 import 'lii_orb.dart';
 
 /// 決定「怎麼出現」。ERS 越高，序曲越短 ——
@@ -54,13 +58,13 @@ extension LiiBreathModeX on LiiBreathMode {
   String get idleText {
     switch (this) {
       case LiiBreathMode.daily:
-        return 'Luna 在 · 今天還好嗎';
+        return 'Luna is here';
       case LiiBreathMode.checkIn:
-        return 'Luna 注意到你了 · 我在這裡';
+        return 'Luna noticed you';
       case LiiBreathMode.safety:
-        return '你不是一個人';
+        return 'You are not alone';
       case LiiBreathMode.silent:
-        return '靜陪模式 · 不引導';
+        return 'Silent company';
     }
   }
 }
@@ -113,6 +117,10 @@ class _LiiBreathPageState extends State<LiiBreathPage>
   bool _running = false;
 
   double _breath = 0, _meet = 0, _amp = 1;
+  GlassTone _tone = GlassTone.ice;
+
+  // 預設關 —— 他可能在課堂上、公車上，聲音會暴露他正在做這件事。
+  final TideSound _tide = TideSound();
   double _luna = 1, _you = 1, _stars = 1, _cue = 0;
   String _cueText = '', _status = '', _tempo = '';
   BreathSegment? _lastSeg;
@@ -129,6 +137,7 @@ class _LiiBreathPageState extends State<LiiBreathPage>
   @override
   void dispose() {
     _ticker.dispose();
+    _tide.dispose();
     super.dispose();
   }
 
@@ -161,14 +170,14 @@ class _LiiBreathPageState extends State<LiiBreathPage>
       _breath = _silent.valueAt(now.inMicroseconds / 1e6);
       _meet = 0.55 * _peak(_breath);
       _amp = 1;
-      _tempo = '不規則 · 8–12 秒 · 不引導';
+      _tempo = 'Irregular \u2014 8 to 12 s \u2014 no guidance';
     } else if (_running && _plan != null) {
       if (_t0 == Duration.zero) _t0 = now;
       final el = (now - _t0).inMicroseconds / 1e6;
       final tick = _plan!.at(el);
 
       if (tick.finished) {
-        _stop('慢慢回來');
+        _stop('Take your time');
         _leaveWords();
         return;
       }
@@ -185,16 +194,16 @@ class _LiiBreathPageState extends State<LiiBreathPage>
 
       switch (tick.stage) {
         case BreathStage.overture:
-          _status = 'Luna 在 · 先看著就好，不用跟';
+          _status = 'Just watch for now \u2014 no need to follow';
           break;
         case BreathStage.ramp:
-          _status = 'Luna 在 · 跟著我的節奏就好';
+          _status = 'Follow my pace when you are ready';
           break;
         case BreathStage.main:
           _status = widget.mode.idleText;
           break;
         case BreathStage.outro:
-          _status = 'Luna 在 · 慢慢回來';
+          _status = 'Coming back, slowly';
           break;
       }
 
@@ -228,15 +237,23 @@ class _LiiBreathPageState extends State<LiiBreathPage>
   // 用 SnackBar 不用彈窗：剛做完呼吸的人不該被打斷。
   Future<void> _leaveWords() async {
     final quote = await BookmarkQuickAdd.addFromBreath(widget.mood);
+    final newCrystals = await CrystalStore.recordSession();
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         backgroundColor: const Color(0xFF16264C),
         duration: const Duration(seconds: 6),
         content: Text(
-          'Luna 留了一句話給你\n$quote',
+          'Luna left you a line\n$quote',
           style: const TextStyle(color: Colors.white, height: 1.6),
         ),
+        action: newCrystals.isEmpty
+            ? null
+            : SnackBarAction(
+                label: 'New crystal',
+                textColor: const Color(0xFFFFD166),
+                onPressed: () => showCrystalCollection(context),
+              ),
       ),
     );
   }
@@ -265,7 +282,7 @@ class _LiiBreathPageState extends State<LiiBreathPage>
               child: IconButton(
                 icon: const Icon(Icons.close, color: Colors.white38),
                 onPressed: () => Navigator.of(context).maybePop(),
-                tooltip: '關閉',
+                tooltip: 'Close',
               ),
             ),
             Center(
@@ -284,10 +301,26 @@ class _LiiBreathPageState extends State<LiiBreathPage>
                       youOpacity: _you,
                       starsOpacity: _stars,
                       lunaGlow: widget.mode.lunaGlow,
+                      tone: _tone,
                       onTap: () => _running ? _stop() : _start(),
                     ),
                   ),
-                  const SizedBox(height: 22),
+                  const SizedBox(height: 14),
+                  // BTN_MOVED 按鈕放在球正下方 —— 原本被擠到六色圓點後面看不到
+                  if (!_isSilent)
+                    TextButton(
+                      onPressed: () => _running ? _stop() : _start(),
+                      child: Text(
+                        _running ? 'Stop' : 'Start breathing',
+                        style: const TextStyle(
+                          color: Color(0xFFFFD166),
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 2,
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 8),
                   SizedBox(
                     height: 22,
                     child: AnimatedOpacity(
@@ -321,19 +354,85 @@ class _LiiBreathPageState extends State<LiiBreathPage>
                       letterSpacing: 1.5,
                     ),
                   ),
-                  const SizedBox(height: 26),
-                  if (!_isSilent)
-                    TextButton(
-                      onPressed: () => _running ? _stop() : _start(),
-                      child: Text(
-                        _running ? '停下來' : '開始呼吸',
-                        style: const TextStyle(
-                          color: Color(0xFFFFD166),
-                          fontSize: 13,
-                          letterSpacing: 2,
+                  const SizedBox(height: 20),
+                  // TONE_PICKER 六色水晶。顏色是練習換來的，不是設定裡挑的。
+                  Wrap(
+                    spacing: 12,
+                    children: GlassTone.values.map((t) {
+                      final got = CrystalStore.isUnlocked(t);
+                      final on = t == _tone;
+                      const cols = [
+                        Color(0xFF337FB0),
+                        Color(0xFF2A8A88),
+                        Color(0xFF7A54B0),
+                        Color(0xFFA65F14),
+                        Color(0xFF2C7247),
+                        Color(0xFFB04E6C),
+                      ];
+                      return GestureDetector(
+                        onTap: () {
+                          if (got == false) {
+                            final r = kCrystalRules
+                                .firstWhere((e) => e.tone == t);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content:
+                                    Text('\${t.labelEn}: \${r.requirementEn}'),
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                            return;
+                          }
+                          setState(() => _tone = t);
+                        },
+                        child: Container(
+                          width: 26,
+                          height: 26,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: got
+                                ? cols[t.index]
+                                : const Color(0x26FFFFFF),
+                            border: Border.all(
+                              color: on
+                                  ? Colors.white
+                                  : const Color(0x33FFFFFF),
+                              width: on ? 2.5 : 1,
+                            ),
+                          ),
                         ),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 16),
+                  // TIDE_TOGGLE 潮聲開關。預設關，開了音量會跟著呼吸漲退。
+                  TextButton.icon(
+                    onPressed: () async {
+                      if (_tide.isOn) {
+                        await _tide.disable();
+                      } else {
+                        await _tide.enable();
+                      }
+                      if (mounted) setState(() {});
+                    },
+                    icon: Icon(
+                      _tide.isOn ? Icons.volume_up_rounded : Icons.volume_off_rounded,
+                      size: 17,
+                      color: _tide.isOn
+                          ? const Color(0xFFC8E8FF)
+                          : Colors.white38,
+                    ),
+                    label: Text(
+                      _tide.isOn ? 'Tide on' : 'Tide off',
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        color: _tide.isOn
+                            ? const Color(0xFFC8E8FF)
+                            : Colors.white38,
                       ),
                     ),
+                  ),
+                  const SizedBox(height: 10),
                   // safety flow：求助入口從第一秒就在，不用等練習結束。
                   // 呼吸是當下降溫，不是處理，兩個要並存。
                   if (widget.mode == LiiBreathMode.safety)
@@ -349,7 +448,7 @@ class _LiiBreathPageState extends State<LiiBreathPage>
                               horizontal: 26, vertical: 12),
                         ),
                         child: const Text(
-                          '我現在想找人說話',
+                          'I want to talk to someone',
                           style: TextStyle(
                               color: Color(0xFFC8E8FF),
                               fontSize: 12,

@@ -90,10 +90,12 @@ class _VoiceWakePageState extends ConsumerState<VoiceWakePage>
             {
               'role': 'system',
               'content':
-                  'Extract key action items and important points from the user speech. '
-                  'Return ONLY a JSON array of strings, each being a concise bullet point. '
-                  '$languageInstruction Max 5 items. '
-                  'Example: $exampleItems'
+                  'Analyze the user speech and split it into TWO lists: '
+                  '"add" (new tasks or notes to record) and '
+                  '"cancel" (things the user says to cancel, remove, cross out, delete, or has already finished). '
+                  'Return ONLY a JSON object: {"add":[...],"cancel":[...]}, each item a concise string. '
+                  '$languageInstruction Max 5 items total. '
+                  'Example: {"add": $exampleItems, "cancel": []}'
             },
             {'role': 'user', 'content': text}
           ],
@@ -105,7 +107,37 @@ class _VoiceWakePageState extends ConsumerState<VoiceWakePage>
         final data = jsonDecode(response.body);
         final raw = data['choices'][0]['message']['content'] as String;
         final clean = raw.replaceAll('```json', '').replaceAll('```', '').trim();
-        final List bullets = jsonDecode(clean);
+        final decoded = jsonDecode(clean);
+        List addList;
+        List cancelList;
+        if (decoded is Map) {
+          addList = (decoded['add'] as List?) ?? [];
+          cancelList = (decoded['cancel'] as List?) ?? [];
+        } else if (decoded is List) {
+          addList = decoded;
+          cancelList = [];
+        } else {
+          addList = [];
+          cancelList = [];
+        }
+
+        // 先處理「取消」：最早日期打勾劃線、其餘天刪掉
+        int cancelledCount = 0;
+        if (cancelList.isNotEmpty) {
+          cancelledCount = await _cancelInNotes(
+              cancelList.map((e) => e.toString()).toList());
+        }
+
+        // 只有取消、沒有新增 → 直接回報並結束
+        if (addList.isEmpty) {
+          if (!mounted) return;
+          setState(() => _statusText = isZh
+              ? '✅ 已取消 / 畫掉 $cancelledCount 項'
+              : '✅ Cancelled $cancelledCount item(s)');
+          return;
+        }
+
+        final List bullets = addList;
 
         final now = DateTime.now();
         DateTime targetDate = now;
@@ -171,8 +203,8 @@ class _VoiceWakePageState extends ConsumerState<VoiceWakePage>
 
         setState(
           () => _statusText = isZh
-              ? '✅ 已整理 ${bullets.length} 條筆記，並設定 $windowDays 天倒數提醒！'
-              : '✅ Organized ${bullets.length} notes with a $windowDays-day countdown!',
+              ? '✅ 已整理 ${bullets.length} 條筆記${cancelledCount > 0 ? '，取消 $cancelledCount 項' : ''}，設定 $windowDays 天倒數提醒！'
+              : '✅ Organized ${bullets.length} notes${cancelledCount > 0 ? ', cancelled $cancelledCount' : ''} with a $windowDays-day countdown!',
         );
       } else {
         setState(() => _statusText = isZh ? '整理失敗 (${response.statusCode})，請重試' : 'Failed (${response.statusCode}), please try again');
@@ -266,6 +298,7 @@ class _VoiceWakePageState extends ConsumerState<VoiceWakePage>
       await _service.startListening(
         isZh: isZh,
         onSpeechEvent: _metrics.onEvent,
+        onSoundLevel: _metrics.onSoundLevel,
         onWakeWordDetected: (text) {
           if (!_isNoteMode) {
             setState(() {

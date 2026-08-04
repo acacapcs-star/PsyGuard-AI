@@ -161,12 +161,12 @@ class BreathTick {
   String get cueText {
     switch (segment) {
       case BreathSegment.inhale:
-        return '吸';
+        return 'Inhale';
       case BreathSegment.exhale:
-        return '吐';
+        return 'Exhale';
       case BreathSegment.holdTop:
       case BreathSegment.holdBottom:
-        return '停';
+        return 'Hold';
     }
   }
 }

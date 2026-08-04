@@ -27,7 +27,16 @@ class LumiApp extends ConsumerWidget {
       child: MaterialApp.router(
         title: 'lii',
         debugShowCheckedModeBanner: false,
-        theme: LumiTheme.lightTheme,
+        // 內嵌中文字型 —— 不靠瀏覽器撿系統字，
+        // 展場沒網路或換裝置也不會變豆腐方塊。
+        theme: LumiTheme.lightTheme.copyWith(
+          textTheme: LumiTheme.lightTheme.textTheme.apply(
+            fontFamily: 'NotoTC',
+          ),
+          primaryTextTheme: LumiTheme.lightTheme.primaryTextTheme.apply(
+            fontFamily: 'NotoTC',
+          ),
+        ),
         routerConfig: router,
         // ⌨️ 全域點空白收鍵盤（修 CBT／筆記本／聊天等鍵盤關不掉）
         builder: (context, child) => MediaQuery(

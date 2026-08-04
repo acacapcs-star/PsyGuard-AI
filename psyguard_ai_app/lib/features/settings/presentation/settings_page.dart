@@ -16,6 +16,7 @@ import '../../../l10n/app_language.dart';
 import '../../../core/ers/group_norms.dart';
 import '../../../core/security/secret_diary_lock.dart';
 import '../../../core/security/secret_diary_lock.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
@@ -151,6 +152,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               ),
             ),
             const SizedBox(height: 18),
+            _sectionTitle(language == AppLanguage.zhTw ? '🚡 陪伴推播' : '🚡 Daily Pacer'),
+            const SizedBox(height: 8),
+            _card(child: const _DailyPacerSwitch()),
+            const SizedBox(height: 20),
             _sectionTitle(copy.languageSectionTitle),
             const SizedBox(height: 12),
             _card(
@@ -1130,4 +1135,49 @@ class _SettingsCopy {
   String get cancel => _isZhTw ? '取消' : 'Cancel';
   String get clear => _isZhTw ? '清除' : 'Clear';
   String get clearDataButton => _isZhTw ? '清除資料' : 'Clear Data';
+}
+
+class _DailyPacerSwitch extends StatefulWidget {
+  const _DailyPacerSwitch();
+  @override
+  State<_DailyPacerSwitch> createState() => _DailyPacerSwitchState();
+}
+
+class _DailyPacerSwitchState extends State<_DailyPacerSwitch> {
+  bool _on = true;
+  bool _ready = false;
+
+  @override
+  void initState() {
+    super.initState();
+    SharedPreferences.getInstance().then((p) {
+      if (!mounted) return;
+      setState(() {
+        _on = p.getBool('daily_pacer_on') ?? true;
+        _ready = true;
+      });
+    });
+  }
+
+  Future<void> _set(bool v) async {
+    setState(() => _on = v);
+    final p = await SharedPreferences.getInstance();
+    await p.setBool('daily_pacer_on', v);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final zh = Localizations.localeOf(context).languageCode == 'zh';
+    return SwitchListTile(
+      value: _on,
+      onChanged: _ready ? _set : null,
+      contentPadding: EdgeInsets.zero,
+      title: Text(zh ? '每天拿一則出來' : 'Bring one back each day',
+          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+      subtitle: Text(
+        zh ? '每天第一次打開時，Luna 會拿一則你存過的話出來。' : 'Luna brings back one saved line each day.',
+        style: const TextStyle(fontSize: 12.5, height: 1.6),
+      ),
+    );
+  }
 }

@@ -64,27 +64,49 @@ const List<_Slide> _slides = [
     'A mental-health companion\nbuilt for youth in Taiwan 🌙',
   ),
   _Slide(
-    '💭',
-    '記錄你的心情',
-    'Track how you feel',
-    '每天記一下心情和睡眠，\nlii 會陪你看見自己的變化。',
-    'Log your mood and sleep each day,\nand watch your own patterns over time.',
+    '🔉',
+    '狀況越差\n它說得越少',
+    'The worse it gets,\nthe less it says',
+    '大部分 App 在你最累的時候講最多話。\nlii 相反，分數越高，它越安靜。',
+    'Most apps talk more when you are struggling.\nlii does the opposite: the higher the score,\nthe quieter it gets.',
+  ),
+  _Slide(
+    '📊',
+    '每天一分鐘\n分數看得懂',
+    'One minute a day',
+    '記情緒、睡眠時間、入睡難易度。\nERS 把三種訊號算成一個分數，\n每個數字都追得到來源，不是 AI 猜的。',
+    'Log your mood, sleep hours and how hard it was\nto fall asleep. ERS turns three signals into one\nscore, and every number traces back to its\ninputs. None is guessed by a model.',
+  ),
+  _Slide(
+    '🧠',
+    '換個想法\n不是換個心情',
+    'Reframe, not pretend',
+    '思考教練帶你把一個念頭拆開重寫。\n思考陷阱測驗讓你看見自己的慣性。\n不是叫你正向，是給你方法。',
+    'Thought Coach walks you through rewriting\na thought. The Thinking Trap Quiz shows your\nhabits. Not telling you to be positive,\ngiving you a method.',
+  ),
+  _Slide(
+    '🔮',
+    '球球是你的\n想放哪就放哪',
+    'The orb is yours',
+    '點一下：陪你呼吸，從你現在的速度慢慢放慢\n長按：看水晶收藏，練習過的次數會變成水晶\n拖著走：換位置。拉四個角：調大小',
+    'Tap: breathe with Luna. It starts at your own\npace, then slows. Hold: your crystals, unlocked\nby practice. Drag to move it, pull a corner\nto resize.',
   ),
   _Slide(
     '🚡',
-    'Pacer Lift',
-    'Pacer Lift',
-    '把別人對你說過、想記得的話收成纜車；\n達成目標就在山上蓋一座觀景台 🏔️',
-    'Save the kind words people said as cable cars,\nand build a deck for each goal you reach 🏔️',
+    '別人說過的話\n留到你需要的那天',
+    'Saved for the day you need it',
+    'Pacer Lift 把有人對你說過的話收成纜車，\n心情低的那天自己浮上來。時機是規則挑的，\n話是人說的。希望盒還有可以翻面的鼓勵卡。',
+    'Pacer Lift saves what people said to you as\ncable cars; one returns on a hard day. Rules\nchoose the moment, a person wrote the words.\nHope Box holds cards you can flip and keep.',
   ),
   _Slide(
-    '🎈',
-    '換氛圍・養夥伴',
-    'Moods & friends',
-    '點上面的球球換季節氛圍\n（冬天企鵝會生蛋！），\n到 Luna 樂園跟水獺玩。',
-    'Tap the floating ball to change the seasonal mood\n(penguins lay eggs in winter!),\nand play with your otter in Luna Park.',
+    '🔒',
+    '沒有你的同意\n不會有人知道',
+    'Nothing leaves without you',
+    '日記加密留在手機裡。\n危機字詞在送進 AI 之前就被攔下。\nlii 不是醫療工具，也不能取代專業人員。',
+    'Your diary stays encrypted on this phone.\nCrisis keywords are caught before they reach\nthe AI. lii is not a medical tool and does not\nreplace licensed professionals.',
   ),
 ];
+
 
 class _OnboardingSheet extends StatefulWidget {
   final bool zh;
