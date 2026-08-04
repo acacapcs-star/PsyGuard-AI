@@ -117,6 +117,7 @@ class _LiiBreathPageState extends State<LiiBreathPage>
   bool _running = false;
 
   double _breath = 0, _meet = 0, _amp = 1;
+  Duration _lastTideUpdate = Duration.zero; // 潮聲音量節流用
   GlassTone _tone = GlassTone.ice;
 
   // 預設關 —— 他可能在課堂上、公車上，聲音會暴露他正在做這件事。
@@ -215,6 +216,12 @@ class _LiiBreathPageState extends State<LiiBreathPage>
     } else {
       _breath += (0 - _breath) * 0.05;
       _meet = 0;
+    }
+
+    // 🌊 潮聲音量跟著呼吸漲退（吸氣漲、吐氣退）；每 60ms 更新一次避免音訊卡頓
+    if (_tide.isOn && (now - _lastTideUpdate).inMilliseconds >= 60) {
+      _lastTideUpdate = now;
+      _tide.update(_breath.clamp(0.0, 1.0));
     }
 
     _luna += (wantLuna - _luna) * 0.045;
