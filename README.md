@@ -50,6 +50,76 @@ allowed to speak.
 
 ---
 
+
+---
+
+## Architecture
+
+```mermaid
+flowchart TD
+    subgraph IN["Input"]
+        V["Voice<br/>speech_metrics"]
+        C["Check-in<br/>mood · stress · energy"]
+        S["Sleep · streak<br/>consistency"]
+    end
+
+    V --> L["Language stream 40%<br/>rate .40 · neg-words .35 · pauses .25"]
+    C --> P["Physical stream 35%<br/>mood .40 · load .35 · resilience .25"]
+    S --> B["Behaviour stream 25%<br/>sleep .50 · streak .25 · consistency .25"]
+
+    L --> E["ERS engine<br/>ers_engine.dart"]
+    P --> E
+    B --> E
+
+    E --> R["Missing-stream renormalisation<br/>language absent → weights over 0.60<br/>returns -1.0 not zero-fill"]
+    R --> BL["Personal baseline correction<br/>50 minus mean mood times 0.1<br/>mean stress minus 50 times 0.1"]
+    BL --> T{"Tier"}
+
+    T -->|"0-44"| G["Green<br/>nothing interrupts you"]
+    T -->|"45-69"| A["Amber<br/>one note then it steps back"]
+    T -->|"70-100"| RED["Red<br/>ranking withdrawn<br/>safety flow opens itself"]
+
+    subgraph SIG["Parallel signals"]
+        CU["Cumulative risk 12 stages<br/>red +1 · three greens -1"]
+        SI["Silence detector<br/>3 days warn · 7 days critical"]
+        IC["Semantic-emotional incongruence<br/>pronouns · rigidity · severity"]
+        RE["Risk engine<br/>keywords + protective factors subtract"]
+    end
+
+    T --> CU
+    T --> SI
+    T --> IC
+    T --> RE
+
+    CU --> AI["Three-tier intervention<br/>ai_safety_models.dart"]
+    SI --> AI
+    IC --> AI
+    RE --> AI
+    G --> AI
+    A --> AI
+    RED --> AI
+
+    AI --> O1["Green · passive"]
+    AI --> O2["Amber · one check-in"]
+    AI --> O3["Red single<br/>resources offered, no notification"]
+    AI --> O4["Red three days<br/>counsellor notified"]
+
+    O3 --> ST["Presents only what the user<br/>stored earlier<br/>My Pacers · rule-selected"]
+    O4 --> ST
+    ST --> HU["Route to a person<br/>TW 1925 / 1995 / 1980<br/>US 988 / 741741"]
+
+    subgraph PRIV["Privacy · separated at table level"]
+        D1["Layer 1 Journal<br/>DiaryEntries<br/>content · never uploaded<br/>AES-256-GCM"]
+        D2["Layer 2 Analysis<br/>ERSRecords<br/>no content column"]
+        D3["Layer 3 Alert<br/>AlertRecords<br/>event type only"]
+    end
+
+    E -.-> D2
+    O4 -.-> D3
+    D1 -.->|"privacy_verification<br/>asserts no content"| D2
+```
+
+
 ## ERS — Emotional Risk Score
 
 `features/ers/ers_engine.dart` · `ers_models.dart`
@@ -490,6 +560,208 @@ bilingual and attributed), `core/settings/font_scale_provider.dart`,
 `CircularProgressIndicator`), and `lib/l10n/`.
 
 ---
+
+
+---
+
+## Project structure
+
+```
+PsyGuard-AI/
+├── README.md
+├── README.zh-TW.md
+├── LICENSE
+├── AGENTS.md
+└── psyguard_ai_app/
+    ├── pubspec.yaml
+    ├── test/                                   14 test files · 934 lines
+    │   ├── config/
+    │   │   ├── android_manifest_test.dart
+    │   │   └── web_assets_test.dart
+    │   ├── core/
+    │   │   ├── ai_chat_repository_test.dart
+    │   │   ├── app_config_controller_test.dart
+    │   │   ├── app_database_test.dart
+    │   │   ├── local_settings_service_test.dart
+    │   │   ├── risk_engine_test.dart
+    │   │   └── summary_export_service_test.dart
+    │   ├── widget/
+    │   │   ├── checkin_page_test.dart
+    │   │   ├── home_page_test.dart
+    │   │   ├── safety_page_test.dart
+    │   │   └── trends_page_test.dart
+    │   └── widget_test.dart
+    ├── integration_test/
+    │   └── app_flow_test.dart
+    └── lib/                                    ~32,900 lines
+        ├── main.dart
+        ├── app/
+        │   ├── app.dart
+        │   ├── router.dart                     31 routes
+        │   └── theme.dart
+        ├── l10n/
+        │   ├── app_language.dart
+        │   ├── app_strings.dart
+        │   └── strings_zh_tw.dart
+        ├── core/                               ← engines and services shared across pages
+        │   ├── ers/
+        │   │   ├── speech_metrics.dart         speech features: rate · neg-words · pauses
+        │   │   └── group_norms.dart            age bands and research norms, not real user data
+        │   ├── risk_engine/
+        │   │   ├── risk_engine.dart            keywords + protective factors + explainable reasons
+        │   │   ├── risk_models.dart
+        │   │   └── risk_provider.dart
+        │   ├── safety/
+        │   │   ├── safety_flow_service.dart    step sequences per tier
+        │   │   └── safety_models.dart
+        │   ├── security/
+        │   │   ├── secret_diary_lock.dart      AES-256-GCM · PBKDF2 · three unlock paths
+        │   │   ├── secret_swipe_shell.dart     swipe reveals the secret page
+        │   │   └── local_settings_service.dart
+        │   ├── pacer/
+        │   │   ├── breath_plan.dart            breathing overture · pure logic · no flutter import
+        │   │   └── bookmark_quick_add.dart
+        │   ├── crystals/
+        │   │   ├── crystal_store.dart          6 crystals · earned only by breathing
+        │   │   └── crystal_collection_page.dart
+        │   ├── cbt/
+        │   │   └── cbt_service.dart            six cognitive distortions
+        │   ├── network/
+        │   │   ├── ai_api_client.dart
+        │   │   ├── ai_chat_repository.dart     context memory + message summarisation
+        │   │   ├── ai_error_formatter.dart
+        │   │   ├── ai_local_messages.dart      offline and high-risk local replies
+        │   │   ├── app_config_controller.dart
+        │   │   └── dio_provider.dart
+        │   ├── storage/
+        │   │   ├── app_database.dart           Drift schema
+        │   │   ├── app_database_executor_native.dart
+        │   │   ├── app_database_executor_web.dart
+        │   │   ├── app_database_executor.dart
+        │   │   └── database_provider.dart
+        │   ├── theme/
+        │   │   ├── mood_theme_service.dart     8 atmosphere themes
+        │   │   ├── background_theme_service.dart
+        │   │   └── app_theme.dart
+        │   ├── audio/
+        │   │   └── tide_sound.dart             synthesised in Dart · no audio assets
+        │   ├── analytics/
+        │   │   ├── usage_tracker.dart          device-only
+        │   │   └── usage_stats_page.dart
+        │   ├── export/
+        │   │   ├── summary_export_service.dart
+        │   │   └── export_models.dart
+        │   ├── config/
+        │   │   ├── access_gate.dart            "a door, not a lock"
+        │   │   └── app_config.dart
+        │   ├── data/
+        │   │   ├── quotes_data.dart
+        │   │   └── mock_data_seeder.dart
+        │   ├── settings/
+        │   │   └── font_scale_provider.dart
+        │   └── widgets/                        25 widgets
+        │       ├── lii_orb.dart                gradient + path · no filters
+        │       ├── luna_orb.dart
+        │       ├── luna_pacer_card.dart
+        │       ├── floating_pacer.dart         grouped by author
+        │       ├── lii_breath_entry.dart       reuses risk_engine thresholds
+        │       ├── lii_breath_page.dart
+        │       ├── breathing_ring.dart         3 / 2 / 1 second by risk
+        │       ├── starry_breath.dart
+        │       ├── geometric_stress_indicator.dart  risk → geometry
+        │       ├── micro_shake.dart            draws attention at very high risk
+        │       ├── mood_fall_overlay.dart      falling-effect controller
+        │       ├── snow_cap.dart               snow accumulation
+        │       ├── frost_touch_layer.dart      observes without consuming gestures
+        │       ├── hongbao_layer.dart          IgnorePointer
+        │       ├── paw_tap.dart                paused while the keyboard is open
+        │       ├── penguin_nest.dart           egg hatching
+        │       ├── beach_corner.dart
+        │       ├── fish_pond.dart
+        │       ├── hoop_corner.dart            layout and physics share proportions
+        │       ├── flowing_water.dart
+        │       ├── pet_reminder_bubble.dart
+        │       ├── floating_app_brand.dart     long-press opens the atmosphere menu
+        │       ├── app_brand_icon.dart
+        │       ├── brand_loading_indicator.dart
+        │       └── tooltip_bubble.dart
+        └── features/                           ← page-level features
+            ├── ers/
+            │   ├── ers_engine.dart             three-stream weighting · missing-stream renormalisation
+            │   ├── ers_models.dart
+            │   ├── cumulative_risk_engine.dart 12 stages · asymmetric hysteresis
+            │   ├── silence_detector.dart       3 days / 7 days
+            │   ├── incongruence_detector.dart  semantic-emotional incongruence
+            │   ├── ers_percentile_widget.dart  withdrawn at the red tier
+            │   └── ers_test.dart
+            ├── ai_safety/
+            │   └── ai_safety_models.dart       three tiers · notification needs three days
+            ├── privacy/
+            │   ├── privacy_database.dart       three tables · separated structurally
+            │   ├── privacy_models.dart         three access levels
+            │   └── privacy_verification.dart   asserts: no content column in ERS
+            ├── safety/presentation/
+            │   └── safety_page.dart
+            ├── home/presentation/
+            │   ├── home_page.dart
+            │   └── encouragement_banner.dart   no AI calls
+            ├── dashboard/presentation/
+            │   └── dashboard_page.dart         local data only
+            ├── checkin/presentation/
+            │   ├── checkin_page.dart
+            │   ├── checkin_history_page.dart
+            │   ├── month_overview_page.dart
+            │   └── note_page.dart              15 priority levels
+            ├── sleep/presentation/
+            │   ├── sleep_page.dart
+            │   └── sleep_history_page.dart
+            ├── trends/presentation/
+            │   ├── trends_page.dart
+            │   ├── ai_report_page.dart
+            │   └── ai_report_history_page.dart
+            ├── chat/presentation/
+            │   └── chat_page.dart
+            ├── voice/
+            │   ├── voice_wake_service.dart     wake-word dedupe · iOS audio category
+            │   └── voice_wake_page.dart
+            ├── cbt/presentation/
+            │   └── cbt_page.dart               5 steps · mood rated before and after
+            ├── quiz/presentation/
+            │   └── distortion_quiz_page.dart   12 questions
+            ├── tools_library/presentation/
+            │   ├── tools_page.dart             4 tools
+            │   └── tool_history_page.dart
+            ├── hopebox/presentation/
+            │   └── hope_box_page.dart          8 situations · 35 cards
+            ├── bookmark/presentation/
+            │   └── bookmark_page.dart          Pacer Lift · quote cable cars + viewing platform
+            ├── card_studio/presentation/
+            │   ├── card_studio_page.dart
+            │   ├── my_cards_page.dart
+            │   └── my_cards_store.dart
+            ├── persona/presentation/
+            │   └── persona_page.dart           6 animals · no quiz
+            ├── penguin/
+            │   ├── penguin_park_page.dart
+            │   └── joke_data.dart
+            ├── welcome/presentation/
+            │   ├── welcome_page.dart
+            │   ├── consent_page.dart           granular consent
+            │   └── pet_selection_page.dart
+            ├── onboarding/
+            │   └── onboarding_guide.dart       4 cards · shown once
+            ├── settings/presentation/
+            │   └── settings_page.dart
+            ├── export/presentation/
+            │   └── export_page.dart            JSON / PNG
+            ├── api_usage/presentation/
+            │   └── api_usage_page.dart
+            ├── about/presentation/
+            │   └── about_page.dart
+            └── shared/
+                └── app_frame.dart
+```
+
 
 ## Scope statement
 
