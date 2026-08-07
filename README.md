@@ -558,7 +558,7 @@ The home screen also carries a draggable Luna Pacer orb (night sky on one side, 
 | Voice | "Hey Luna" wake-word notes; speech features also feed the ERS language stream |
 | Export Report | Summary export as JSON or PNG, over a selectable day range |
 | Settings | See below |
-| About & Statement | Privacy and security notes, disclaimer, license and credits |
+| About & Statement | **Privacy and security**: local-first, AES-256-GCM authenticated encryption, envelope-encrypted key, PBKDF2 derivation, the key loaded into memory only when needed and auto-wiped by policy, API keys in Keychain / Secure Enclave / Keystore — and a direct statement that the web build lacks hardware-backed protection and the strongest guarantees are native. **Disclaimer**: does not replace professional medical care, counselling or crisis services; the ERS is a reference indicator, not a clinical diagnosis. **License and credits**: every open-source package listed under its original license. It closes with a line: teenagers mental-health data deserves the highest protection |
 
 ### Home screen
 
@@ -801,6 +801,85 @@ PsyGuard-AI/
             └── shared/
                 └── app_frame.dart
 ```
+
+
+
+---
+
+
+---
+
+## External validation and results
+
+### 23rd Y.S. Awards, April 2026
+
+v1 PsyGuard AI was entered by a four-student team under the advisor Kai-Chun Hou,
+and received two awards:
+
+| Award | Field |
+|---|---|
+| **Honorable Mention, Senior-High AI Application** | 75 entries in that category |
+| **Miao Feng-Chiang Technology Innovation Award** | **3 of 714 entries, judged across all categories**; presented jointly to the team and its advisor |
+
+The Miao Feng-Chiang award is judged across the entire competition rather than
+within a category — 3 out of 714. It is the strongest third-party validation the
+project currently holds, and it belongs to the v1 phase. **v2 lii was rebuilt
+independently by the author and has no award result of its own yet.**
+
+### Da Vinci International Invention Exhibition, submitted August 2026
+
+v2 lii was submitted as an individual work. **The result has not been announced.**
+No anticipated result is written here as if it were already achieved.
+
+### Education Bureau guidance, April 2026
+
+See "Regulatory alignment" below. Advisory in nature; not an endorsement.
+
+### Two small pilot runs, July and August 2026
+
+See "Pilot studies" below. **Neither is a validation**, and the limits are listed
+item by item.
+
+
+## Regulatory alignment
+
+On 17 April 2026, following the project's **selection for the national finals of
+the 23rd Y.S. Awards**, the team wrote to the Taichung City Government requesting
+written guidance from the Education Bureau. A reply was issued on 23 April by the
+**Education Bureau / Student Affairs Office** (case no. 115-E018647, municipal
+ref. 1150123154).
+
+The reply covers two areas: statutory requirements and school-practice
+implementation. Below are its main points and how lii is designed against them.
+**The reply is advisory guidance offered for the team's consideration — it is not
+an endorsement, certification or approval.**
+
+> To be clear about provenance: this correspondence was obtained during the v1
+> PsyGuard team phase and was requested in the team's name. v2 lii was rebuilt
+> independently by the author afterwards, carrying the same regulatory mapping
+> forward and deepening it — for example, implementing "layered authorisation" as
+> three structurally separate database tables, and "avoid labelling" as the
+> withdrawal of ranking at the red tier.
+
+### 1 · Statutory requirements
+
+| Statute | Requirement | How lii responds |
+|---|---|---|
+| Personal Data Protection Act | Mental-health data is sensitive personal data; collection, processing and use require notice and written consent | Consent at launch; separate, individually withdrawable permissions for counsellor statistics and for red-tier notification |
+| Child and Youth Welfare Act | Rigorous safeguards against leakage of identifying information; an early-warning mechanism must serve the child's best interests and avoid labelling or improper treatment | Ranking and comparison are withdrawn at the red tier; a teacher sees one de-identified number and never a line of the journal |
+| Student Guidance Act | Counselling ethics and information-security standards: secure transmission and storage, professional confidentiality, cyber-security classification | The journal is encrypted on device with AES-256-GCM; the key lives only in Keychain / Secure Enclave / Android Keystore and never leaves the phone |
+
+### 2 · School-practice implementation
+
+The reply states that the system should align with Taichung's *Three-Tier
+Prevention Plan for Student Self-Harm in Schools*. lii's three tiers are designed
+directly against that framework:
+
+| Framework | Content | lii |
+|---|---|---|
+| **Primary prevention** | Life education and emotional awareness; help students manage their own wellbeing and help school gatekeepers recognise risk | **Green** — nothing interrupts you |
+| **Secondary prevention** | Early warning for students of high concern, privacy upheld, with timely intervention by counselling staff | **Amber** — one note, then it steps back |
+| **Tertiary prevention** | Integrate crisis procedure and reporting, track the case, link to external medical or social services | **Red** — the safety flow opens by itself, with staffed service lines |
 
 
 ## Scope statement
