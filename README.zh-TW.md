@@ -232,6 +232,37 @@ PBKDF2 迭代次數為 30,000,並附理由:Web 版編譯成單執行緒 JS,12 �
 
 `secret_swipe_shell.dart` 是隱藏入口——向左滑時顏色跟著手指褪到 75% 飽和度,露出秘密頁。
 
+### 秘密層:一整套平行的筆記與月曆
+
+`core/security/secret_swipe_shell.dart` · `secret_diary_lock.dart` ·
+`features/checkin/presentation/note_page.dart` · `month_overview_page.dart`
+
+秘密內容不是日記裡的一個資料夾,而是**與公開版並存的一整層**。`SecretSwipeShell` 同時包住筆記頁與年度月曆:
+
+```dart
+SecretSwipeShell(
+  publicPage: MonthOverviewPage(),
+  secretPage: MonthOverviewPage(secret: true),
+)
+```
+
+向左滑,顏色跟著手指褪到 75% 飽和度,底下就是同一頁的秘密版本。
+
+| | 公開層 | 秘密層 |
+|---|---|---|
+| 儲存鍵 | `note_YYYY_M_D` | `secret_note_YYYY_M_D` |
+| 內容 | 明文 | `encryptContent()` / `decryptContent()` · AES-256-GCM |
+| 配色 | 淺藍 | 芋頭紫 — 一眼就知道現在在哪一層 |
+| 年度月曆 | 彙整公開筆記 | 只彙整秘密筆記,需先解鎖 |
+| 進出 | — | 進入時 `cancelPendingLock()`,離開時 `scheduleLock()` |
+
+**解鎖三條路**:生物辨識(提示語「解鎖秘密日記」)、App 密碼(PBKDF2 推導)、復原碼。
+
+**復原碼只顯示一次。** 畫面上直接寫著:如果忘記密碼,這是唯一回到秘密日記的方法,請寫在紙上收好,這個畫面只會出現這一次。首次使用有獨立的「建立秘密日記」流程;未解鎖時顯示鎖定畫面而非空白頁。
+
+離開時何時清掉記憶體中的金鑰,由設定頁那三個自動上鎖選項決定(離開就鎖 / 2 分鐘後 / 關閉 App 才鎖)。
+
+
 ### 對存取控制的誠實聲明
 
 `core/config/access_gate.dart` 檔頭:「這是一道門,不是一把鎖。Flutter web build 是純前端,key 就在 JS 檔裡,開 devtools 搜尋就找得到……要真正保護 key 只有一條路:後端代理,key 留在伺服器。」
@@ -344,7 +375,7 @@ PBKDF2 迭代次數為 30,000,並附理由:Web 版編譯成單執行緒 JS,12 �
 | Check-in | 情緒穩定度、心理負荷感、心理韌性三支滑桿 + 備註;儲存後 ERS 卡自動展開。另有歷史頁 |
 | Sleep Log | 睡眠時數、入睡困難度(0–3)、就寢與起床時間。另有歷史頁 |
 | Trends | 7/14/30 日趨勢拉桿、個人與團體對比、研究基準線 |
-| Calendar | 年度重點總覽月曆,紅黃事項依週彙整 |
+| Calendar | 年度重點總覽月曆,紅黃事項依週彙整。**向左滑可切換到需解鎖的秘密月曆** |
 
 ### Practice · 練習
 

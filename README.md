@@ -286,6 +286,46 @@ several seconds; 30,000 is four times faster and noticeably smoother.
 `secret_swipe_shell.dart` is the hidden entry — swiping left desaturates the
 colour to 75% under the finger, revealing the secret page.
 
+### The secret layer: a parallel set of notes and calendar
+
+`core/security/secret_swipe_shell.dart` · `secret_diary_lock.dart` ·
+`features/checkin/presentation/note_page.dart` · `month_overview_page.dart`
+
+Secret content is not a folder inside the diary — it is **an entire layer running
+parallel to the public one**. `SecretSwipeShell` wraps both the notes page and the
+annual calendar:
+
+```dart
+SecretSwipeShell(
+  publicPage: MonthOverviewPage(),
+  secretPage: MonthOverviewPage(secret: true),
+)
+```
+
+Swipe left and the colour desaturates to 75% under the finger, revealing the
+secret version of the same page.
+
+| | Public layer | Secret layer |
+|---|---|---|
+| Storage key | `note_YYYY_M_D` | `secret_note_YYYY_M_D` |
+| Content | Plaintext | `encryptContent()` / `decryptContent()` · AES-256-GCM |
+| Palette | Pale blue | Taro purple — you can tell at a glance which layer you are in |
+| Annual calendar | Aggregates public notes | Aggregates secret notes only; requires unlocking |
+| Entering / leaving | — | `cancelPendingLock()` on entry, `scheduleLock()` on exit |
+
+**Three ways to unlock**: biometrics (prompted with "Unlock your secret diary"),
+the app password (PBKDF2-derived), or a recovery code.
+
+**The recovery code is shown exactly once.** The screen says so directly: if you
+forget your password, this is the only way back into your secret diary — write it
+on paper and keep it safe, because this screen appears only once. First-time use
+has its own "Create your secret diary" flow, and a locked state shows a lock
+screen rather than an empty page.
+
+When the key is wiped from memory on leaving is governed by the three auto-lock
+options in Settings (lock on leaving / after 2 minutes / when the app closes).
+
+
 ### An honest statement about access control
 
 From the header of `core/config/access_gate.dart`: this is a door, not a lock.
@@ -480,7 +520,7 @@ controller, playing once per call.
 | Check-in | Three sliders (mood stability, perceived load, resilience) plus notes; the ERS card opens itself once saved. History page included |
 | Sleep Log | Duration, difficulty falling asleep (0–3), bedtime and wake time. History page included |
 | Trends | 7/14/30-day slider, personal-vs-group comparison, research baseline |
-| Calendar | Annual overview, red and amber items grouped by week |
+| Calendar | Annual overview, red and amber items grouped by week. **Swipe left for the locked secret calendar** |
 
 ### Practice
 
