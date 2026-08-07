@@ -40,6 +40,76 @@ git log --since=2026-07-10 --pretty=format:"%ad  %an  %s" --date=short
 
 ---
 
+
+---
+
+## 架構圖
+
+```mermaid
+flowchart TD
+    subgraph IN["輸入"]
+        V["語音<br/>speech_metrics"]
+        C["Check-in<br/>情緒 · 壓力 · 活力"]
+        S["睡眠 · 連續天數<br/>打卡一致性"]
+    end
+
+    V --> L["語言串流 40%<br/>語速 .40 · 負面詞 .35 · 停頓 .25"]
+    C --> P["生理串流 35%<br/>情緒 .40 · 負荷 .35 · 韌性 .25"]
+    S --> B["行為串流 25%<br/>睡眠 .50 · 連續 .25 · 一致性 .25"]
+
+    L --> E["ERS 引擎<br/>ers_engine.dart"]
+    P --> E
+    B --> E
+
+    E --> R["缺漏串流重新正規化<br/>語言缺席 → 權重除以 0.60<br/>回傳 -1.0 而非補 0"]
+    R --> BL["個人基線校正<br/>50 減平均情緒 乘 0.1<br/>平均壓力 減 50 乘 0.1"]
+    BL --> T{"分級"}
+
+    T -->|"0-44"| G["綠<br/>什麼都不打擾你"]
+    T -->|"45-69"| A["黃<br/>一則提醒 然後退開"]
+    T -->|"70-100"| RED["紅<br/>撤下排名<br/>安全流程自動開啟"]
+
+    subgraph SIG["並行訊號"]
+        CU["累積風險 12 階<br/>紅 +1 · 三天綠 -1"]
+        SI["沉默偵測<br/>3 天警示 · 7 天危急"]
+        IC["語意情緒不一致<br/>代名詞 · 僵化 · 嚴重度"]
+        RE["風險引擎<br/>關鍵詞 + 保護因子扣分"]
+    end
+
+    T --> CU
+    T --> SI
+    T --> IC
+    T --> RE
+
+    CU --> AI["三級介入<br/>ai_safety_models.dart"]
+    SI --> AI
+    IC --> AI
+    RE --> AI
+    G --> AI
+    A --> AI
+    RED --> AI
+
+    AI --> O1["綠 · 被動"]
+    AI --> O2["黃 · 一次關懷對話"]
+    AI --> O3["紅 單次<br/>提供資源 不通報"]
+    AI --> O4["紅 連續三天<br/>通報輔導室"]
+
+    O3 --> ST["只呈現使用者<br/>先前存下的內容<br/>My Pacers · 規則決定"]
+    O4 --> ST
+    ST --> HU["真人支援入口<br/>1925 / 1995 / 1980<br/>988 / 741741"]
+
+    subgraph PRIV["隱私三層 · 資料表層級分離"]
+        D1["Layer 1 日記<br/>DiaryEntries<br/>content · 永不上傳<br/>AES-256-GCM"]
+        D2["Layer 2 分析<br/>ERSRecords<br/>無 content 欄位"]
+        D3["Layer 3 通報<br/>AlertRecords<br/>僅事件型別"]
+    end
+
+    E -.-> D2
+    O4 -.-> D3
+    D1 -.->|"privacy_verification<br/>assert 無 content"| D2
+```
+
+
 ## ERS:情緒風險分數
 
 `features/ers/ers_engine.dart` · `ers_models.dart`
@@ -346,6 +416,208 @@ PBKDF2 迭代次數為 30,000,並附理由:Web 版編譯成單執行緒 JS,12 �
 **其他** — `core/data/quotes_data.dart`(每日語錄庫,中英雙語並記錄出處)、`core/settings/font_scale_provider.dart`(字級)、`core/widgets/tooltip_bubble.dart`(長按功能說明氣泡)、`core/widgets/brand_loading_indicator.dart`(以 logo 緩慢縮放取代 CircularProgressIndicator)、`lib/l10n/`(中英雙語字串)。
 
 ---
+
+
+---
+
+## 專案結構
+
+```
+PsyGuard-AI/
+├── README.md
+├── README.zh-TW.md
+├── LICENSE
+├── AGENTS.md
+└── psyguard_ai_app/
+    ├── pubspec.yaml
+    ├── test/                                   14 個測試檔 · 934 行
+    │   ├── config/
+    │   │   ├── android_manifest_test.dart
+    │   │   └── web_assets_test.dart
+    │   ├── core/
+    │   │   ├── ai_chat_repository_test.dart
+    │   │   ├── app_config_controller_test.dart
+    │   │   ├── app_database_test.dart
+    │   │   ├── local_settings_service_test.dart
+    │   │   ├── risk_engine_test.dart
+    │   │   └── summary_export_service_test.dart
+    │   ├── widget/
+    │   │   ├── checkin_page_test.dart
+    │   │   ├── home_page_test.dart
+    │   │   ├── safety_page_test.dart
+    │   │   └── trends_page_test.dart
+    │   └── widget_test.dart
+    ├── integration_test/
+    │   └── app_flow_test.dart
+    └── lib/                                    約 32,900 行
+        ├── main.dart
+        ├── app/
+        │   ├── app.dart
+        │   ├── router.dart                     31 條路由
+        │   └── theme.dart
+        ├── l10n/
+        │   ├── app_language.dart
+        │   ├── app_strings.dart
+        │   └── strings_zh_tw.dart
+        ├── core/                               ← 跨頁面共用的引擎與服務
+        │   ├── ers/
+        │   │   ├── speech_metrics.dart         語音特徵：語速 · 負面詞 · 停頓
+        │   │   └── group_norms.dart            年齡層與研究常模（非真實使用者資料）
+        │   ├── risk_engine/
+        │   │   ├── risk_engine.dart            關鍵詞 + 保護因子扣分 + 可解釋理由
+        │   │   ├── risk_models.dart
+        │   │   └── risk_provider.dart
+        │   ├── safety/
+        │   │   ├── safety_flow_service.dart    分級對應的步驟序列
+        │   │   └── safety_models.dart
+        │   ├── security/
+        │   │   ├── secret_diary_lock.dart      AES-256-GCM · PBKDF2 · 三條解鎖路徑
+        │   │   ├── secret_swipe_shell.dart     滑動露出秘密頁
+        │   │   └── local_settings_service.dart
+        │   ├── pacer/
+        │   │   ├── breath_plan.dart            呼吸序曲 · 純邏輯 · 不 import flutter
+        │   │   └── bookmark_quick_add.dart
+        │   ├── crystals/
+        │   │   ├── crystal_store.dart          6 顆 · 只能靠呼吸取得
+        │   │   └── crystal_collection_page.dart
+        │   ├── cbt/
+        │   │   └── cbt_service.dart            6 種認知扭曲
+        │   ├── network/
+        │   │   ├── ai_api_client.dart
+        │   │   ├── ai_chat_repository.dart     上下文記憶 + 舊訊息壓縮
+        │   │   ├── ai_error_formatter.dart
+        │   │   ├── ai_local_messages.dart      離線與高風險的本機回覆
+        │   │   ├── app_config_controller.dart
+        │   │   └── dio_provider.dart
+        │   ├── storage/
+        │   │   ├── app_database.dart           Drift schema
+        │   │   ├── app_database_executor_native.dart
+        │   │   ├── app_database_executor_web.dart
+        │   │   ├── app_database_executor.dart
+        │   │   └── database_provider.dart
+        │   ├── theme/
+        │   │   ├── mood_theme_service.dart     8 種氛圍主題
+        │   │   ├── background_theme_service.dart
+        │   │   └── app_theme.dart
+        │   ├── audio/
+        │   │   └── tide_sound.dart             Dart 即時合成 · 無音檔
+        │   ├── analytics/
+        │   │   ├── usage_tracker.dart          僅存本機
+        │   │   └── usage_stats_page.dart
+        │   ├── export/
+        │   │   ├── summary_export_service.dart
+        │   │   └── export_models.dart
+        │   ├── config/
+        │   │   ├── access_gate.dart            「一道門，不是一把鎖」
+        │   │   └── app_config.dart
+        │   ├── data/
+        │   │   ├── quotes_data.dart
+        │   │   └── mock_data_seeder.dart
+        │   ├── settings/
+        │   │   └── font_scale_provider.dart
+        │   └── widgets/                        25 個元件
+        │       ├── lii_orb.dart                Gradient + Path · 不用濾鏡
+        │       ├── luna_orb.dart
+        │       ├── luna_pacer_card.dart
+        │       ├── floating_pacer.dart         依 author 分組
+        │       ├── lii_breath_entry.dart       沿用 risk_engine 門檻
+        │       ├── lii_breath_page.dart
+        │       ├── breathing_ring.dart         3 / 2 / 1 秒依風險
+        │       ├── starry_breath.dart
+        │       ├── geometric_stress_indicator.dart  風險 → 幾何形狀
+        │       ├── micro_shake.dart            極高風險時引導注意
+        │       ├── mood_fall_overlay.dart      飄落控制器
+        │       ├── snow_cap.dart               積雪
+        │       ├── frost_touch_layer.dart      不消費手勢
+        │       ├── hongbao_layer.dart          IgnorePointer
+        │       ├── paw_tap.dart                鍵盤開啟時暫停
+        │       ├── penguin_nest.dart           孵蛋
+        │       ├── beach_corner.dart
+        │       ├── fish_pond.dart
+        │       ├── hoop_corner.dart            畫面與物理共用比例
+        │       ├── flowing_water.dart
+        │       ├── pet_reminder_bubble.dart
+        │       ├── floating_app_brand.dart     長按叫出氛圍選單
+        │       ├── app_brand_icon.dart
+        │       ├── brand_loading_indicator.dart
+        │       └── tooltip_bubble.dart
+        └── features/                           ← 以頁面為單位
+            ├── ers/
+            │   ├── ers_engine.dart             三串流加權 · 缺漏重新正規化
+            │   ├── ers_models.dart
+            │   ├── cumulative_risk_engine.dart 12 階 · 非對稱遲滯
+            │   ├── silence_detector.dart       3 天 / 7 天
+            │   ├── incongruence_detector.dart  語意情緒不一致
+            │   ├── ers_percentile_widget.dart  紅燈時撤下
+            │   └── ers_test.dart
+            ├── ai_safety/
+            │   └── ai_safety_models.dart       三級介入 · 通報需連續三天
+            ├── privacy/
+            │   ├── privacy_database.dart       三張表 · 結構上分離
+            │   ├── privacy_models.dart         三個存取層級
+            │   └── privacy_verification.dart   assert：ERS 表無 content
+            ├── safety/presentation/
+            │   └── safety_page.dart
+            ├── home/presentation/
+            │   ├── home_page.dart
+            │   └── encouragement_banner.dart   不呼叫 AI
+            ├── dashboard/presentation/
+            │   └── dashboard_page.dart         只讀本機資料
+            ├── checkin/presentation/
+            │   ├── checkin_page.dart
+            │   ├── checkin_history_page.dart
+            │   ├── month_overview_page.dart
+            │   └── note_page.dart              15 級優先度
+            ├── sleep/presentation/
+            │   ├── sleep_page.dart
+            │   └── sleep_history_page.dart
+            ├── trends/presentation/
+            │   ├── trends_page.dart
+            │   ├── ai_report_page.dart
+            │   └── ai_report_history_page.dart
+            ├── chat/presentation/
+            │   └── chat_page.dart
+            ├── voice/
+            │   ├── voice_wake_service.dart     喚醒詞去重 · iOS 音訊類別
+            │   └── voice_wake_page.dart
+            ├── cbt/presentation/
+            │   └── cbt_page.dart               5 步驟 · 前後各評一次情緒
+            ├── quiz/presentation/
+            │   └── distortion_quiz_page.dart   12 題
+            ├── tools_library/presentation/
+            │   ├── tools_page.dart             4 個工具
+            │   └── tool_history_page.dart
+            ├── hopebox/presentation/
+            │   └── hope_box_page.dart          8 情境 · 35 張卡
+            ├── bookmark/presentation/
+            │   └── bookmark_page.dart          Pacer Lift · 語錄纜車 + 觀景台
+            ├── card_studio/presentation/
+            │   ├── card_studio_page.dart
+            │   ├── my_cards_page.dart
+            │   └── my_cards_store.dart
+            ├── persona/presentation/
+            │   └── persona_page.dart           6 隻動物 · 不用做題
+            ├── penguin/
+            │   ├── penguin_park_page.dart
+            │   └── joke_data.dart
+            ├── welcome/presentation/
+            │   ├── welcome_page.dart
+            │   ├── consent_page.dart           分項授權
+            │   └── pet_selection_page.dart
+            ├── onboarding/
+            │   └── onboarding_guide.dart       4 張卡 · 只跳一次
+            ├── settings/presentation/
+            │   └── settings_page.dart
+            ├── export/presentation/
+            │   └── export_page.dart            JSON / PNG
+            ├── api_usage/presentation/
+            │   └── api_usage_page.dart
+            ├── about/presentation/
+            │   └── about_page.dart
+            └── shared/
+                └── app_frame.dart
+```
+
 
 ## 適用範圍聲明
 
