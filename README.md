@@ -4,7 +4,13 @@
 
 *The worse it gets, the less lii says.*
 
-[English](README.md) | [繁體中文](README.zh-TW.md)
+**[▶ Live demo](https://singular-croissant-c88834.netlify.app)** | [English](README.md) | [繁體中文](README.zh-TW.md)
+
+> The web build runs in a browser with no install. AI conversation needs your own
+> OpenAI-compatible API key, entered in Settings; without one the app runs in
+> offline mode with demo replies, and every other feature works normally.
+> The web build lacks hardware-backed key protection — the strongest guarantees
+> are on native iOS and Android, as the app's own About page states.
 
 ---
 

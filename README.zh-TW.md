@@ -4,7 +4,10 @@
 
 *狀況越糟,lii 說得越少。*
 
-[English](README.md) | [繁體中文](README.zh-TW.md)
+**[▶ 線上試用](https://singular-croissant-c88834.netlify.app)** ｜ [English](README.md) ｜ [繁體中文](README.zh-TW.md)
+
+> 網頁版可直接開啟試玩,無需安裝。AI 對話需自備 OpenAI 相容 API key(設定頁填入);未填時為離線模式、使用 demo 回覆,其餘功能皆可正常操作。
+> 網頁版缺少硬體級金鑰保護,最完整的保護在原生 iOS / Android 版本——此點在 App 的「關於與聲明」頁亦有明示。
 
 ---
 
