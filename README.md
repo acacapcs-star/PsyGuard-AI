@@ -1,111 +1,568 @@
-# PsyGuard AI
+# lii
 
-[English](./README.md) | [繁體中文](./README.zh-TW.md)
+**A proactive, tiered AI emotional health app.**
 
-## Project Overview
+*The worse it gets, the less lii says.*
 
-PsyGuard AI is a Flutter-based mental health companion app MVP. It provides AI companion chat, daily self-awareness check-ins, sleep tracking, risk observation, and trend analysis. The main app currently lives in `psyguard_ai_app`, stores user data in a local database, and calls an OpenAI-compatible API for AI chat.
+[English](README.md) | [繁體中文](README.zh-TW.md)
 
-## Features
+---
 
-- `AI companion`: Responds in a counselor-like style and uses previous conversation context.
-- `Context memory`: Reads chat history and compresses older messages into summaries when needed.
-- `High-risk protection`: Prioritizes safety guidance and human support resources when high-risk language is detected.
-- `Daily check-ins`: Records mood, stress, energy, and notes.
-- `Sleep tracking`: Records sleep duration, bedtime, and sleep difficulty.
-- `Trend analysis`: Presents recent mental and physical changes through charts and AI reports.
-- `Local storage`: Stores chats, records, and risk snapshots in local SQLite.
-- `Language settings`: Supports English and Traditional Chinese in settings, defaults to English, and applies the preference to AI replies.
-- `Voice settings`: Allows users to adjust AI response speech playback speed.
+## Read this first — two versions live in this repository
 
-## Tech Stack
+The repository name still reflects v1; the current product is **lii**.
 
-- `Frontend`: Flutter
-- `State management`: Riverpod
-- `Routing`: GoRouter
-- `Database`: Drift + SQLite
-- `Networking`: Dio
-- `Voice features`: `speech_to_text`, `flutter_tts`
-- `AI integration`: OpenAI-compatible `chat/completions` API
+| | v1 — PsyGuard AI | v2 — lii |
+|---|---|---|
+| Period | Apr – May 2026 | 10 Jul 2026 – present |
+| Authorship | Four-student team, advisor Kai-Chun Hou | **Rebuilt independently by Yu-Shin Lan** |
+| Scope | Flutter MVP: AI companion chat, check-in, sleep log, trend charts | Three-stream ERS, three-tier intervention, risk-inverse response, three-layer privacy, encrypted journal, speech features, breathing overture |
+| Recognition | 23rd Y.S. Awards, Apr 2026 — Honorable Mention, Senior-High AI Application (75 entries); Miao Feng-Chiang Technology Innovation Award, 3 of 714 entries, presented jointly to the team and its advisor | Submitted to the Da Vinci International Invention Exhibition; **result not yet announced** |
 
-## Project Structure
+There is a two-month gap between the phases. **All 55 commits from 10 July 2026
+onward are the author's own work.**
 
-```text
-.
-├── README.md
-├── README.zh-TW.md
-├── LICENSE
-└── psyguard_ai_app
-    ├── README.md
-    ├── lib
-    ├── test
-    ├── integration_test
-    └── pubspec.yaml
+The first v2 commit (`3ac57e1`, 10 Jul) carries the git name `olivia` — an
+earlier identity of the author's, corrected the same day in `a4c26d8`.
+Everything after is committed under `YuxinLan`.
+
+```bash
+git shortlog -sn --all
+git log --since=2026-07-10 --pretty=format:"%ad  %an  %s" --date=short
 ```
 
-## Local Testing Guide
+**Scale**: roughly 32,900 lines of Dart under `lib/` (excluding generated
+files), plus 14 test files totalling about 934 lines — covering the risk
+engine, database, settings service, export service, four page widget tests and
+one integration test.
 
-1. Enter the app directory:
-   ```bash
-   cd psyguard_ai_app
-   ```
-2. Install dependencies:
-   ```bash
-   flutter pub get
-   ```
-3. Regenerate Drift and test-related generated code:
-   ```bash
-   dart run build_runner build --delete-conflicting-outputs
-   ```
-4. Run static analysis:
-   ```bash
-   flutter analyze
-   ```
-5. Run tests:
-   ```bash
-   flutter test
-   ```
-6. If the app icon is updated, regenerate platform icons:
-   ```bash
-   cd psyguard_ai_app
-   dart run flutter_launcher_icons
-   ```
-7. To verify the Web build:
-   ```bash
-   cd psyguard_ai_app
-   flutter build web
-   ```
+---
 
-## Environment Variables
+## The core design: the higher the risk, the less the system says
 
-Set the following variables in `psyguard_ai_app/.env`:
+Every wellbeing app gets louder when a student is struggling. lii inverts the
+curve — as the score rises, the system withdraws its own comparisons, advice
+and prompting, hands the screen back to what the user stored earlier, and
+opens a door to a person.
 
-```env
+The tier is not a label on the student. It decides how loudly the app is
+allowed to speak.
+
+---
+
+## ERS — Emotional Risk Score
+
+`features/ers/ers_engine.dart` · `ers_models.dart`
+
+Three streams, each with its own sub-weights. Every sub-item passes through a
+stepped normalisation function mapping it to a risk value between 10 and 90:
+
+| Stream | Weight | Sub-items and weights |
+|---|---|---|
+| **Language** | 40% | speech rate 0.40 · negative-word density 0.35 · pause frequency 0.25 |
+| **Physical** | 35% | mood stability 0.40 · perceived load 0.35 · resilience 0.25 |
+| **Behaviour** | 25% | sleep duration 0.50 · usage streak 0.25 · check-in consistency 0.25 |
+
+Normalisation steps across bands rather than mapping linearly. Speech rate,
+for instance: below 150 wpm is markedly slowed (90), 250–350 is normal (10),
+above 400 reads as anxious over-speech (60) — **both ends are risk; only the
+middle is safe.** Sleep behaves the same way: more than 9 hours also scores 25.
+
+**Missing-stream renormalisation** (`hasVoice == false`): the language stream
+is dropped and its weight redistributed across physical and behaviour as
+`0.35/0.60` and `0.25/0.60`. `streamScores['language']` returns `-1.0` as a
+"not recorded" sentinel rather than being zero-filled or imputed.
+
+**Personal baseline correction**: `(50 − personal mean mood) × 0.1 +
+(personal mean stress − 50) × 0.1`, clamped to 0–100. The same raw score means
+different things for different people.
+
+**Tiers**: red ≥ 70, amber ≥ 45, green below.
+
+### The language stream: a methodological fix, recorded
+
+The header of `core/ers/speech_metrics.dart` states plainly that the language
+stream used to be derived from the stress slider — meaning stress was counted
+twice and the "three streams" were really two independent signals. This file
+replaced it with real speech features: rate (characters ÷ speaking seconds ×
+60), negative-word density, pause frequency.
+
+The same comment states the limits: phone speech recognition is affected by
+ambient noise, accent and network latency, so the derived figures are rough
+estimates rather than lab-grade acoustic analysis — suitable as a trend
+signal, not as a single-session diagnosis.
+
+### Three-tier intervention: notification requires persistence, not one bad day
+
+`features/ai_safety/ai_safety_models.dart`
+
+| Tier | Condition | Behaviour |
+|---|---|---|
+| Green | — | Passive; nothing interrupts |
+| Amber | — | One proactive check-in conversation |
+| Red (single) | ERS ≥ 70 | Offers support resources; **no notification** |
+| Red (sustained) | ERS ≥ 70 **for 3 consecutive days** | Counsellor notified, `notifyCounselor = true` |
+
+**One bad day does not alert an adult.** Notification requires evidence to
+accumulate across three days — a deliberate threshold, chosen to limit the
+damage a false positive does to a student's trust.
+
+### Cumulative risk: asymmetric hysteresis
+
+`features/ers/cumulative_risk_engine.dart`
+
+A 12-stage scale, each with its own colour and label (*Doing okay* → *Needs
+immediate help*). Escalation and de-escalation are deliberately asymmetric:
+
+- One red day raises the count by **+1**
+- **Three consecutive green days** are required to lower it by **−1**
+
+Updated at most once per calendar day. The system errs toward keeping
+attention on, rather than clearing it after a single better day.
+
+### Silence detection
+
+`features/ers/silence_detector.dart`
+
+Not writing is itself a signal. Three days of inactivity raises a warning,
+seven days is critical, and at most one alert is raised per day.
+
+### Semantic–emotional incongruence detection
+
+`features/ers/incongruence_detector.dart`
+
+Detects crisis hidden beneath a calm tone, across four dimensions: pronoun
+density (Chinese 我 / English I, me, my), cognitive-rigidity markers (一定,
+必須, 絕對 / always, never, impossible), event-severity keywords, and
+low-intensity emotion markers. When the events described are severe but the
+emotional expression is flat, the gap is the signal.
+
+### Risk engine: a second layer, separate from ERS
+
+`core/risk_engine/risk_engine.dart`
+
+ERS computes a trend score; RiskEngine handles present-moment signals with
+bilingual keyword matching, and returns an **explainable list of reasons**.
+
+Protective factors *subtract*:
+
+| Signal | Score |
+|---|---|
+| Self-help tools completed recently (≥3 in 7 days) | **−10** |
+| Help-seeking intent in messages | **−10** |
+| Sleep difficulty stabilising | **−5** |
+| 3-day mood mean ≥20 below the 14-day mean | +10 |
+| School-refusal / helplessness signals ≥3 | +20 |
+
+Help-seeking language lowers the risk score — **a person willing to speak up
+is in a different position from one who has gone quiet.**
+
+---
+
+## Safety flow
+
+`core/safety/safety_flow_service.dart` ·
+`features/safety/presentation/safety_page.dart`
+
+Different step sequences per risk level, in both languages. High risk begins
+at **Step 0 — secure immediate safety**, then stabilise breathing, choose a
+real person, and prepare a message asking for help.
+
+`core/network/ai_local_messages.dart` holds offline and high-risk local
+replies, so even with no server connection the user receives breathing
+guidance and crisis lines rather than an error message.
+
+`core/widgets/micro_shake.dart` gives the help button a continuous subtle
+shake at very high risk, to draw attention to it.
+
+---
+
+## Privacy: three layers, separated at the table level
+
+`features/privacy/privacy_database.dart` defines three Drift tables:
+
+| Layer | Table | Columns |
+|---|---|---|
+| Layer 1 · Journal | `DiaryEntries` | `id`, `content`, `createdAt` — **local, never uploaded** |
+| Layer 2 · Analysis | `ERSRecords` | `anonymousId`, `ersScore`, `riskLevel`, three stream scores, `date` — **no content column** |
+| Layer 3 · Alert | `AlertRecords` | `anonymousId`, `alertType`, `triggeredAt`, `counselorNotified` — used only when the safety flow fires |
+
+The separation lives in the schema, not in a permissions layer: the analysis
+table **structurally has no column** for journal content.
+
+`privacy_verification.dart` asserts exactly this — turning "the journal never
+leaks" into an executable check rather than a documentation promise.
+
+`privacy_models.dart` defines three access levels (`studentOnly` /
+`counselorStats` / `adminAlert`), and consent is **granular**: agreeing that a
+counsellor may view statistics and agreeing to notification at the red tier
+are two independent switches.
+
+### Secret Diary encryption
+
+`core/security/secret_diary_lock.dart`
+
+One AES key, three ways to obtain it: app password (PBKDF2-derived, unwrapping
+an envelope around the key), Touch ID (retrieved from Keychain), and a
+recovery code.
+
+The header states it directly: **if all three paths fail, the secret diary is
+unrecoverable. That is the design, not a bug.**
+
+PBKDF2 runs 30,000 iterations, with the reasoning recorded in place: the web
+build compiles to single-threaded JS, where 120,000 iterations froze the UI for
+several seconds; 30,000 is four times faster and noticeably smoother.
+
+`secret_swipe_shell.dart` is the hidden entry — swiping left desaturates the
+colour to 75% under the finger, revealing the secret page.
+
+### An honest statement about access control
+
+From the header of `core/config/access_gate.dart`: this is a door, not a lock.
+A Flutter web build is pure front-end — the key sits in the JS bundle and any
+devtools search will find it. It stops passers-by, forwarded links and search
+engines; it stops nobody willing to spend five minutes reading the source. The
+only real protection is a backend proxy with the key held server-side.
+
+The same posture appears where users can see it. The privacy section of the
+`/about` page states directly that the web build lacks hardware-backed
+protection, that the strongest guarantees are on native iOS and Android, and
+that the web build is for demo and trial. **The limits are not only in the
+comments — they are on a page the user can read.**
+
+---
+
+## My Pacers and the breathing overture
+
+`core/pacer/breath_plan.dart` — 317 lines of pure logic that imports no
+Flutter, so it can be tested without an emulator.
+
+The central idea is the *overture*: **you cannot drop an anxious person
+straight into 4-7-8.** Someone breathing 18 times a minute cannot hold for
+seven seconds on the first cycle — they will panic further and close the app.
+So the pattern starts from their current rate and slows in stages: overture →
+ramp → main → outro.
+
+`core/widgets/lii_breath_entry.dart` **reuses the thresholds already defined in
+`risk_engine` rather than inventing new ones** — one definition of risk runs
+through the whole app.
+
+`core/pacer/bookmark_quick_add.dart` lets the user store a phrase, a person or
+a turning point on a steady day.
+`features/bookmark/presentation/bookmark_page.dart` (Pacer Lift, 1,650 lines)
+has two tabs: quotes as cable cars, tagged with who said them, and a
+viewing-platform achievements tab. `core/widgets/floating_pacer.dart` groups
+them by author and allows one-tap deletion.
+
+**A rule decides which Pacer surfaces — no generative model decides what the
+user hears.**
+
+### Crystal collection
+
+From the header of `core/crystals/crystal_store.dart`: crystals can only be
+earned through breathing. Not purchased, not randomly drawn — each corresponds
+to something the user actually did. The conditions are listed explicitly in
+`kCrystalRules`.
+
+The collection page's rationale is also written into the comments: earned
+crystals breathe on their own, unearned ones are dimmed but their shape stays
+visible — **you have to see it to want it; an all-black square just tells
+people they will never get there.**
+
+Built on the hope box, a cognitive-therapy technique whose digital form was
+tested in a randomised trial of 118 veterans (Bush et al., *Psychiatric
+Services*, 2017), which found improved coping self-efficacy.
+
+---
+
+## Hey Luna — the planning step, removed
+
+`features/voice/voice_wake_service.dart` · `voice_wake_page.dart`
+
+Every to-do app asks *when do you want to be reminded?* — a question that
+assumes the student can still plan. lii asks for a **priority** instead,
+spoken rather than typed, and computes the lead time from the tier.
+
+Two concrete implementation problems are handled, both documented in comments:
+partial speech-recognition results fire `onResult` repeatedly and caused the
+wake word to trigger several times per utterance (solved with a flag scoped to
+one listening session); and iOS defaults to an audio category that stays
+silent when the mute switch is on, requiring `playback`.
+
+Notes and to-dos live in `features/checkin/presentation/note_page.dart`
+(15 priority levels); the annual overview is in `month_overview_page.dart`.
+
+---
+
+## CBT and tools
+
+`core/cbt/cbt_service.dart` targets the six cognitive distortions most common
+in adolescents: all-or-nothing, overgeneralization, jumping to conclusions,
+emotional reasoning, catastrophizing, and labeling. A fallback path covers the
+case where no AI is configured.
+
+`features/cbt/presentation/cbt_page.dart` is a five-step exercise guided by the
+pet, with **a mood rating taken before and after** the practice.
+
+`features/quiz/presentation/distortion_quiz_page.dart` is a 12-question quiz
+(two per distortion) identifying which thinking trap the user falls into most
+easily, with an explanation and practice suggestions.
+
+`features/tools_library/` holds the tools library and usage history.
+
+Clinical literature is cited as design provenance, not as therapy.
+
+---
+
+## Group baselines
+
+`core/ers/group_norms.dart` provides comparison norms by age band (under 13,
+13–15, 16–18, over 18). The header states plainly: **these are research-norm
+estimates, not real user data, and the UI must label them as such.** A backend
+hook is reserved — connecting an anonymised database later means rewriting
+`fetch()` alone, with no change at the call sites.
+
+---
+
+## Engineering decisions, recorded where they were made
+
+- **The tide sound is synthesised in Dart at runtime**
+  (`core/audio/tide_sound.dart`) — no audio files, so no assets to license and
+  no multi-megabyte mp3 in the bundle.
+- **The orbs are built entirely from gradients and paths**
+  (`core/widgets/lii_orb.dart`, `luna_orb.dart`) — no blur or glow filters,
+  because filters on Flutter web either have no equivalent or drop frames,
+  whereas gradients and paths map one to one.
+- **A non-numeric representation of risk**
+  (`core/widgets/geometric_stress_indicator.dart`) — low risk is a hollow
+  circle, medium a half-filled square: state conveyed by shape rather than by
+  a number.
+- **The breathing ring's rate follows the risk level**
+  (`core/widgets/breathing_ring.dart`) — 3-second cycles when calm, 2 when
+  watchful, 1 when anxious.
+- **The dashboard and daily encouragement read local data only**
+  (`features/dashboard/`, `features/home/presentation/encouragement_banner.dart`)
+  — no AI calls, zero cost, works offline.
+- **API usage is made transparent** (`features/api_usage/`) — shows estimated
+  usage and cost for the user's own key, noting that tokens are estimated from
+  text length and the provider's bill is authoritative.
+- **Usage analytics stay on the device**
+  (`core/analytics/usage_tracker.dart`) — page open counts and dwell time are
+  recorded for research purposes and never uploaded.
+
+---
+
+## Atmosphere system: eight seasonal and festival themes
+
+`core/theme/mood_theme_service.dart` · `core/widgets/mood_fall_overlay.dart`
+
+Eight atmospheres plus a "none" default. Each one simultaneously determines
+the background colour, the falling particle effect, and the mascot in the home
+screen corner:
+
+| Atmosphere | Background | Falling effect | Home corner |
+|---|---|---|---|
+| 🎄 Christmas | `#FFFBF5` pale cream | Snow | Cat among the ornaments |
+| 🧧 Lunar New Year | `#FFF3F3` pale pink | Fireworks | New Year dragons + red-envelope burst |
+| 🌸 Spring | `#FCE4EC` soft pink | Petals | Easter bunny |
+| ☀️ Summer | `#E0F7FA` bright pale blue | Water splash | Beach cat and bunny in sunglasses |
+| 🍁 Autumn | `#FBE9E0` warm orange-brown | Leaves | Swaying mascot |
+| ❄️ Winter | `#E8F0F7` cool blue-white | Snow | Engineer penguin → egg-hatching → igloo |
+| 🧣 Winter Break | `#F3E9E0` warm beige | Snow | Building a snowman together |
+| 🏖️ Summer Break | `#FFF3D6` bright yellow | Treats | Volleyball boy + drinks bar |
+| — None | Transparent | None | Empty slot |
+
+**The atmosphere colour takes priority over light/dark mode.** In dark mode it
+is not swapped for a different palette — it becomes
+`Color.lerp(base, #14161B, 0.85)`, **preserving the hue while darkening**, so
+spring at night is still spring's pink.
+
+The interaction widgets for each atmosphere live under `core/widgets/`:
+`snow_cap.dart` (snow accumulation, +1 per tap on the orb),
+`frost_touch_layer.dart` (frost crystallises outward from wherever a finger
+lands — implemented as `translucent` so it observes touches without consuming
+gestures, and therefore never blocks buttons), `hongbao_layer.dart` (tapping
+the envelope opens a random amount and sprays money from that position; the
+overlay uses `IgnorePointer` so it doesn't block interaction), `paw_tap.dart`
+(at Christmas a cat paw lands where you tap and leaves a fading print — paused
+while the keyboard is open so it doesn't interrupt writing),
+`penguin_nest.dart` (the penguin lays eggs, which hatch once the nest fills),
+`beach_corner.dart` and `fish_pond.dart` (fish can be picked up and dragged;
+Angry Birds-style basketball with a predicted trajectory), and
+`hoop_corner.dart` (layout and physics share one set of proportions, so a shot
+that looks in actually scores).
+
+Long-pressing the floating lii orb (`floating_app_brand.dart`) opens the
+atmosphere menu; `mood_fall_overlay.dart` is the app-wide falling-effect
+controller, playing once per call.
+
+---
+
+## Complete feature map
+
+31 routes, grouped into six sections in the navigation drawer.
+
+### Daily
+
+| Page | Content |
+|---|---|
+| Dashboard | ERS, streak, regularity, note count and recent trend on one page — **local data only, no AI calls** |
+| Check-in | Three sliders (mood stability, perceived load, resilience) plus notes; the ERS card opens itself once saved. History page included |
+| Sleep Log | Duration, difficulty falling asleep (0–3), bedtime and wake time. History page included |
+| Trends | 7/14/30-day slider, personal-vs-group comparison, research baseline |
+| Calendar | Annual overview, red and amber items grouped by week |
+
+### Practice
+
+| Page | Content |
+|---|---|
+| AI Companion | Text conversation with Luna, with context memory and summarisation of older messages |
+| Thought Coach | Five-step CBT practice guided by the pet, **with a mood rating before and after** |
+| Thinking Trap Quiz | 12 questions (two per distortion), with results, explanation and practice suggestions |
+| Toolbox | Four tools: self-dialogue, 4-7-8 breathing, 5-4-3-2-1 grounding, emotion dictionary; with usage history |
+
+### Companions
+
+| Page | Content |
+|---|---|
+| Hope Box | 8 situations (breathe, low day, not alone, rest, be kind, late night, you got this, mine), 35 cards. Tap to flip, swipe to change, ♡ to favourite, write your own. Chinese and English kept strictly separate |
+| My Pacers | Pacer Lift: quotes as cable cars tagged with who said them, plus a viewing-platform achievements tab |
+| Weekly Persona | One of six animals (otter, capybara, turtle, squirrel, bear, butterfly) computed from that week's actual mood / stress / energy records. **No quiz to fill in** |
+| Luna Park | Pet park: XP, unlockable skins, joke Q&A, feeding interactions |
+| My Pet | Choose and name a companion (otter / capybara) |
+
+The home screen also carries a draggable Luna Pacer orb (night sky on one side, coloured glass on the other, turned by swiping) and the crystal collection: six crystals — ice from the start, sea at 3 breathing sessions, amethyst at 7, amber at 14, moss at a 3-day streak, dawn at 7, with a hint showing how far the next one is.
+
+### Reports
+
+| Page | Content |
+|---|---|
+| AI Report · AI History | AI-generated trend reports and their history |
+| API Usage | Estimated usage and cost for the user's own key, with a configurable unit price and a note that tokens are estimated from text length and the provider's bill is authoritative |
+
+### More
+
+| Page | Content |
+|---|---|
+| Safety Flow | Tier-aware safety flow with staffed service lines |
+| Voice | "Hey Luna" wake-word notes; speech features also feed the ERS language stream |
+| Export Report | Summary export as JSON or PNG, over a selectable day range |
+| Settings | See below |
+| About & Statement | Privacy and security notes, disclaimer, license and credits |
+
+### Home screen
+
+A greeting with a light/dark toggle, four swipeable status cards (the first showing today's well-being), then two card sections: **Explore Yourself** (Check-in, Well-being Trends, AI Companion, Sleep Log, Year Overview, My Quote Cards) and **More Features** (Toolbox, Export Report, Thought Coach, Thinking Trap Quiz, Weekly Persona, Hope Box, My Pacers, Luna Park, Hey Luna).
+
+### Settings
+
+| Section | Content |
+|---|---|
+| Age group | Under 13 / 13–15 / 16–18 / Over 18, used to compare trends with peer research norms |
+| Font size | S / M / L / XL |
+| **Daily Pacer** | "Bring one back each day" — Luna returns one previously saved line daily |
+| Language | English and Chinese, applied immediately |
+| **AI status** | With no key configured it states plainly that the app is in offline mode using demo replies — **it does not pretend to be working** |
+| AI settings | OpenAI-compatible base URL, API key and model name, supplied by the user |
+| Voice | Read-aloud speed slider |
+| **Data and privacy** | States that data is stored locally in SQLite and can be cleared at any time, and that configuring an API key means chat content may be sent to a third-party AI service |
+| **Secret Diary auto-lock** | Three options, each with its cost spelled out: lock on leaving (safest, but unlock every time) / lock after 2 minutes (no re-unlock for short trips away) / lock when the app closes (most convenient, least private) |
+| Clear local data | Deletes all chats, notes, sleep records, trends, AI reports and settings including consent status; cannot be undone |
+
+The auto-lock options deserve a separate note: **the app does not decide the balance between security and convenience on the user's behalf — it presents all three options together with what each one costs, and lets the user choose.** That is consistent with the posture running through the whole product: disclose the limits rather than hide them.
+
+---
+
+## Remaining implementation notes
+
+**AI conversation layer** — under `core/network/`: `ai_api_client.dart`,
+`ai_chat_repository.dart` (660 lines, including context memory and
+summarisation), `ai_error_formatter.dart`, `app_config_controller.dart`,
+`dio_provider.dart`.
+
+**Storage** — `core/storage/app_database.dart` (Drift, 531 lines) with native
+and web executors sharing one schema. Local-first; nothing uploaded by default.
+
+**Everything else** — `core/data/quotes_data.dart` (daily quote library,
+bilingual and attributed), `core/settings/font_scale_provider.dart`,
+`core/widgets/tooltip_bubble.dart` (long-press feature explanations),
+`core/widgets/brand_loading_indicator.dart` (a slow breathing logo replacing
+`CircularProgressIndicator`), and `lib/l10n/`.
+
+---
+
+## Scope statement
+
+> lii is an emotional-companionship and wellbeing-support product. It is not a
+> medical device. It does not diagnose, treat or prevent any condition and does
+> not replace professional care. Clinical literature — including the
+> CBT-informed content — is cited as design provenance, not as therapy.
+
+Staffed services listed on the safety page: TW 1925 / 1995 / 1980 ·
+US 988 / 741741.
+
+---
+
+## Pilot studies — and what they are not
+
+| | July 2026 | 3–4 Aug 2026 |
+|---|---|---|
+| Participants | 18 students, one guided session | 17 responses, 13 usable |
+| Streams active | Two (language inactive) | **Three** — language in the score for the first time |
+| Tiers observed | 12 green, 5 amber, 1 red | 9 green, 4 amber, 0 red |
+
+**Neither run is a validation.** Single session; n = 13–18; sample
+self-selected and the August session unsupervised; sub-scores read off the app
+rather than independently measured; no independent mood measure; weights are
+design choices, not validated coefficients. No red tier appeared in August, so
+restraint at the red tier remains untested.
+
+What the July run changed: 2 of 18 said a returning Pacer might make things
+worse — every Pacer is now dismissible in one tap. And 3 of 16 could not think
+what to write; the cold start is real and unsolved.
+
+---
+
+## Status
+
+- **Da Vinci International Invention Exhibition** — submitted; result not yet
+  announced.
+- **Patent** — Taiwan invention patent, application in preparation, **not yet
+  filed**.
+- External guidance — Taichung City Government Education Bureau,
+  ref. 115-E018647, 23 Apr 2026, in reply to the author's enquiry. Advisory
+  guidance, not an endorsement.
+
+## Tech stack
+
+Flutter · Riverpod · GoRouter · Drift + SQLite · Dio ·
+`speech_to_text` / `flutter_tts` · `encrypt` + `pointycastle` ·
+`flutter_secure_storage` · OpenAI-compatible chat API ·
+iOS and Android · zh-TW and English · local-first storage
+
+## Running locally
+
+```bash
+cd psyguard_ai_app
+flutter pub get
+dart run build_runner build --delete-conflicting-outputs
+flutter analyze
+flutter test
+```
+
+Environment variables go in `psyguard_ai_app/.env` (see `.env.example`):
+
+```
 API_BASE_URL=https://api.openai.com
 API_KEY=your_api_key
 AI_MODEL=gpt-4o-mini
 APP_ENV=dev
 ```
 
-Descriptions:
+## Author
 
-- `API_BASE_URL`: Base URL for the OpenAI-compatible API.
-- `API_KEY`: API key for the model service.
-- `AI_MODEL`: Model name shared by chat and analysis features.
-- `APP_ENV`: Runtime environment label, such as `dev`, `staging`, or `prod`.
+Yu-Shin Lan · Shin Min High School, Taichung, Taiwan
 
-## Coolify Deployment Guide
+## License
 
-This repository currently contains only the Flutter client. It does not include a backend service or container configuration that can be deployed directly to Coolify, so there is no verified Coolify deployment flow yet.
-
-If a standalone API or Web service is added later, document the following:
-
-- `Dockerfile` or deployable image configuration
-- Coolify service setup steps
-- Required environment variables
-- Health checks and startup commands
-
-## Frontend / Backend Documentation
-
-- Frontend app documentation: [psyguard_ai_app/README.md](./psyguard_ai_app/README.md)
-- Backend documentation: No standalone backend directory currently exists.
+MIT — see [LICENSE](LICENSE).
