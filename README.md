@@ -9,8 +9,17 @@
 > The web build runs in a browser with no install. AI conversation needs your own
 > OpenAI-compatible API key, entered in Settings; without one the app runs in
 > offline mode with demo replies, and every other feature works normally.
-> The web build lacks hardware-backed key protection — the strongest guarantees
-> are on native iOS and Android, as the app's own About page states.
+>
+> **First load is slow — a known limitation.** Flutter web renders through
+> CanvasKit, which must download several megabytes of engine before the first
+> pixel is painted. Measured over 7 days (n = 66 unique visitors across Japan,
+> the US and Taiwan, on varied networks), p75 FCP exceeds 3 seconds, with longer
+> one-off peaks on slow connections. Once loaded, interaction is stable and the
+> layout does not shift (CLS is good). Native iOS and Android builds do not have
+> this problem.
+>
+> The web build also lacks hardware-backed key protection — the strongest
+> guarantees are on native, as the app's own About page states.
 
 ---
 
