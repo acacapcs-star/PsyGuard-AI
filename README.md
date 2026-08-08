@@ -65,12 +65,12 @@ allowed to speak.
 flowchart TD
     subgraph IN["Input"]
         V["Voice<br/>speech_metrics"]
-        C["Check-in<br/>mood · stress · energy"]
+        C["Check-in<br/>stability · ease · resilience"]
         S["Sleep · streak<br/>consistency"]
     end
 
     V --> L["Language stream 40%<br/>rate .40 · neg-words .35 · pauses .25"]
-    C --> P["Physical stream 35%<br/>mood .40 · load .35 · resilience .25"]
+    C --> P["Physical stream 35%<br/>stability .40 · ease .35 · resilience .25"]
     S --> B["Behaviour stream 25%<br/>sleep .50 · streak .25 · consistency .25"]
 
     L --> E["ERS engine<br/>ers_engine.dart"]
@@ -136,7 +136,7 @@ stepped normalisation function mapping it to a risk value between 10 and 90:
 | Stream | Weight | Sub-items and weights |
 |---|---|---|
 | **Language** | 40% | speech rate 0.40 · negative-word density 0.35 · pause frequency 0.25 |
-| **Physical** | 35% | mood stability 0.40 · perceived load 0.35 · resilience 0.25 |
+| **Physical** | 35% | Emotional Stability 0.40 · Emotional Ease 0.35 · Emotional Resilience 0.25 |
 | **Behaviour** | 25% | sleep duration 0.50 · usage streak 0.25 · check-in consistency 0.25 |
 
 Normalisation steps across bands rather than mapping linearly. Speech rate,
@@ -523,7 +523,7 @@ controller, playing once per call.
 | Page | Content |
 |---|---|
 | Dashboard | ERS, streak, regularity, note count and recent trend on one page — **local data only, no AI calls** |
-| Check-in | Three sliders (mood stability, perceived load, resilience) plus notes; the ERS card opens itself once saved. History page included |
+| Check-in | Three sliders (Emotional Stability, Emotional Ease, Emotional Resilience) plus notes; the ERS card opens itself once saved. History page included |
 | Sleep Log | Duration, difficulty falling asleep (0–3), bedtime and wake time. History page included |
 | Trends | 7/14/30-day slider, personal-vs-group comparison, research baseline |
 | Calendar | Annual overview, red and amber items grouped by week. **Swipe left for the locked secret calendar** |
