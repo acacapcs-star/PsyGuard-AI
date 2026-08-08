@@ -16,7 +16,7 @@
 
 ## Read this first — two versions live in this repository
 
-The repository name still reflects v1; the current product is **lii**.
+This repository was renamed to `lii` in August 2026 (formerly `PsyGuard-AI`); the full development history of both phases remains in the commit log. The application directory `psyguard_ai_app/` is left unchanged as a trace of v1.
 
 | | v1 — PsyGuard AI | v2 — lii |
 |---|---|---|
@@ -613,7 +613,7 @@ bilingual and attributed), `core/settings/font_scale_provider.dart`,
 ## Project structure
 
 ```
-PsyGuard-AI/
+lii/
 ├── README.md
 ├── README.zh-TW.md
 ├── LICENSE

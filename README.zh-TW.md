@@ -13,7 +13,7 @@
 
 ## 請先看這裡 — 這個 repository 包含兩個版本
 
-Repo 名稱仍沿用 v1,目前的產品為 **lii**。
+本 repository 已於 2026 年 8 月更名為 `lii`(原名 `PsyGuard-AI`),但兩個階段的完整開發歷史都保留在 commit 紀錄中。應用程式內的資料夾名稱 `psyguard_ai_app/` 維持不變,作為 v1 的歷史痕跡。
 
 | | v1 — PsyGuard AI | v2 — lii |
 |---|---|---|
@@ -457,7 +457,7 @@ SecretSwipeShell(
 ## 專案結構
 
 ```
-PsyGuard-AI/
+lii/
 ├── README.md
 ├── README.zh-TW.md
 ├── LICENSE
