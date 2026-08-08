@@ -187,8 +187,11 @@ damage a false positive does to a student's trust.
 
 `features/ers/cumulative_risk_engine.dart`
 
-A 12-stage scale, each with its own colour and label (*Doing okay* → *Needs
-immediate help*). Escalation and de-escalation are deliberately asymmetric:
+A 12-stage scale, each with its own colour and label, in both languages:
+
+> Doing okay · Worth watching · Mild alert · Needs attention · Please look after yourself · Consider talking to someone · Ongoing concern · Active intervention · High alert · Urgent · Crisis state · Needs immediate help
+
+The wording deliberately shifts from describing a state to suggesting an action — early stages say "watching", the middle says "talk to someone", and only the later stages say "intervention". Escalation and de-escalation are deliberately asymmetric:
 
 - One red day raises the count by **+1**
 - **Three consecutive green days** are required to lower it by **−1**
@@ -523,8 +526,8 @@ controller, playing once per call.
 | Page | Content |
 |---|---|
 | Dashboard | ERS, streak, regularity, note count and recent trend on one page — **local data only, no AI calls** |
-| Check-in | Three sliders (Emotional Stability, Emotional Ease, Emotional Resilience) plus notes; the ERS card opens itself once saved. History page included |
-| Sleep Log | Duration, difficulty falling asleep (0–3), bedtime and wake time. History page included |
+| Check-in | Titled "Check-in". Three sliders — Emotional Stability, Emotional Ease, Emotional Resilience (0–100%, higher is better) — plus a daily note; the ERS card opens itself once saved. History page included |
+| Sleep Log | Sleep Duration, Difficulty Falling Asleep, Bedtime and Wake Time. History page included |
 | Trends | 7/14/30-day slider, personal-vs-group comparison, research baseline |
 | Calendar | Annual overview, red and amber items grouped by week. **Swipe left for the locked secret calendar** |
 
@@ -535,7 +538,7 @@ controller, playing once per call.
 | AI Companion | Text conversation with Luna, with context memory and summarisation of older messages |
 | Thought Coach | Five-step CBT practice guided by the pet, **with a mood rating before and after** |
 | Thinking Trap Quiz | 12 questions (two per distortion), with results, explanation and practice suggestions |
-| Toolbox | Four tools: self-dialogue, 4-7-8 breathing, 5-4-3-2-1 grounding, emotion dictionary; with usage history |
+| Toolbox | Toolbox, four tools: Self-dialogue Card, 4-7-8 Breathing, 5-4-3-2-1 Grounding, Emotion Dictionary; with practice history |
 
 ### Companions
 
@@ -562,7 +565,7 @@ The home screen also carries a draggable Luna Pacer orb (night sky on one side, 
 |---|---|
 | Safety Flow | Tier-aware safety flow with staffed service lines |
 | Voice | "Hey Luna" wake-word notes; speech features also feed the ERS language stream |
-| Export Report | Summary export as JSON or PNG, over a selectable day range |
+| Export Report | Well-being report export as JSON or PNG, over a selectable day range (with a 7-day shortcut) |
 | Settings | See below |
 | About & Statement | **Privacy and security**: local-first, AES-256-GCM authenticated encryption, envelope-encrypted key, PBKDF2 derivation, the key loaded into memory only when needed and auto-wiped by policy, API keys in Keychain / Secure Enclave / Keystore — and a direct statement that the web build lacks hardware-backed protection and the strongest guarantees are native. **Disclaimer**: does not replace professional medical care, counselling or crisis services; the ERS is a reference indicator, not a clinical diagnosis. **License and credits**: every open-source package listed under its original license. It closes with a line: teenagers mental-health data deserves the highest protection |
 
